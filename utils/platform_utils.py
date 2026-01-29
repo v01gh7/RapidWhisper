@@ -40,6 +40,53 @@ def detect_platform() -> Platform:
         return Platform.UNKNOWN
 
 
+def get_platform_info() -> dict:
+    """
+    Возвращает информацию о текущей платформе.
+    
+    Returns:
+        dict: Словарь с информацией о платформе
+    """
+    return {
+        "system": platform.system(),
+        "release": platform.release(),
+        "version": platform.version(),
+        "machine": platform.machine(),
+        "processor": platform.processor(),
+        "platform": detect_platform().value
+    }
+
+
+def is_windows() -> bool:
+    """
+    Проверяет, является ли текущая платформа Windows.
+    
+    Returns:
+        bool: True если Windows, False иначе
+    """
+    return detect_platform() == Platform.WINDOWS
+
+
+def is_macos() -> bool:
+    """
+    Проверяет, является ли текущая платформа macOS.
+    
+    Returns:
+        bool: True если macOS, False иначе
+    """
+    return detect_platform() == Platform.MACOS
+
+
+def is_linux() -> bool:
+    """
+    Проверяет, является ли текущая платформа Linux.
+    
+    Returns:
+        bool: True если Linux, False иначе
+    """
+    return detect_platform() == Platform.LINUX
+
+
 def apply_windows_blur(hwnd: int) -> bool:
     """
     Применяет эффект размытия Acrylic для Windows 11.

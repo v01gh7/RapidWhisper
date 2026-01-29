@@ -20,6 +20,7 @@ from services.silence_detector import SilenceDetector
 from ui.floating_window import FloatingWindow
 from ui.tray_icon import TrayIcon
 from utils.logger import get_logger
+from utils.single_instance import SingleInstance
 
 
 class RapidWhisperApp(QObject):
@@ -592,12 +593,130 @@ class RapidWhisperApp(QObject):
         """Показывает окно настроек."""
         from ui.settings_window import SettingsWindow
         
-        settings_window = SettingsWindow(self.config, parent=None)
+        # ВАЖНО: Передаем self.floating_window как parent чтобы окно не закрывало приложение
+        settings_window = SettingsWindow(self.config, parent=self.floating_window)
+        # Подключить сигнал сохранения настроек
+        settings_window.settings_saved.connect(self._reload_settings)
         settings_window.exec()
+    
+    def _reload_settings(self):
+        """
+        Перезагружает настройки без перезапуска приложения.
+        
+        Применяет новые настройки для всех компонентов которые можно обновить
+        без полного перезапуска.
+        """
+        try:
+            self.logger.info("Перезагрузка настроек...")
+            
+            # Загрузить новую конфигурацию
+            new_config = Config.load_from_env()
+            errors = new_config.validate()
+            
+            if errors:
+                self.logger.error("Ошибки в новой конфигурации:")
+                for error in errors:
+                    self.logger.error(f"  - {error}")
+                
+                # Показать уведомление об ошибке
+                self.tray_icon.show_message(
+                    "⚠️ Ошибка настроек",
+                    "Некоторые настройки некорректны. Проверьте логи.",
+                    duration=5000
+                )
+                return
+            
+            # Сохранить старую конфигурацию для сравнения
+            old_config = self.config
+            self.config = new_config
+            
+            # Обновить компоненты которые можно обновить без перезапуска
+            
+            # 1. Обновить детектор тишины
+            if (old_config.silence_threshold != new_config.silence_threshold or
+                old_config.silence_duration != new_config.silence_duration):
+                try:
+                    self.silence_detector = SilenceDetector(
+                        threshold=new_config.silence_threshold,
+                        silence_duration=new_config.silence_duration
+                    )
+                    self.logger.info(f"Детектор тишины обновлен: threshold={new_config.silence_threshold}, duration={new_config.silence_duration}")
+                except Exception as e:
+                    self.logger.error(f"Ошибка обновления детектора тишины: {e}")
+            
+            # 2. Обновить горячую клавишу если изменилась
+            if old_config.hotkey != new_config.hotkey:
+                try:
+                    self.logger.info(f"Обновление горячей клавиши: {old_config.hotkey} -> {new_config.hotkey}")
+                    
+                    # Отменить старую регистрацию
+                    if self.hotkey_manager:
+                        self.hotkey_manager.unregister_hotkey()
+                        self.logger.info("Старая горячая клавиша отменена")
+                    
+                    # Зарегистрировать новую
+                    self.hotkey_manager = HotkeyManager(self._on_hotkey_pressed)
+                    success = self.hotkey_manager.register_hotkey(new_config.hotkey)
+                    
+                    if success:
+                        # Зарегистрировать ESC снова
+                        self.hotkey_manager.register_hotkey("esc", self._on_cancel_pressed)
+                        self.logger.info(f"Горячая клавиша обновлена: {new_config.hotkey}")
+                    else:
+                        self.logger.error(f"Не удалось зарегистрировать новую горячую клавишу: {new_config.hotkey}")
+                        # Попытаться вернуть старую
+                        self.hotkey_manager = HotkeyManager(self._on_hotkey_pressed)
+                        self.hotkey_manager.register_hotkey(old_config.hotkey)
+                        self.hotkey_manager.register_hotkey("esc", self._on_cancel_pressed)
+                        self.config.hotkey = old_config.hotkey
+                        
+                        self.tray_icon.show_message(
+                            "⚠️ Ошибка",
+                            f"Не удалось зарегистрировать горячую клавишу {new_config.hotkey}. Используется старая: {old_config.hotkey}",
+                            duration=5000
+                        )
+                        return
+                        
+                except Exception as e:
+                    self.logger.error(f"Ошибка обновления горячей клавиши: {e}")
+                    import traceback
+                    self.logger.error(traceback.format_exc())
+            
+            # 3. Логировать изменения AI Provider
+            if old_config.ai_provider != new_config.ai_provider:
+                self.logger.info(f"AI Provider изменен: {old_config.ai_provider} -> {new_config.ai_provider}")
+            
+            # 4. Проверить API ключ для нового провайдера
+            api_key = self._get_api_key_for_provider()
+            if api_key:
+                self.logger.info(f"API ключ для {new_config.ai_provider} загружен: {api_key[:10]}...")
+            else:
+                self.logger.warning(f"API ключ для провайдера {new_config.ai_provider} не найден!")
+            
+            # Показать уведомление об успешном обновлении
+            self.tray_icon.show_message(
+                "✅ Настройки обновлены",
+                "Новые настройки применены успешно!",
+                duration=3000
+            )
+            
+            self.logger.info("Настройки успешно перезагружены")
+            
+        except Exception as e:
+            self.logger.error(f"Ошибка перезагрузки настроек: {e}")
+            import traceback
+            self.logger.error(traceback.format_exc())
+            
+            # Показать уведомление об ошибке
+            self.tray_icon.show_message(
+                "❌ Ошибка",
+                f"Не удалось применить настройки: {str(e)}",
+                duration=5000
+            )
     
     def _quit_app(self) -> None:
         """Выход из приложения."""
-        self.logger.info("Запрос на выход из приложения")
+        self.logger.info("Запрос на выход из приложения (через меню трея)")
         QApplication.instance().quit()
     
     def run(self) -> int:
@@ -638,7 +757,9 @@ class RapidWhisperApp(QObject):
         Requirements: 12.2, 12.3, 12.4
         """
         try:
+            import traceback
             self.logger.info("Завершение работы RapidWhisper...")
+            self.logger.debug("Traceback вызова shutdown:\n" + ''.join(traceback.format_stack()))
             
             # Скрыть иконку трея
             if self.tray_icon:
@@ -672,6 +793,35 @@ class RapidWhisperApp(QObject):
 
 def main():
     """Точка входа в приложение."""
+    # Проверить что приложение еще не запущено
+    single_instance = SingleInstance("RapidWhisper")
+    
+    if single_instance.is_already_running():
+        print("❌ RapidWhisper уже запущен!")
+        print("Проверьте системный трей.")
+        
+        # Показать MessageBox на Windows
+        try:
+            from PyQt6.QtWidgets import QMessageBox
+            temp_app = QApplication(sys.argv)
+            QMessageBox.warning(
+                None,
+                "RapidWhisper уже запущен",
+                "RapidWhisper уже запущен!\n\n"
+                "Проверьте иконку в системном трее.\n"
+                "Если приложение не отвечает, завершите процесс через диспетчер задач.",
+                QMessageBox.StandardButton.Ok
+            )
+        except Exception:
+            pass
+        
+        sys.exit(1)
+    
+    # Захватить блокировку
+    if not single_instance.acquire():
+        print("❌ Не удалось захватить блокировку приложения")
+        sys.exit(1)
+    
     # Создать QApplication
     app = QApplication(sys.argv)
     app.setApplicationName("RapidWhisper")
@@ -694,6 +844,7 @@ def main():
         
     finally:
         rapid_whisper.shutdown()
+        single_instance.release()
     
     sys.exit(exit_code)
 

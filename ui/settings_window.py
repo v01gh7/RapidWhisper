@@ -470,8 +470,8 @@ class SettingsWindow(QDialog):
             QMessageBox.information(
                 self,
                 "✅ Успешно",
-                "Настройки сохранены!\n\n"
-                "Перезапустите приложение для применения изменений.",
+                "Настройки сохранены и применены!\n\n"
+                "Новые настройки вступили в силу.",
                 QMessageBox.StandardButton.Ok
             )
             
