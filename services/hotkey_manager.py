@@ -24,20 +24,22 @@ class HotkeyManager:
         Инициализирует менеджер горячих клавиш.
         
         Args:
-            callback: Функция, которая будет вызвана при нажатии горячей клавиши
+            callback: Функция, которая будет вызвана при нажатии основной горячей клавиши
         
         Requirements: 1.1, 1.4
         """
         self.hotkey: Optional[str] = None
         self.callback: Callable = callback
         self._is_registered: bool = False
+        self._additional_hotkeys: dict = {}  # Дополнительные горячие клавиши
     
-    def register_hotkey(self, key: str = "F1") -> bool:
+    def register_hotkey(self, key: str = "F1", callback: Optional[Callable] = None) -> bool:
         """
         Регистрирует глобальную горячую клавишу.
         
         Args:
             key: Клавиша для регистрации (по умолчанию F1)
+            callback: Опциональный callback для этой клавиши (если None, используется основной)
         
         Returns:
             True если регистрация успешна, False в случае ошибки
@@ -45,15 +47,19 @@ class HotkeyManager:
         Requirements: 1.1, 1.2
         """
         try:
-            # Если уже зарегистрирована другая клавиша, отменяем её
-            if self._is_registered and self.hotkey:
-                self.unregister_hotkey()
+            # Определяем callback для этой клавиши
+            key_callback = callback if callback else self._on_hotkey_pressed
             
-            # Регистрируем новую горячую клавишу
-            keyboard.add_hotkey(key, self._on_hotkey_pressed, suppress=False)
+            # Регистрируем горячую клавишу
+            keyboard.add_hotkey(key, key_callback, suppress=False)
             
-            self.hotkey = key
-            self._is_registered = True
+            # Если это основная клавиша
+            if callback is None:
+                self.hotkey = key
+                self._is_registered = True
+            else:
+                # Сохраняем дополнительную клавишу
+                self._additional_hotkeys[key] = callback
             
             logger.info(f"Горячая клавиша {key} успешно зарегистрирована")
             return True
@@ -64,10 +70,11 @@ class HotkeyManager:
     
     def unregister_hotkey(self) -> None:
         """
-        Отменяет регистрацию горячей клавиши.
+        Отменяет регистрацию всех горячих клавиш.
         
         Requirements: 12.4
         """
+        # Отменить основную клавишу
         if self._is_registered and self.hotkey:
             try:
                 keyboard.remove_hotkey(self.hotkey)
@@ -77,6 +84,16 @@ class HotkeyManager:
             finally:
                 self._is_registered = False
                 self.hotkey = None
+        
+        # Отменить дополнительные клавиши
+        for key in list(self._additional_hotkeys.keys()):
+            try:
+                keyboard.remove_hotkey(key)
+                logger.info(f"Дополнительная горячая клавиша {key} отменена")
+            except Exception as e:
+                logger.error(f"Ошибка отмены регистрации дополнительной клавиши {key}: {e}")
+        
+        self._additional_hotkeys.clear()
     
     def _on_hotkey_pressed(self) -> None:
         """

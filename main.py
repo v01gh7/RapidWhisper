@@ -50,6 +50,9 @@ class RapidWhisperApp(QObject):
     # ВАЖНО: Сигнал для обработки нажатия горячей клавиши из другого потока
     _hotkey_pressed_signal = pyqtSignal()
     
+    # Сигнал для отмены записи (ESC)
+    _cancel_recording_signal = pyqtSignal()
+    
     def __init__(self):
         """Инициализирует приложение."""
         super().__init__()
@@ -183,6 +186,9 @@ class RapidWhisperApp(QObject):
         # ВАЖНО: Подключаем сигнал горячей клавиши к обработчику в главном потоке
         self._hotkey_pressed_signal.connect(self._handle_hotkey_in_main_thread)
         
+        # Подключаем сигнал отмены записи
+        self._cancel_recording_signal.connect(self._handle_cancel_recording)
+        
         self.logger.info("Сигналы подключены")
     
     def _register_hotkey(self) -> None:
@@ -198,11 +204,59 @@ class RapidWhisperApp(QObject):
             # Зарегистрировать горячую клавишу
             self.hotkey_manager.register_hotkey(self.config.hotkey)
             
+            # Зарегистрировать ESC для отмены записи
+            self.hotkey_manager.register_hotkey("esc", self._on_cancel_pressed)
+            
             self.logger.info(f"Горячая клавиша зарегистрирована: {self.config.hotkey}")
+            self.logger.info("ESC зарегистрирован для отмены записи")
             
         except Exception as e:
             self.logger.error(f"Не удалось зарегистрировать горячую клавишу: {e}")
             raise
+    
+    def _on_cancel_pressed(self) -> None:
+        """
+        Обработчик нажатия ESC для отмены записи.
+        
+        Вызывается из потока keyboard, поэтому использует сигнал
+        для безопасной передачи в главный поток Qt.
+        """
+        self.logger.info("ESC нажат")
+        # Отправляем сигнал в главный поток Qt
+        self._cancel_recording_signal.emit()
+    
+    def _handle_cancel_recording(self) -> None:
+        """
+        Обрабатывает отмену записи в главном потоке Qt.
+        """
+        self.logger.info("Обработка отмены записи")
+        
+        # Отменяем только если идет запись
+        if self.state_manager.current_state == AppState.RECORDING:
+            self.logger.info("Отмена записи по ESC")
+            
+            # Остановить поток записи
+            if self.recording_thread and self.recording_thread.isRunning():
+                self.recording_thread.stop()
+                self.logger.info("Поток записи остановлен")
+            
+            # Скрыть окно
+            self._hide_window_signal.emit()
+            
+            # Показать уведомление
+            self.tray_icon.show_message(
+                "🚫 Отменено",
+                "Запись отменена",
+                duration=3000
+            )
+            
+            # Вернуться в IDLE
+            self.state_manager.transition_to(AppState.IDLE)
+            
+            # Сбросить статус трея
+            self.tray_icon.set_status("Готово! Нажмите Ctrl+Space для записи")
+        else:
+            self.logger.info(f"ESC нажат в состоянии {self.state_manager.current_state.value}, игнорируем")
     
     def _on_hotkey_pressed(self) -> None:
         """
@@ -466,8 +520,10 @@ class RapidWhisperApp(QObject):
             
             self.logger.info("Результат обработан")
             
-            # Вернуться в IDLE состояние
-            self.state_manager.transition_to(AppState.IDLE)
+            # НЕ переходим в IDLE здесь - пусть StateManager обработает
+            # Переход в DISPLAYING уже произошел в state_manager.on_transcription_complete
+            # Автоматически перейдем в IDLE через таймер
+            QTimer.singleShot(100, lambda: self.state_manager.transition_to(AppState.IDLE))
             
         except Exception as e:
             self.logger.error(f"Ошибка отображения результата: {e}")
