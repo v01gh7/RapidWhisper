@@ -1,0 +1,491 @@
+"""
+Окно настроек приложения RapidWhisper.
+
+Предоставляет графический интерфейс для редактирования всех параметров
+конфигурации из .env файла.
+"""
+
+from PyQt6.QtWidgets import (
+    QDialog, QVBoxLayout, QHBoxLayout, QFormLayout,
+    QLabel, QLineEdit, QComboBox, QDoubleSpinBox,
+    QPushButton, QGroupBox, QMessageBox, QTabWidget, QWidget
+)
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QFont
+from core.config import Config
+from utils.logger import get_logger
+import os
+
+logger = get_logger()
+
+
+class SettingsWindow(QDialog):
+    """
+    Окно настроек приложения.
+    
+    Позволяет редактировать все параметры конфигурации и сохранять их в .env файл.
+    
+    Signals:
+        settings_saved: Сигнал при сохранении настроек
+    """
+    
+    settings_saved = pyqtSignal()
+    
+    def __init__(self, config: Config, parent=None):
+        """
+        Инициализирует окно настроек.
+        
+        Args:
+            config: Текущая конфигурация приложения
+            parent: Родительский виджет
+        """
+        super().__init__(parent)
+        self.config = config
+        self.setWindowTitle("Настройки RapidWhisper")
+        self.setMinimumWidth(500)
+        self.setMinimumHeight(600)
+        
+        # Применить стиль
+        self._apply_style()
+        
+        # Создать интерфейс
+        self._create_ui()
+        
+        # Загрузить текущие значения
+        self._load_values()
+    
+    def _apply_style(self):
+        """Применяет стиль к окну настроек."""
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #1e1e1e;
+                color: #ffffff;
+            }
+            QLabel {
+                color: #ffffff;
+                font-size: 12px;
+            }
+            QLineEdit, QDoubleSpinBox, QComboBox {
+                background-color: #2d2d2d;
+                color: #ffffff;
+                border: 1px solid #3d3d3d;
+                border-radius: 4px;
+                padding: 6px;
+                font-size: 12px;
+            }
+            QLineEdit:focus, QDoubleSpinBox:focus, QComboBox:focus {
+                border: 1px solid #0078d4;
+            }
+            QPushButton {
+                background-color: #0078d4;
+                color: #ffffff;
+                border: none;
+                border-radius: 4px;
+                padding: 8px 16px;
+                font-size: 12px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #1084d8;
+            }
+            QPushButton:pressed {
+                background-color: #006cc1;
+            }
+            QPushButton#cancelButton {
+                background-color: #3d3d3d;
+            }
+            QPushButton#cancelButton:hover {
+                background-color: #4d4d4d;
+            }
+            QGroupBox {
+                color: #ffffff;
+                border: 1px solid #3d3d3d;
+                border-radius: 6px;
+                margin-top: 12px;
+                font-weight: bold;
+                padding-top: 12px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                subcontrol-position: top left;
+                padding: 4px 8px;
+                background-color: #2d2d2d;
+                border-radius: 4px;
+            }
+            QTabWidget::pane {
+                border: 1px solid #3d3d3d;
+                border-radius: 4px;
+                background-color: #1e1e1e;
+            }
+            QTabBar::tab {
+                background-color: #2d2d2d;
+                color: #ffffff;
+                padding: 8px 16px;
+                border: 1px solid #3d3d3d;
+                border-bottom: none;
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+            }
+            QTabBar::tab:selected {
+                background-color: #0078d4;
+            }
+            QTabBar::tab:hover {
+                background-color: #3d3d3d;
+            }
+        """)
+    
+    def _create_ui(self):
+        """Создает интерфейс окна настроек."""
+        layout = QVBoxLayout()
+        layout.setSpacing(16)
+        
+        # Заголовок
+        title = QLabel("⚙️ Настройки")
+        title_font = QFont()
+        title_font.setPointSize(16)
+        title_font.setBold(True)
+        title.setFont(title_font)
+        layout.addWidget(title)
+        
+        # Вкладки
+        tabs = QTabWidget()
+        
+        # Вкладка AI Provider
+        ai_tab = self._create_ai_tab()
+        tabs.addTab(ai_tab, "🤖 AI Provider")
+        
+        # Вкладка Приложение
+        app_tab = self._create_app_tab()
+        tabs.addTab(app_tab, "⚡ Приложение")
+        
+        # Вкладка Аудио
+        audio_tab = self._create_audio_tab()
+        tabs.addTab(audio_tab, "🎤 Аудио")
+        
+        layout.addWidget(tabs)
+        
+        # Кнопки
+        buttons_layout = QHBoxLayout()
+        buttons_layout.addStretch()
+        
+        cancel_btn = QPushButton("Отмена")
+        cancel_btn.setObjectName("cancelButton")
+        cancel_btn.clicked.connect(self.reject)
+        buttons_layout.addWidget(cancel_btn)
+        
+        save_btn = QPushButton("💾 Сохранить")
+        save_btn.clicked.connect(self._save_settings)
+        buttons_layout.addWidget(save_btn)
+        
+        layout.addLayout(buttons_layout)
+        
+        self.setLayout(layout)
+    
+    def _create_ai_tab(self) -> QWidget:
+        """Создает вкладку настроек AI Provider."""
+        widget = QWidget()
+        layout = QVBoxLayout()
+        
+        # Группа: AI Provider
+        provider_group = QGroupBox("Провайдер AI")
+        provider_layout = QFormLayout()
+        
+        self.provider_combo = QComboBox()
+        self.provider_combo.addItems(["groq", "openai", "glm"])
+        self.provider_combo.currentTextChanged.connect(self._on_provider_changed)
+        provider_layout.addRow("Провайдер:", self.provider_combo)
+        
+        provider_group.setLayout(provider_layout)
+        layout.addWidget(provider_group)
+        
+        # Группа: API ключи
+        keys_group = QGroupBox("API Ключи")
+        keys_layout = QFormLayout()
+        
+        # Groq API Key
+        groq_layout = QHBoxLayout()
+        self.groq_key_edit = QLineEdit()
+        self.groq_key_edit.setEchoMode(QLineEdit.EchoMode.Password)
+        self.groq_key_edit.setPlaceholderText("Введите Groq API ключ")
+        groq_layout.addWidget(self.groq_key_edit)
+        
+        groq_show_btn = QPushButton("👁")
+        groq_show_btn.setMaximumWidth(40)
+        groq_show_btn.setCheckable(True)
+        groq_show_btn.toggled.connect(
+            lambda checked: self.groq_key_edit.setEchoMode(
+                QLineEdit.EchoMode.Normal if checked else QLineEdit.EchoMode.Password
+            )
+        )
+        groq_layout.addWidget(groq_show_btn)
+        
+        groq_label = QLabel("Groq API Key:")
+        groq_label.setToolTip("Получите на https://console.groq.com/keys")
+        keys_layout.addRow(groq_label, groq_layout)
+        
+        # OpenAI API Key
+        openai_layout = QHBoxLayout()
+        self.openai_key_edit = QLineEdit()
+        self.openai_key_edit.setEchoMode(QLineEdit.EchoMode.Password)
+        self.openai_key_edit.setPlaceholderText("Введите OpenAI API ключ")
+        openai_layout.addWidget(self.openai_key_edit)
+        
+        openai_show_btn = QPushButton("👁")
+        openai_show_btn.setMaximumWidth(40)
+        openai_show_btn.setCheckable(True)
+        openai_show_btn.toggled.connect(
+            lambda checked: self.openai_key_edit.setEchoMode(
+                QLineEdit.EchoMode.Normal if checked else QLineEdit.EchoMode.Password
+            )
+        )
+        openai_layout.addWidget(openai_show_btn)
+        
+        openai_label = QLabel("OpenAI API Key:")
+        openai_label.setToolTip("Получите на https://platform.openai.com/api-keys")
+        keys_layout.addRow(openai_label, openai_layout)
+        
+        # GLM API Key
+        glm_layout = QHBoxLayout()
+        self.glm_key_edit = QLineEdit()
+        self.glm_key_edit.setEchoMode(QLineEdit.EchoMode.Password)
+        self.glm_key_edit.setPlaceholderText("Введите GLM API ключ")
+        glm_layout.addWidget(self.glm_key_edit)
+        
+        glm_show_btn = QPushButton("👁")
+        glm_show_btn.setMaximumWidth(40)
+        glm_show_btn.setCheckable(True)
+        glm_show_btn.toggled.connect(
+            lambda checked: self.glm_key_edit.setEchoMode(
+                QLineEdit.EchoMode.Normal if checked else QLineEdit.EchoMode.Password
+            )
+        )
+        glm_layout.addWidget(glm_show_btn)
+        
+        glm_label = QLabel("GLM API Key:")
+        glm_label.setToolTip("Получите на https://open.bigmodel.cn/usercenter/apikeys")
+        keys_layout.addRow(glm_label, glm_layout)
+        
+        keys_group.setLayout(keys_layout)
+        layout.addWidget(keys_group)
+        
+        # Информация
+        info_label = QLabel(
+            "💡 Совет: Groq предоставляет бесплатный и быстрый API.\n"
+            "Рекомендуется для начала использования."
+        )
+        info_label.setWordWrap(True)
+        info_label.setStyleSheet("color: #888888; font-size: 11px; padding: 8px;")
+        layout.addWidget(info_label)
+        
+        layout.addStretch()
+        widget.setLayout(layout)
+        return widget
+    
+    def _create_app_tab(self) -> QWidget:
+        """Создает вкладку настроек приложения."""
+        widget = QWidget()
+        layout = QVBoxLayout()
+        
+        # Группа: Горячие клавиши
+        hotkey_group = QGroupBox("Горячие клавиши")
+        hotkey_layout = QFormLayout()
+        
+        self.hotkey_edit = QLineEdit()
+        self.hotkey_edit.setPlaceholderText("ctrl+space")
+        hotkey_label = QLabel("Горячая клавиша:")
+        hotkey_label.setToolTip("Например: F1, ctrl+space, ctrl+shift+r")
+        hotkey_layout.addRow(hotkey_label, self.hotkey_edit)
+        
+        hotkey_group.setLayout(hotkey_layout)
+        layout.addWidget(hotkey_group)
+        
+        # Группа: Определение тишины
+        silence_group = QGroupBox("Определение тишины")
+        silence_layout = QFormLayout()
+        
+        self.silence_threshold_spin = QDoubleSpinBox()
+        self.silence_threshold_spin.setRange(0.01, 0.1)
+        self.silence_threshold_spin.setSingleStep(0.01)
+        self.silence_threshold_spin.setDecimals(2)
+        threshold_label = QLabel("Порог тишины:")
+        threshold_label.setToolTip("RMS значение (0.01-0.1). Меньше = более чувствительно")
+        silence_layout.addRow(threshold_label, self.silence_threshold_spin)
+        
+        self.silence_duration_spin = QDoubleSpinBox()
+        self.silence_duration_spin.setRange(0.5, 5.0)
+        self.silence_duration_spin.setSingleStep(0.5)
+        self.silence_duration_spin.setDecimals(1)
+        self.silence_duration_spin.setSuffix(" сек")
+        duration_label = QLabel("Длительность тишины:")
+        duration_label.setToolTip("Секунды тишины перед остановкой записи (0.5-5.0)")
+        silence_layout.addRow(duration_label, self.silence_duration_spin)
+        
+        silence_group.setLayout(silence_layout)
+        layout.addWidget(silence_group)
+        
+        # Группа: Интерфейс
+        ui_group = QGroupBox("Интерфейс")
+        ui_layout = QFormLayout()
+        
+        self.auto_hide_spin = QDoubleSpinBox()
+        self.auto_hide_spin.setRange(1.0, 10.0)
+        self.auto_hide_spin.setSingleStep(0.5)
+        self.auto_hide_spin.setDecimals(1)
+        self.auto_hide_spin.setSuffix(" сек")
+        hide_label = QLabel("Автоскрытие:")
+        hide_label.setToolTip("Задержка автоматического скрытия окна (1.0-10.0)")
+        ui_layout.addRow(hide_label, self.auto_hide_spin)
+        
+        ui_group.setLayout(ui_layout)
+        layout.addWidget(ui_group)
+        
+        layout.addStretch()
+        widget.setLayout(layout)
+        return widget
+    
+    def _create_audio_tab(self) -> QWidget:
+        """Создает вкладку настроек аудио."""
+        widget = QWidget()
+        layout = QVBoxLayout()
+        
+        # Группа: Параметры записи
+        audio_group = QGroupBox("Параметры записи")
+        audio_layout = QFormLayout()
+        
+        self.sample_rate_combo = QComboBox()
+        self.sample_rate_combo.addItems(["16000", "44100", "48000"])
+        rate_label = QLabel("Частота дискретизации:")
+        rate_label.setToolTip("Гц. 16000 рекомендуется для речи")
+        audio_layout.addRow(rate_label, self.sample_rate_combo)
+        
+        self.chunk_size_combo = QComboBox()
+        self.chunk_size_combo.addItems(["256", "512", "1024", "2048", "4096"])
+        chunk_label = QLabel("Размер чанка:")
+        chunk_label.setToolTip("Фреймов. 1024 - оптимальное значение")
+        audio_layout.addRow(chunk_label, self.chunk_size_combo)
+        
+        audio_group.setLayout(audio_layout)
+        layout.addWidget(audio_group)
+        
+        # Информация
+        info_label = QLabel(
+            "⚠️ Внимание: Изменение параметров аудио может повлиять на качество записи.\n"
+            "Рекомендуется оставить значения по умолчанию."
+        )
+        info_label.setWordWrap(True)
+        info_label.setStyleSheet("color: #ff8800; font-size: 11px; padding: 8px;")
+        layout.addWidget(info_label)
+        
+        layout.addStretch()
+        widget.setLayout(layout)
+        return widget
+    
+    def _load_values(self):
+        """Загружает текущие значения конфигурации в поля."""
+        # AI Provider
+        self.provider_combo.setCurrentText(self.config.ai_provider)
+        self.groq_key_edit.setText(self.config.groq_api_key)
+        self.openai_key_edit.setText(self.config.openai_api_key)
+        self.glm_key_edit.setText(self.config.glm_api_key)
+        
+        # Приложение
+        self.hotkey_edit.setText(self.config.hotkey)
+        self.silence_threshold_spin.setValue(self.config.silence_threshold)
+        self.silence_duration_spin.setValue(self.config.silence_duration)
+        self.auto_hide_spin.setValue(self.config.auto_hide_delay)
+        
+        # Аудио
+        self.sample_rate_combo.setCurrentText(str(self.config.sample_rate))
+        self.chunk_size_combo.setCurrentText(str(self.config.chunk_size))
+        
+        # Обновить подсветку активного провайдера
+        self._on_provider_changed(self.config.ai_provider)
+    
+    def _on_provider_changed(self, provider: str):
+        """
+        Обработчик изменения провайдера AI.
+        
+        Подсвечивает соответствующее поле API ключа.
+        """
+        # Сбросить стили
+        self.groq_key_edit.setStyleSheet("")
+        self.openai_key_edit.setStyleSheet("")
+        self.glm_key_edit.setStyleSheet("")
+        
+        # Подсветить активное поле
+        if provider == "groq":
+            self.groq_key_edit.setStyleSheet("border: 2px solid #0078d4;")
+        elif provider == "openai":
+            self.openai_key_edit.setStyleSheet("border: 2px solid #0078d4;")
+        elif provider == "glm":
+            self.glm_key_edit.setStyleSheet("border: 2px solid #0078d4;")
+    
+    def _save_settings(self):
+        """Сохраняет настройки в .env файл."""
+        try:
+            # Получить новые значения
+            new_config = {
+                "AI_PROVIDER": self.provider_combo.currentText(),
+                "GROQ_API_KEY": self.groq_key_edit.text(),
+                "OPENAI_API_KEY": self.openai_key_edit.text(),
+                "GLM_API_KEY": self.glm_key_edit.text(),
+                "HOTKEY": self.hotkey_edit.text(),
+                "SILENCE_THRESHOLD": str(self.silence_threshold_spin.value()),
+                "SILENCE_DURATION": str(self.silence_duration_spin.value()),
+                "AUTO_HIDE_DELAY": str(self.auto_hide_spin.value()),
+                "SAMPLE_RATE": self.sample_rate_combo.currentText(),
+                "CHUNK_SIZE": self.chunk_size_combo.currentText(),
+            }
+            
+            # Прочитать текущий .env файл
+            env_path = ".env"
+            env_lines = []
+            
+            if os.path.exists(env_path):
+                with open(env_path, 'r', encoding='utf-8') as f:
+                    env_lines = f.readlines()
+            
+            # Обновить значения
+            updated_keys = set()
+            for i, line in enumerate(env_lines):
+                line_stripped = line.strip()
+                if line_stripped and not line_stripped.startswith('#'):
+                    key = line_stripped.split('=')[0].strip()
+                    if key in new_config:
+                        env_lines[i] = f"{key}={new_config[key]}\n"
+                        updated_keys.add(key)
+            
+            # Добавить новые ключи если их не было
+            for key, value in new_config.items():
+                if key not in updated_keys:
+                    env_lines.append(f"{key}={value}\n")
+            
+            # Сохранить обратно в файл
+            with open(env_path, 'w', encoding='utf-8') as f:
+                f.writelines(env_lines)
+            
+            logger.info("Настройки сохранены в .env файл")
+            
+            # Показать сообщение
+            QMessageBox.information(
+                self,
+                "✅ Успешно",
+                "Настройки сохранены!\n\n"
+                "Перезапустите приложение для применения изменений.",
+                QMessageBox.StandardButton.Ok
+            )
+            
+            # Испустить сигнал
+            self.settings_saved.emit()
+            
+            # Закрыть окно
+            self.accept()
+            
+        except Exception as e:
+            logger.error(f"Ошибка сохранения настроек: {e}")
+            QMessageBox.critical(
+                self,
+                "❌ Ошибка",
+                f"Не удалось сохранить настройки:\n{str(e)}",
+                QMessageBox.StandardButton.Ok
+            )

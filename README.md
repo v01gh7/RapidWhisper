@@ -4,20 +4,26 @@ A modern speech-to-text transcription application using Zhipu GLM API, inspired 
 
 ## Features
 
-- 🎤 **Global Hotkey Activation** - Activate from anywhere with F1
+- 🎤 **Global Hotkey Activation** - Activate from anywhere with Ctrl+Space
 - 🎨 **Modern Floating UI** - Minimalist pill-shaped window with frosted glass effect
 - 🌊 **Real-time Waveform** - Animated sound wave visualization during recording
 - 🤫 **Smart Silence Detection** - Automatically stops recording after pauses
-- ⚡ **Fast Transcription** - 1-2 second turnaround via GLM API
+- ⚡ **Fast Transcription** - 1-2 second turnaround via AI APIs (Groq, OpenAI, GLM)
 - 📋 **Auto-Copy** - Results instantly copied to clipboard
 - 🧵 **Multi-threaded** - Smooth UI with background processing
+- ⚙️ **Settings Window** - Easy configuration through graphical interface
+- 🔔 **System Tray** - Runs in background with tray notifications
+- 🚫 **Cancel Recording** - Press ESC to cancel recording without transcription
 
 ## Requirements
 
 - Python 3.11 or higher
 - Microphone access
-- Internet connection for GLM API
-- Zhipu GLM API key ([Get one here](https://open.bigmodel.cn/))
+- Internet connection for AI API
+- API key from one of the supported providers:
+  - **Groq** (recommended, free): https://console.groq.com/keys
+  - **OpenAI**: https://platform.openai.com/api-keys
+  - **GLM**: https://open.bigmodel.cn/usercenter/apikeys
 
 ## Installation
 
@@ -56,17 +62,25 @@ uv pip install -e ".[dev]"
 
 ### 5. Configure API key
 
-Copy the example environment file and add your GLM API key:
+Copy the example environment file and add your API key:
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` and add your API key:
+Edit `.env` and configure your preferred AI provider:
 
+```env
+# Choose your AI provider (groq, openai, or glm)
+AI_PROVIDER=groq
+
+# Add your API key for the chosen provider
+GROQ_API_KEY=your_groq_key_here
+# OPENAI_API_KEY=your_openai_key_here
+# GLM_API_KEY=your_glm_key_here
 ```
-GLM_API_KEY=your_api_key_here
-```
+
+**Or use the Settings Window** after first launch to configure through GUI.
 
 ## Usage
 
@@ -78,23 +92,44 @@ python main.py
 
 ### Basic Workflow
 
-1. Press **F1** to activate the floating window
+1. Press **Ctrl+Space** to activate the floating window
 2. Speak into your microphone
-3. The app automatically detects when you stop speaking
-4. Transcribed text is copied to your clipboard
-5. Paste anywhere with **Ctrl+V** (or **Cmd+V** on macOS)
+3. Press **Ctrl+Space** again to stop recording, or wait for automatic silence detection
+4. Press **ESC** to cancel recording without transcription
+5. Transcribed text is automatically copied to your clipboard
+6. Paste anywhere with **Ctrl+V** (or **Cmd+V** on macOS)
+7. Notification appears in system tray when transcription is complete
 
 ### Configuration
 
-All settings can be customized in the `.env` file:
+All settings can be customized through the **Settings Window** or by editing the `.env` file:
 
-- `HOTKEY` - Global activation key (default: F1)
+#### Opening Settings Window
+
+1. Right-click on the tray icon
+2. Select "Настройки" (Settings)
+3. Modify settings in the graphical interface
+4. Click "💾 Сохранить" to save
+5. Restart the application to apply changes
+
+#### Settings Categories
+
+**🤖 AI Provider**
+- Choose between Groq (free & fast), OpenAI, or GLM
+- Configure API keys for each provider
+- Groq is recommended for beginners (free tier available)
+
+**⚡ Application**
+- `HOTKEY` - Global activation key (default: ctrl+space)
 - `SILENCE_THRESHOLD` - Sensitivity for silence detection (default: 0.02)
 - `SILENCE_DURATION` - How long to wait before stopping (default: 1.5 seconds)
 - `AUTO_HIDE_DELAY` - Window auto-hide delay (default: 2.5 seconds)
-- `WINDOW_WIDTH` / `WINDOW_HEIGHT` - Window dimensions
 
-See `.env.example` for all available options.
+**🎤 Audio**
+- `SAMPLE_RATE` - Audio sample rate (default: 16000 Hz, recommended for speech)
+- `CHUNK_SIZE` - Audio chunk size (default: 1024 frames)
+
+See `docs/settings_guide.md` for detailed configuration guide.
 
 ## Development
 

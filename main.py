@@ -524,7 +524,7 @@ class RapidWhisperApp(QObject):
             # Переход в DISPLAYING уже произошел в state_manager.on_transcription_complete
             # Автоматически перейдем в IDLE через таймер
             QTimer.singleShot(100, lambda: self.state_manager.transition_to(AppState.IDLE))
-            
+
         except Exception as e:
             self.logger.error(f"Ошибка отображения результата: {e}")
             self.state_manager.on_error(e)
@@ -590,18 +590,10 @@ class RapidWhisperApp(QObject):
     
     def _show_settings(self) -> None:
         """Показывает окно настроек."""
-        from PyQt6.QtWidgets import QMessageBox
-        QMessageBox.information(
-            None,
-            "Настройки",
-            f"Текущие настройки:\n\n"
-            f"AI Provider: {self.config.ai_provider}\n"
-            f"Горячая клавиша: {self.config.hotkey}\n"
-            f"Порог тишины: {self.config.silence_threshold}\n"
-            f"Длительность тишины: {self.config.silence_duration}с\n"
-            f"Автоскрытие: {self.config.auto_hide_delay}с\n\n"
-            f"Для изменения настроек отредактируйте файл .env"
-        )
+        from ui.settings_window import SettingsWindow
+        
+        settings_window = SettingsWindow(self.config, parent=None)
+        settings_window.exec()
     
     def _quit_app(self) -> None:
         """Выход из приложения."""
