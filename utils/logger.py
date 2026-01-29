@@ -223,3 +223,100 @@ def log_api_request(endpoint: str, duration: float, success: bool):
 def log_audio_event(event: str, details: Optional[Dict[str, Any]] = None):
     """Log audio event."""
     get_logger().log_audio_event(event, details)
+
+
+# ============================================================================
+# ErrorLogger - Специализированный логгер для ошибок
+# ============================================================================
+
+class ErrorLogger:
+    """
+    Специализированный логгер для обработки и записи ошибок.
+    
+    Предоставляет удобный интерфейс для логирования ошибок с контекстом,
+    автоматической категоризацией и форматированием. Использует глобальный
+    RapidWhisperLogger для фактической записи в лог.
+    """
+    
+    def __init__(self, log_path: str = "rapidwhisper.log"):
+        """
+        Инициализирует ErrorLogger.
+        
+        Args:
+            log_path: Путь к файлу логов (по умолчанию rapidwhisper.log)
+        """
+        self.log_path = log_path
+        self.logger = get_logger()
+    
+    def log_error(self, error: Exception, context: Optional[Dict[str, Any]] = None):
+        """
+        Логирует ошибку с дополнительной контекстной информацией.
+        
+        Записывает детальную информацию об ошибке включая:
+        - Тип исключения
+        - Сообщение об ошибке
+        - Временную метку
+        - Контекстную информацию (если предоставлена)
+        - Полный traceback
+        
+        Args:
+            error: Исключение для логирования
+            context: Опциональный словарь с дополнительной контекстной информацией
+                    (например, текущее состояние приложения, параметры запроса)
+        
+        Example:
+            >>> error_logger = ErrorLogger()
+            >>> try:
+            ...     # some code
+            ... except Exception as e:
+            ...     error_logger.log_error(e, {'state': 'RECORDING', 'duration': 5.2})
+        """
+        # Используем существующий метод log_error из RapidWhisperLogger
+        self.logger.log_error(error, context)
+        
+        # Дополнительно логируем user-friendly сообщение если это RapidWhisperError
+        try:
+            from utils.exceptions import RapidWhisperError
+            if isinstance(error, RapidWhisperError):
+                self.logger.info(f"User message: {error.user_message}")
+        except ImportError:
+            pass
+    
+    def log_audio_error(self, error: Exception, audio_details: Optional[Dict[str, Any]] = None):
+        """
+        Логирует ошибку, связанную с аудио подсистемой.
+        
+        Args:
+            error: Исключение аудио подсистемы
+            audio_details: Детали аудио (sample_rate, duration, buffer_size и т.д.)
+        """
+        context = {'category': 'audio'}
+        if audio_details:
+            context.update(audio_details)
+        self.log_error(error, context)
+    
+    def log_api_error(self, error: Exception, api_details: Optional[Dict[str, Any]] = None):
+        """
+        Логирует ошибку, связанную с API запросом.
+        
+        Args:
+            error: Исключение API
+            api_details: Детали запроса (endpoint, method, duration и т.д.)
+        """
+        context = {'category': 'api'}
+        if api_details:
+            context.update(api_details)
+        self.log_error(error, context)
+    
+    def log_config_error(self, error: Exception, config_details: Optional[Dict[str, Any]] = None):
+        """
+        Логирует ошибку конфигурации.
+        
+        Args:
+            error: Исключение конфигурации
+            config_details: Детали конфигурации (параметр, значение и т.д.)
+        """
+        context = {'category': 'configuration'}
+        if config_details:
+            context.update(config_details)
+        self.log_error(error, context)
