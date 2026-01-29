@@ -93,7 +93,7 @@
   - Проверить, что SilenceDetector корректно определяет тишину
   - Спросить пользователя, если возникли вопросы
 
-- [ ] 7. Реализация GLM API клиента
+- [x] 7. Реализация GLM API клиента
   - [x] 7.1 Создать GLMClient в services/glm_client.py
     - Реализовать инициализацию OpenAI клиента с base_url для Zhipu AI
     - Реализовать метод transcribe_audio(audio_file_path) для транскрипции
@@ -115,25 +115,25 @@
     - **Property 17: Отправка аудио на транскрипцию**
     - **Validates: Requirements 6.3, 6.6**
 
-- [ ] 8. Реализация вспомогательных сервисов
-  - [~] 8.1 Создать ClipboardManager в services/clipboard_manager.py
+- [x] 8. Реализация вспомогательных сервисов
+  - [x] 8.1 Создать ClipboardManager в services/clipboard_manager.py
     - Реализовать метод copy_to_clipboard(text) с использованием pyperclip
     - Реализовать метод get_from_clipboard()
     - Добавить обработку ошибок недоступности буфера обмена
     - _Requirements: 8.2_
   
-  - [~] 8.2 Написать property-тест для буфера обмена
+  - [x] 8.2 Написать property-тест для буфера обмена
     - **Property 22: Копирование в буфер обмена**
     - **Validates: Requirements 8.2**
   
-  - [~] 8.3 Создать HotkeyManager в services/hotkey_manager.py
+  - [x] 8.3 Создать HotkeyManager в services/hotkey_manager.py
     - Реализовать регистрацию глобальной горячей клавиши с использованием keyboard
     - Реализовать метод register_hotkey(key, callback)
     - Реализовать метод unregister_hotkey()
     - Реализовать обработку конфликтов горячих клавиш
     - _Requirements: 1.1, 1.4, 1.5_
   
-  - [~] 8.4 Написать property-тест для горячих клавиш
+  - [x] 8.4 Написать property-тест для горячих клавиш
     - **Property 1: Глобальная активация горячей клавиши**
     - **Validates: Requirements 1.2, 1.4**
 

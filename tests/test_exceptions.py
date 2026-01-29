@@ -138,4 +138,6 @@ class TestAPIErrors:
     """Тесты для ошибок API."""
     
     def test_api_error_inheritance(self):
-        """Тест что APIError наследуется от RapidWhispe
+        """Тест что APIError наследуется от RapidWhisperError."""
+        error = APIError("API error")
+        assert isinstance(error, RapidWhisperError)

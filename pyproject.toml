@@ -67,3 +67,11 @@ exclude_lines = [
     "if __name__ == .__main__.:",
     "if TYPE_CHECKING:",
 ]
+
+[tool.hypothesis]
+profile = "rapidwhisper"
+
+[[tool.hypothesis.profiles.rapidwhisper]]
+max_examples = 100
+deadline = "None"
+suppress_health_check = ["too_slow"]
