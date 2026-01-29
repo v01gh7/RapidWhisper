@@ -1,49 +1,34 @@
 """
-GLM API клиент для транскрипции аудио через Zhipu AI.
+Клиент для взаимодействия с Zhipu GLM API для транскрипции аудио.
 
-Этот модуль предоставляет клиент для взаимодействия с Zhipu GLM API
-для транскрипции аудио файлов в текст. Использует OpenAI Python SDK
-с настроенным base_url для совместимости с GLM API.
+Использует OpenAI Python SDK с настройкой на Zhipu AI API endpoint.
 """
 
 import os
 from typing import BinaryIO, Optional
-from pathlib import Path
-
-import openai
-from openai import OpenAI
+from openai import OpenAI, AuthenticationError, APIConnectionError, APITimeoutError
 
 from utils.exceptions import (
-    AuthenticationError,
-    APIConnectionError,
-    APITimeoutError,
-    APIResponseError,
-    MissingConfigError,
+    APIError,
+    APIAuthenticationError,
+    APINetworkError,
+    APITimeoutError as CustomAPITimeoutError,
+    InvalidAPIKeyError
 )
-from utils.logger import get_logger
-
-
-logger = get_logger()
 
 
 class GLMClient:
     """
-    Клиент для взаимодействия с Zhipu GLM API.
+    Клиент для Zhipu GLM API.
     
-    Использует OpenAI Python SDK с настроенным base_url для отправки
-    аудио файлов на транскрипцию через модель whisper-1.
+    Использует OpenAI SDK для отправки аудио файлов на транскрипцию
+    через Zhipu AI API endpoint.
     
     Attributes:
         client: Экземпляр OpenAI клиента
-        base_url: URL эндпоинта Zhipu AI API
-        model: Название модели для транскрипции
+        base_url: URL endpoint для Zhipu AI API
+        model: Модель для транскрипции (whisper-1)
         timeout: Таймаут запроса в секундах
-    
-    Example:
-        >>> client = GLMClient(api_key="your_api_key")
-        >>> text = client.transcribe_audio("recording.wav")
-        >>> print(text)
-        "Привет, это тестовая транскрипция"
     """
     
     def __init__(self, api_key: Optional[str] = None):
@@ -51,72 +36,53 @@ class GLMClient:
         Инициализирует GLM клиент.
         
         Args:
-            api_key: API ключ для Zhipu AI. Если не указан, загружается
-                    из переменной окружения GLM_API_KEY.
+            api_key: API ключ для Zhipu AI. Если не указан, загружается из GLM_API_KEY
         
         Raises:
-            MissingConfigError: Если API ключ не найден
+            InvalidAPIKeyError: Если API ключ не найден или пустой
         """
-        # Загрузить API ключ из параметра или переменной окружения
-        self.api_key = api_key or os.getenv("GLM_API_KEY")
+        # Загрузить API ключ из переменной окружения или использовать переданный
+        if api_key is None:
+            api_key = os.getenv("GLM_API_KEY")
         
-        if not self.api_key:
-            logger.error("GLM_API_KEY не найден в переменных окружения")
-            raise MissingConfigError("GLM_API_KEY")
+        if not api_key:
+            raise InvalidAPIKeyError()
         
-        # Настройки API
+        # Настроить OpenAI клиент для Zhipu AI
         self.base_url = "https://open.bigmodel.cn/api/paas/v4/"
         self.model = "whisper-1"
         self.timeout = 30
         
-        # Инициализировать OpenAI клиент с настройками для Zhipu AI
         try:
             self.client = OpenAI(
-                api_key=self.api_key,
+                api_key=api_key,
                 base_url=self.base_url,
                 timeout=self.timeout
             )
-            logger.info(f"GLMClient инициализирован с base_url={self.base_url}")
         except Exception as e:
-            logger.error(f"Ошибка инициализации OpenAI клиента: {e}")
-            raise
+            raise APIError(f"Не удалось инициализировать GLM клиент: {e}")
     
     def transcribe_audio(self, audio_file_path: str) -> str:
         """
         Отправляет аудио файл на транскрипцию и возвращает текст.
         
         Args:
-            audio_file_path: Путь к аудио файлу в формате WAV
+            audio_file_path: Путь к аудио файлу (WAV формат)
         
         Returns:
-            Распознанный текст из аудио
+            Транскрибированный текст
         
         Raises:
-            FileNotFoundError: Если аудио файл не найден
-            AuthenticationError: Если API ключ неверный
-            APIConnectionError: Если не удалось подключиться к API
-            APITimeoutError: Если превышен таймаут запроса
-            APIResponseError: Если ответ API некорректен
-        
-        Example:
-            >>> client = GLMClient()
-            >>> text = client.transcribe_audio("recording.wav")
-            >>> print(text)
-            "Привет, это тестовая транскрипция"
+            APIAuthenticationError: Если API ключ неверен
+            APINetworkError: Если произошла сетевая ошибка
+            CustomAPITimeoutError: Если запрос превысил таймаут
+            APIError: Для других ошибок API
         """
-        # Проверить существование файла
-        if not os.path.exists(audio_file_path):
-            logger.error(f"Аудио файл не найден: {audio_file_path}")
-            raise FileNotFoundError(f"Аудио файл не найден: {audio_file_path}")
-        
-        logger.info(f"Начало транскрипции файла: {audio_file_path}")
-        
         try:
-            # Подготовить аудио файл для отправки
+            # Подготовить аудио файл
             audio_file = self._prepare_audio_file(audio_file_path)
             
             # Отправить запрос на транскрипцию
-            logger.debug(f"Отправка запроса к API с моделью {self.model}")
             response = self.client.audio.transcriptions.create(
                 model=self.model,
                 file=audio_file,
@@ -125,103 +91,64 @@ class GLMClient:
             
             # Извлечь текст из ответа
             if hasattr(response, 'text'):
-                text = response.text
-                logger.info(f"Транскрипция успешна, длина текста: {len(text)} символов")
-                return text
+                return response.text
             else:
-                logger.error(f"Ответ API не содержит поле 'text': {response}")
-                raise APIResponseError("Ответ API не содержит поле 'text'")
+                raise APIError("Ответ API не содержит поле 'text'")
         
-        except openai.AuthenticationError as e:
-            logger.error(f"Ошибка аутентификации: {e}")
-            self._handle_api_error(e)
+        except AuthenticationError as e:
+            raise APIAuthenticationError(str(e))
         
-        except openai.APIConnectionError as e:
-            logger.error(f"Ошибка подключения к API: {e}")
-            self._handle_api_error(e)
+        except APITimeoutError as e:
+            raise CustomAPITimeoutError(str(e))
         
-        except openai.APITimeoutError as e:
-            logger.error(f"Превышен таймаут запроса: {e}")
-            self._handle_api_error(e)
+        except APIConnectionError as e:
+            raise APINetworkError(str(e))
         
         except Exception as e:
-            logger.error(f"Неожиданная ошибка при транскрипции: {e}")
-            self._handle_api_error(e)
-        
-        finally:
-            # Закрыть файл если он был открыт
-            if 'audio_file' in locals() and hasattr(audio_file, 'close'):
-                audio_file.close()
+            # Обработать другие ошибки
+            error_message = self._handle_api_error(e)
+            raise APIError(error_message)
     
     def _prepare_audio_file(self, filepath: str) -> BinaryIO:
         """
         Подготавливает аудио файл для отправки в API.
         
-        Открывает файл в бинарном режиме для чтения и возвращает
-        файловый объект, который может быть передан в API.
-        
         Args:
             filepath: Путь к аудио файлу
         
         Returns:
-            Открытый файловый объект в бинарном режиме
+            Открытый файловый объект
         
         Raises:
-            FileNotFoundError: Если файл не найден
-            PermissionError: Если нет прав на чтение файла
+            APIError: Если файл не найден или не может быть открыт
         """
         try:
-            # Открыть файл в бинарном режиме
-            audio_file = open(filepath, 'rb')
-            logger.debug(f"Файл {filepath} успешно открыт для чтения")
-            return audio_file
-        
+            return open(filepath, 'rb')
         except FileNotFoundError:
-            logger.error(f"Файл не найден: {filepath}")
-            raise
-        
-        except PermissionError:
-            logger.error(f"Нет прав на чтение файла: {filepath}")
-            raise
-        
+            raise APIError(f"Аудио файл не найден: {filepath}")
         except Exception as e:
-            logger.error(f"Ошибка открытия файла {filepath}: {e}")
-            raise
+            raise APIError(f"Не удалось открыть аудио файл: {e}")
     
     def _handle_api_error(self, error: Exception) -> str:
         """
-        Обрабатывает ошибки API и преобразует их в понятные исключения.
-        
-        Анализирует тип ошибки от OpenAI SDK и преобразует её в
-        соответствующее исключение из нашей иерархии ошибок с
-        понятными сообщениями для пользователя.
+        Обрабатывает ошибки API и возвращает понятное сообщение.
         
         Args:
-            error: Исключение от OpenAI SDK
+            error: Исключение от API
         
-        Raises:
-            AuthenticationError: Для ошибок аутентификации
-            APIConnectionError: Для ошибок подключения
-            APITimeoutError: Для ошибок таймаута
-            APIResponseError: Для других ошибок API
+        Returns:
+            Понятное сообщение об ошибке для пользователя
         """
-        # Обработка ошибок таймаута (проверяем первым, так как это подкласс APIConnectionError)
-        if isinstance(error, openai.APITimeoutError):
-            raise APITimeoutError(timeout=self.timeout)
+        error_str = str(error).lower()
         
-        # Обработка ошибок аутентификации
-        if isinstance(error, openai.AuthenticationError):
-            raise AuthenticationError(
-                message=f"Ошибка аутентификации в GLM API: {error}"
-            )
-        
-        # Обработка ошибок подключения
-        if isinstance(error, openai.APIConnectionError):
-            raise APIConnectionError(
-                message=f"Не удалось подключиться к GLM API: {error}"
-            )
-        
-        # Обработка других ошибок API
-        raise APIResponseError(
-            message=f"Ошибка при обработке запроса: {error}"
-        )
+        # Определить тип ошибки по сообщению
+        if "authentication" in error_str or "api key" in error_str:
+            return "Ошибка аутентификации. Проверьте GLM_API_KEY в .env файле"
+        elif "network" in error_str or "connection" in error_str:
+            return "Ошибка сети. Проверьте подключение к интернету"
+        elif "timeout" in error_str:
+            return "Превышено время ожидания ответа от API"
+        elif "rate limit" in error_str:
+            return "Превышен лимит запросов к API"
+        else:
+            return f"Ошибка API: {error}"

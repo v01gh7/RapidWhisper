@@ -133,7 +133,7 @@ class APIError(RapidWhisperError):
     pass
 
 
-class AuthenticationError(APIError):
+class APIAuthenticationError(APIError):
     """
     Ошибка аутентификации в API.
     
@@ -150,7 +150,7 @@ class AuthenticationError(APIError):
         )
 
 
-class APIConnectionError(APIError):
+class APINetworkError(APIError):
     """
     Ошибка подключения к API.
     
@@ -165,6 +165,11 @@ class APIConnectionError(APIError):
             message=message,
             user_message="Ошибка сети, проверьте подключение к интернету"
         )
+
+
+# Оставляем старые имена для обратной совместимости
+AuthenticationError = APIAuthenticationError
+APIConnectionError = APINetworkError
 
 
 class APITimeoutError(APIError):
@@ -217,6 +222,21 @@ class ConfigurationError(RapidWhisperError):
     конфигурационных параметров.
     """
     pass
+
+
+class InvalidAPIKeyError(ConfigurationError):
+    """
+    API ключ отсутствует или неверен.
+    
+    Возникает когда GLM_API_KEY не найден в переменных окружения
+    или имеет пустое значение.
+    """
+    
+    def __init__(self):
+        super().__init__(
+            message="API ключ GLM_API_KEY не найден или пустой",
+            user_message="Проверьте GLM_API_KEY в .env файле"
+        )
 
 
 class MissingConfigError(ConfigurationError):
@@ -308,6 +328,7 @@ def is_recoverable_error(error: Exception) -> bool:
     """
     # Временные ошибки, после которых можно продолжить
     recoverable_types = (
+        APINetworkError,
         APIConnectionError,
         APITimeoutError,
         RecordingTooShortError,
@@ -317,7 +338,9 @@ def is_recoverable_error(error: Exception) -> bool:
     
     # Критические ошибки, требующие вмешательства
     critical_types = (
+        APIAuthenticationError,
         AuthenticationError,
+        InvalidAPIKeyError,
         MissingConfigError,
         InvalidConfigError,
     )

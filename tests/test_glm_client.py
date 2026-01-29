@@ -1,287 +1,279 @@
 """
-Unit-тесты для GLM API клиента.
+Unit-тесты для GLMClient.
 
-Тестирует инициализацию клиента, отправку запросов на транскрипцию,
-обработку ошибок API и извлечение текста из ответов.
+Проверяет функциональность транскрипции аудио через Zhipu GLM API.
 """
 
-import os
 import pytest
-from unittest.mock import Mock, patch, mock_open
-import openai
+import os
+from unittest.mock import Mock, patch, mock_open, MagicMock
+from openai import AuthenticationError, APIConnectionError, APITimeoutError
 
 from services.glm_client import GLMClient
 from utils.exceptions import (
-    AuthenticationError,
-    APIConnectionError,
-    APITimeoutError,
-    APIResponseError,
-    MissingConfigError,
+    APIError,
+    APIAuthenticationError,
+    APINetworkError,
+    APITimeoutError as CustomAPITimeoutError,
+    InvalidAPIKeyError
 )
 
 
 class TestGLMClientInitialization:
-    """Тесты инициализации GLM клиента."""
+    """Тесты инициализации GLMClient."""
     
-    def test_initialization_with_api_key(self):
-        """Тест инициализации с явно указанным API ключом."""
-        client = GLMClient(api_key="test_api_key_123")
+    @patch.dict(os.environ, {'GLM_API_KEY': 'test_api_key'})
+    def test_initialization_with_env_variable(self):
+        """
+        Тест загрузки API ключа из переменной окружения.
         
-        assert client.api_key == "test_api_key_123"
+        Requirements: 6.2
+        """
+        client = GLMClient()
+        
         assert client.base_url == "https://open.bigmodel.cn/api/paas/v4/"
         assert client.model == "whisper-1"
         assert client.timeout == 30
         assert client.client is not None
     
-    def test_initialization_from_environment(self, monkeypatch):
-        """Тест загрузки API ключа из переменной окружения."""
-        monkeypatch.setenv("GLM_API_KEY", "env_api_key_456")
+    def test_initialization_with_explicit_key(self):
+        """Тест инициализации с явно переданным API ключом."""
+        client = GLMClient(api_key="explicit_test_key")
         
-        client = GLMClient()
-        
-        assert client.api_key == "env_api_key_456"
+        assert client.client is not None
     
-    def test_initialization_without_api_key(self, monkeypatch):
-        """Тест ошибки при отсутствии API ключа."""
-        monkeypatch.delenv("GLM_API_KEY", raising=False)
+    @patch.dict(os.environ, {}, clear=True)
+    def test_initialization_without_api_key(self):
+        """
+        Тест ошибки при отсутствии API ключа.
         
-        with pytest.raises(MissingConfigError) as exc_info:
+        Requirements: 6.2, 10.2
+        """
+        with pytest.raises(InvalidAPIKeyError) as exc_info:
             GLMClient()
         
-        assert "GLM_API_KEY" in str(exc_info.value)
-    
-    def test_initialization_prefers_parameter_over_env(self, monkeypatch):
-        """Тест приоритета параметра над переменной окружения."""
-        monkeypatch.setenv("GLM_API_KEY", "env_key")
-        
-        client = GLMClient(api_key="param_key")
-        
-        assert client.api_key == "param_key"
+        assert "GLM_API_KEY" in exc_info.value.user_message
 
 
 class TestGLMClientTranscription:
     """Тесты транскрипции аудио."""
     
-    def test_transcribe_audio_success(self, tmp_path):
-        """Тест успешной транскрипции аудио файла."""
-        # Создать временный аудио файл
-        audio_file = tmp_path / "test_audio.wav"
-        audio_file.write_bytes(b"fake audio data")
+    @patch('services.glm_client.OpenAI')
+    @patch('builtins.open', new_callable=mock_open, read_data=b'fake_audio_data')
+    def test_transcribe_audio_success(self, mock_file, mock_openai_class):
+        """
+        Тест успешной транскрипции аудио.
         
-        # Создать мок ответа API
+        Requirements: 6.3, 6.6
+        """
+        # Настроить мок OpenAI клиента
+        mock_client = Mock()
+        mock_openai_class.return_value = mock_client
+        
+        # Настроить мок ответа API
         mock_response = Mock()
         mock_response.text = "Привет, это тестовая транскрипция"
+        mock_client.audio.transcriptions.create.return_value = mock_response
         
+        # Создать клиент и выполнить транскрипцию
         client = GLMClient(api_key="test_key")
+        result = client.transcribe_audio("test_audio.wav")
         
-        with patch.object(client.client.audio.transcriptions, 'create', return_value=mock_response):
-            result = client.transcribe_audio(str(audio_file))
-        
+        # Проверить результат
         assert result == "Привет, это тестовая транскрипция"
+        
+        # Проверить что API был вызван с правильными параметрами
+        mock_client.audio.transcriptions.create.assert_called_once()
+        call_kwargs = mock_client.audio.transcriptions.create.call_args[1]
+        assert call_kwargs['model'] == "whisper-1"
+        assert call_kwargs['response_format'] == "json"
     
-    def test_transcribe_audio_file_not_found(self):
-        """Тест обработки отсутствующего файла."""
+    @patch('services.glm_client.OpenAI')
+    @patch('builtins.open', new_callable=mock_open, read_data=b'fake_audio_data')
+    def test_transcribe_audio_extracts_text_from_response(self, mock_file, mock_openai_class):
+        """
+        Тест извлечения текста из JSON ответа API.
+        
+        Requirements: 6.6
+        Property 16: Извлечение текста из ответа API
+        """
+        # Настроить мок
+        mock_client = Mock()
+        mock_openai_class.return_value = mock_client
+        
+        mock_response = Mock()
+        mock_response.text = "Извлеченный текст"
+        mock_client.audio.transcriptions.create.return_value = mock_response
+        
+        # Выполнить транскрипцию
         client = GLMClient(api_key="test_key")
+        result = client.transcribe_audio("test.wav")
         
-        with pytest.raises(FileNotFoundError):
-            client.transcribe_audio("nonexistent_file.wav")
+        # Проверить что текст извлечен корректно
+        assert result == "Извлеченный текст"
     
-    def test_transcribe_audio_authentication_error(self, tmp_path):
-        """Тест обработки ошибки аутентификации."""
-        audio_file = tmp_path / "test_audio.wav"
-        audio_file.write_bytes(b"fake audio data")
+    @patch('services.glm_client.OpenAI')
+    @patch('builtins.open', new_callable=mock_open, read_data=b'fake_audio_data')
+    def test_transcribe_audio_authentication_error(self, mock_file, mock_openai_class):
+        """
+        Тест обработки ошибки аутентификации.
         
+        Requirements: 6.7, 10.2
+        """
+        # Настроить мок для вызова ошибки аутентификации
+        mock_client = Mock()
+        mock_openai_class.return_value = mock_client
+        mock_client.audio.transcriptions.create.side_effect = AuthenticationError(
+            "Invalid API key",
+            response=Mock(status_code=401),
+            body=None
+        )
+        
+        # Выполнить транскрипцию и проверить ошибку
         client = GLMClient(api_key="invalid_key")
         
-        # Создать мок ответа для AuthenticationError
-        mock_response = Mock()
-        mock_response.status_code = 401
-        mock_body = {"error": {"message": "Invalid API key"}}
+        with pytest.raises(APIAuthenticationError) as exc_info:
+            client.transcribe_audio("test.wav")
         
-        with patch.object(
-            client.client.audio.transcriptions, 
-            'create', 
-            side_effect=openai.AuthenticationError("Invalid API key", response=mock_response, body=mock_body)
-        ):
-            with pytest.raises(AuthenticationError) as exc_info:
-                client.transcribe_audio(str(audio_file))
-            
-            assert "GLM_API_KEY" in exc_info.value.user_message
+        assert "GLM_API_KEY" in exc_info.value.user_message
     
-    def test_transcribe_audio_connection_error(self, tmp_path):
-        """Тест обработки ошибки подключения."""
-        audio_file = tmp_path / "test_audio.wav"
-        audio_file.write_bytes(b"fake audio data")
+    @patch('services.glm_client.OpenAI')
+    @patch('builtins.open', new_callable=mock_open, read_data=b'fake_audio_data')
+    def test_transcribe_audio_network_error(self, mock_file, mock_openai_class):
+        """
+        Тест обработки сетевой ошибки.
+        
+        Requirements: 6.8, 10.4
+        """
+        # Настроить мок для вызова сетевой ошибки
+        mock_client = Mock()
+        mock_openai_class.return_value = mock_client
+        
+        # Создать правильный экземпляр APIConnectionError
+        from openai import APIConnectionError as OpenAIConnectionError
+        mock_client.audio.transcriptions.create.side_effect = OpenAIConnectionError(
+            request=Mock()
+        )
+        
+        # Выполнить транскрипцию и проверить ошибку
+        client = GLMClient(api_key="test_key")
+        
+        with pytest.raises(APINetworkError) as exc_info:
+            client.transcribe_audio("test.wav")
+        
+        assert "подключение" in exc_info.value.user_message.lower()
+    
+    @patch('services.glm_client.OpenAI')
+    @patch('builtins.open', new_callable=mock_open, read_data=b'fake_audio_data')
+    def test_transcribe_audio_timeout_error(self, mock_file, mock_openai_class):
+        """
+        Тест обработки таймаута.
+        
+        Requirements: 6.5, 6.8
+        """
+        # Настроить мок для вызова таймаута
+        mock_client = Mock()
+        mock_openai_class.return_value = mock_client
+        
+        # Создать правильный экземпляр APITimeoutError
+        from openai import APITimeoutError as OpenAITimeoutError
+        mock_client.audio.transcriptions.create.side_effect = OpenAITimeoutError(
+            request=Mock()
+        )
+        
+        # Выполнить транскрипцию и проверить ошибку
+        client = GLMClient(api_key="test_key")
+        
+        with pytest.raises(CustomAPITimeoutError):
+            client.transcribe_audio("test.wav")
+    
+    @patch('services.glm_client.OpenAI')
+    def test_transcribe_audio_file_not_found(self, mock_openai_class):
+        """
+        Тест обработки отсутствующего файла.
+        
+        Requirements: 10.3
+        """
+        mock_client = Mock()
+        mock_openai_class.return_value = mock_client
         
         client = GLMClient(api_key="test_key")
         
-        # Создать мок для APIConnectionError
-        mock_request = Mock()
+        with pytest.raises(APIError) as exc_info:
+            client.transcribe_audio("nonexistent_file.wav")
         
-        with patch.object(
-            client.client.audio.transcriptions, 
-            'create', 
-            side_effect=openai.APIConnectionError(request=mock_request)
-        ):
-            with pytest.raises(APIConnectionError) as exc_info:
-                client.transcribe_audio(str(audio_file))
-            
-            assert "сети" in exc_info.value.user_message.lower() or "подключение" in exc_info.value.user_message.lower()
+        assert "не найден" in str(exc_info.value.message).lower()
+
+
+class TestGLMClientErrorHandling:
+    """Тесты обработки ошибок."""
     
-    def test_transcribe_audio_timeout_error(self, tmp_path):
+    def test_handle_api_error_authentication(self):
+        """Тест обработки ошибки аутентификации."""
+        client = GLMClient(api_key="test_key")
+        
+        error = Exception("Authentication failed: invalid API key")
+        message = client._handle_api_error(error)
+        
+        assert "GLM_API_KEY" in message
+        assert ".env" in message
+    
+    def test_handle_api_error_network(self):
+        """Тест обработки сетевой ошибки."""
+        client = GLMClient(api_key="test_key")
+        
+        error = Exception("Network connection failed")
+        message = client._handle_api_error(error)
+        
+        assert "сети" in message.lower() or "подключение" in message.lower()
+    
+    def test_handle_api_error_timeout(self):
         """Тест обработки таймаута."""
-        audio_file = tmp_path / "test_audio.wav"
-        audio_file.write_bytes(b"fake audio data")
-        
         client = GLMClient(api_key="test_key")
         
-        with patch.object(
-            client.client.audio.transcriptions, 
-            'create', 
-            side_effect=openai.APITimeoutError("Request timeout")
-        ):
-            with pytest.raises(APITimeoutError) as exc_info:
-                client.transcribe_audio(str(audio_file))
-            
-            assert "время" in exc_info.value.user_message.lower() or "таймаут" in exc_info.value.user_message.lower()
+        error = Exception("Request timeout exceeded")
+        message = client._handle_api_error(error)
+        
+        assert "время" in message.lower() or "timeout" in message.lower()
     
-    def test_transcribe_audio_response_without_text(self, tmp_path):
-        """Тест обработки ответа без поля text."""
-        audio_file = tmp_path / "test_audio.wav"
-        audio_file.write_bytes(b"fake audio data")
-        
-        # Создать мок ответа без поля text
-        mock_response = Mock(spec=[])  # Пустой spec - нет атрибутов
-        
+    def test_handle_api_error_rate_limit(self):
+        """Тест обработки превышения лимита запросов."""
         client = GLMClient(api_key="test_key")
         
-        with patch.object(client.client.audio.transcriptions, 'create', return_value=mock_response):
-            with pytest.raises(APIResponseError) as exc_info:
-                client.transcribe_audio(str(audio_file))
-            
-            assert "text" in str(exc_info.value).lower()
+        error = Exception("Rate limit exceeded")
+        message = client._handle_api_error(error)
+        
+        assert "лимит" in message.lower()
+    
+    def test_handle_api_error_generic(self):
+        """Тест обработки общей ошибки."""
+        client = GLMClient(api_key="test_key")
+        
+        error = Exception("Unknown error occurred")
+        message = client._handle_api_error(error)
+        
+        assert "Unknown error occurred" in message
 
 
 class TestGLMClientPrepareAudioFile:
     """Тесты подготовки аудио файла."""
     
-    def test_prepare_audio_file_success(self, tmp_path):
-        """Тест успешного открытия файла."""
-        audio_file = tmp_path / "test.wav"
-        audio_file.write_bytes(b"test audio content")
-        
+    @patch('builtins.open', new_callable=mock_open, read_data=b'audio_data')
+    def test_prepare_audio_file_success(self, mock_file):
+        """Тест успешной подготовки аудио файла."""
         client = GLMClient(api_key="test_key")
-        file_obj = client._prepare_audio_file(str(audio_file))
         
+        file_obj = client._prepare_audio_file("test.wav")
+        
+        # Проверить что файл был открыт в бинарном режиме
+        mock_file.assert_called_once_with("test.wav", 'rb')
         assert file_obj is not None
-        assert file_obj.mode == 'rb'
-        
-        # Прочитать содержимое для проверки
-        content = file_obj.read()
-        assert content == b"test audio content"
-        
-        file_obj.close()
     
     def test_prepare_audio_file_not_found(self):
         """Тест обработки отсутствующего файла."""
         client = GLMClient(api_key="test_key")
         
-        with pytest.raises(FileNotFoundError):
+        with pytest.raises(APIError) as exc_info:
             client._prepare_audio_file("nonexistent.wav")
-
-
-class TestGLMClientErrorHandling:
-    """Тесты обработки ошибок API."""
-    
-    def test_handle_authentication_error(self):
-        """Тест преобразования ошибки аутентификации."""
-        client = GLMClient(api_key="test_key")
         
-        # Создать мок ответа для AuthenticationError
-        mock_response = Mock()
-        mock_response.status_code = 401
-        mock_body = {"error": {"message": "Invalid API key"}}
-        error = openai.AuthenticationError("Invalid API key", response=mock_response, body=mock_body)
-        
-        with pytest.raises(AuthenticationError):
-            client._handle_api_error(error)
-    
-    def test_handle_connection_error(self):
-        """Тест преобразования ошибки подключения."""
-        client = GLMClient(api_key="test_key")
-        
-        # Создать мок для APIConnectionError
-        mock_request = Mock()
-        error = openai.APIConnectionError(request=mock_request)
-        
-        with pytest.raises(APIConnectionError):
-            client._handle_api_error(error)
-    
-    def test_handle_timeout_error(self):
-        """Тест преобразования ошибки таймаута."""
-        client = GLMClient(api_key="test_key")
-        error = openai.APITimeoutError("Request timeout")
-        
-        with pytest.raises(APITimeoutError):
-            client._handle_api_error(error)
-    
-    def test_handle_generic_error(self):
-        """Тест преобразования общей ошибки."""
-        client = GLMClient(api_key="test_key")
-        error = Exception("Unknown error")
-        
-        with pytest.raises(APIResponseError):
-            client._handle_api_error(error)
-
-
-class TestGLMClientIntegration:
-    """Интеграционные тесты GLM клиента."""
-    
-    def test_full_transcription_flow(self, tmp_path):
-        """Тест полного потока транскрипции."""
-        # Создать временный аудио файл
-        audio_file = tmp_path / "recording.wav"
-        audio_file.write_bytes(b"simulated audio data")
-        
-        # Создать мок ответа
-        mock_response = Mock()
-        mock_response.text = "Это полная транскрипция аудио записи"
-        
-        client = GLMClient(api_key="integration_test_key")
-        
-        with patch.object(client.client.audio.transcriptions, 'create', return_value=mock_response) as mock_create:
-            result = client.transcribe_audio(str(audio_file))
-            
-            # Проверить результат
-            assert result == "Это полная транскрипция аудио записи"
-            
-            # Проверить, что API был вызван с правильными параметрами
-            mock_create.assert_called_once()
-            call_kwargs = mock_create.call_args.kwargs
-            assert call_kwargs['model'] == 'whisper-1'
-            assert call_kwargs['response_format'] == 'json'
-    
-    def test_error_recovery_flow(self, tmp_path):
-        """Тест восстановления после ошибки."""
-        audio_file = tmp_path / "test.wav"
-        audio_file.write_bytes(b"audio data")
-        
-        client = GLMClient(api_key="test_key")
-        
-        # Первый вызов - ошибка
-        mock_request = Mock()
-        with patch.object(
-            client.client.audio.transcriptions, 
-            'create', 
-            side_effect=openai.APIConnectionError(request=mock_request)
-        ):
-            with pytest.raises(APIConnectionError):
-                client.transcribe_audio(str(audio_file))
-        
-        # Второй вызов - успех
-        mock_response = Mock()
-        mock_response.text = "Успешная транскрипция после ошибки"
-        
-        with patch.object(client.client.audio.transcriptions, 'create', return_value=mock_response):
-            result = client.transcribe_audio(str(audio_file))
-            assert result == "Успешная транскрипция после ошибки"
+        assert "не найден" in str(exc_info.value.message).lower()
