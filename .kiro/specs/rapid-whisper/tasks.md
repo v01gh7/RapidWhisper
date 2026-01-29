@@ -6,7 +6,7 @@
 
 ## Задачи
 
-- [-] 1. Настройка проекта и базовой инфраструктуры
+- [x] 1. Настройка проекта и базовой инфраструктуры
   - Создать структуру директорий проекта (core/, ui/, services/, models/, utils/, tests/)
   - Настроить pyproject.toml для uv с зависимостями (PyQt6, PyAudio, openai, pyperclip, keyboard, numpy, python-dotenv, pytest, hypothesis)
   - Создать .env.example с шаблоном для GLM_API_KEY
@@ -15,13 +15,13 @@
   - _Requirements: 12.1, 12.5_
 
 - [ ] 2. Реализация моделей данных и конфигурации
-  - [~] 2.1 Создать модели данных в models/data_models.py
+  - [x] 2.1 Создать модели данных в models/data_models.py
     - Реализовать dataclass AudioData с методом save_to_file
     - Реализовать dataclass TranscriptionResult с методом get_preview
     - Реализовать dataclass ErrorInfo с методом log_to_file
     - _Requirements: 3.2, 3.3, 8.3_
   
-  - [~] 2.2 Написать unit-тесты для моделей данных
+  - [x] 2.2 Написать unit-тесты для моделей данных
     - Тест сохранения AudioData в WAV файл
     - Тест усечения текста в TranscriptionResult.get_preview
     - Тест логирования ErrorInfo
