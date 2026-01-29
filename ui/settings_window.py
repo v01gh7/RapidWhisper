@@ -132,6 +132,14 @@ class SettingsWindow(QDialog):
             QTabBar::tab:hover {
                 background-color: #3d3d3d;
             }
+            QLabel a {
+                color: #0078d4;
+                text-decoration: none;
+            }
+            QLabel a:hover {
+                color: #1084d8;
+                text-decoration: underline;
+            }
         """)
     
     def _create_ui(self):
@@ -268,13 +276,25 @@ class SettingsWindow(QDialog):
         keys_group.setLayout(keys_layout)
         layout.addWidget(keys_group)
         
-        # Информация
+        # Информация с кликабельными ссылками
         info_label = QLabel(
-            "💡 Совет: Groq предоставляет бесплатный и быстрый API.\n"
-            "Рекомендуется для начала использования."
+            "💡 <b>Совет:</b> Groq предоставляет бесплатный и быстрый API.<br>"
+            "Рекомендуется для начала использования.<br><br>"
+            "<b>Получить API ключи:</b><br>"
+            "• Groq: <a href='https://console.groq.com/keys'>console.groq.com/keys</a><br>"
+            "• OpenAI: <a href='https://platform.openai.com/api-keys'>platform.openai.com/api-keys</a><br>"
+            "• GLM: <a href='https://open.bigmodel.cn/usercenter/apikeys'>open.bigmodel.cn/usercenter/apikeys</a>"
         )
         info_label.setWordWrap(True)
-        info_label.setStyleSheet("color: #888888; font-size: 11px; padding: 8px;")
+        info_label.setOpenExternalLinks(True)  # Открывать ссылки в браузере
+        info_label.setToolTip("Кликните на ссылку чтобы открыть в браузере")
+        info_label.setStyleSheet(
+            "color: #888888; "
+            "font-size: 11px; "
+            "padding: 8px; "
+            "background-color: #2d2d2d; "
+            "border-radius: 4px;"
+        )
         layout.addWidget(info_label)
         
         layout.addStretch()
