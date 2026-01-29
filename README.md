@@ -27,14 +27,27 @@ A modern speech-to-text transcription application using Zhipu GLM API, inspired 
 
 ## Installation
 
-### 1. Clone the repository
+### For End Users (Windows)
+
+1. Download `RapidWhisper.exe` from releases
+2. Run the application
+3. Follow the welcome screen instructions
+4. Get a free API key from [Groq](https://console.groq.com/keys)
+5. Open Settings (tray icon → Settings) and add your API key
+6. Done! Press Ctrl+Space to start recording
+
+**Note**: Settings are automatically saved in `%APPDATA%\RapidWhisper\.env`
+
+### For Developers
+
+#### 1. Clone the repository
 
 ```bash
 git clone <repository-url>
 cd RapidWhisper
 ```
 
-### 2. Set up virtual environment with uv
+#### 2. Set up virtual environment with uv
 
 ```bash
 # Install uv if you haven't already
@@ -48,21 +61,21 @@ uv venv
 source .venv/bin/activate
 ```
 
-### 3. Install dependencies
+#### 3. Install dependencies
 
 ```bash
 uv pip install -e .
 ```
 
-### 4. Install development dependencies (optional)
+#### 4. Install development dependencies (optional)
 
 ```bash
 uv pip install -e ".[dev]"
 ```
 
-### 5. Configure API key
+#### 5. Configure API key
 
-Copy the example environment file and add your API key:
+Create a `.env` file in the project root:
 
 ```bash
 cp .env.example .env
@@ -102,7 +115,12 @@ python main.py
 
 ### Configuration
 
-All settings can be customized through the **Settings Window** or by editing the `.env` file:
+Settings are automatically saved in:
+- **Windows**: `%APPDATA%\RapidWhisper\.env`
+- **macOS**: `~/Library/Application Support/RapidWhisper/.env`
+- **Linux**: `~/.config/RapidWhisper/.env`
+
+All settings can be customized through the **Settings Window** (no restart required!):
 
 #### Opening Settings Window
 
@@ -110,7 +128,7 @@ All settings can be customized through the **Settings Window** or by editing the
 2. Select "Настройки" (Settings)
 3. Modify settings in the graphical interface
 4. Click "💾 Сохранить" to save
-5. Restart the application to apply changes
+5. Settings apply immediately without restart!
 
 #### Settings Categories
 
@@ -118,6 +136,7 @@ All settings can be customized through the **Settings Window** or by editing the
 - Choose between Groq (free & fast), OpenAI, or GLM
 - Configure API keys for each provider
 - Groq is recommended for beginners (free tier available)
+- Clickable links to get API keys
 
 **⚡ Application**
 - `HOTKEY` - Global activation key (default: ctrl+space)
@@ -132,6 +151,29 @@ All settings can be customized through the **Settings Window** or by editing the
 See `docs/settings_guide.md` for detailed configuration guide.
 
 ## Development
+
+### Building .exe for Distribution
+
+```bash
+# Run the build script
+build.bat
+```
+
+The script will:
+1. Check PyInstaller installation
+2. Save your development .env
+3. Build clean .exe (without .env files)
+4. Restore your development .env
+
+Output: `dist\RapidWhisper.exe`
+
+**Important**: 
+- The .exe contains NO .env files
+- Settings are saved in `%APPDATA%\RapidWhisper\.env`
+- First-time users will see a welcome screen with setup instructions
+- Only distribute the .exe file, nothing else needed
+
+See `BUILD_QUICK.md` and `DISTRIBUTION_CHECKLIST.md` for details.
 
 ### Project Structure
 

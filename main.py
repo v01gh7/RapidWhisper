@@ -81,6 +81,9 @@ class RapidWhisperApp(QObject):
         
         # Флаг показа окна при запуске
         self._startup_window_visible = False
+        
+        # Флаг необходимости первоначальной настройки
+        self._needs_setup = False
     
     def initialize(self) -> None:
         """
@@ -93,12 +96,22 @@ class RapidWhisperApp(QObject):
         try:
             # Загрузить конфигурацию
             self.config = Config.load_from_env()
-            errors = self.config.validate()
             
-            if errors:
-                for error in errors:
-                    self.logger.error(f"Ошибка конфигурации: {error}")
-                raise ValueError("Ошибки в конфигурации. Проверьте .env файл")
+            # Проверить наличие API ключа
+            if not self.config.has_api_key():
+                self.logger.warning("API ключ не установлен - требуется первоначальная настройка")
+                # Флаг что нужна первоначальная настройка
+                self._needs_setup = True
+            else:
+                self._needs_setup = False
+                
+                # Валидировать только если ключ есть
+                errors = self.config.validate()
+                
+                if errors:
+                    for error in errors:
+                        self.logger.error(f"Ошибка конфигурации: {error}")
+                    raise ValueError("Ошибки в конфигурации. Проверьте .env файл")
             
             self.logger.info("Конфигурация загружена успешно")
             
@@ -280,6 +293,22 @@ class RapidWhisperApp(QObject):
         Повторное нажатие останавливает запись.
         """
         self.logger.info("Обработка горячей клавиши в главном потоке Qt")
+        
+        # Проверить наличие API ключа
+        if not self.config.has_api_key():
+            self.logger.warning("Попытка записи без API ключа")
+            
+            # Показать уведомление
+            self.tray_icon.show_message(
+                "⚠️ API ключ не установлен",
+                "Для работы приложения необходимо установить API ключ.\n\n"
+                "Откройте настройки и добавьте ключ для выбранного провайдера.",
+                duration=5000
+            )
+            
+            # Открыть настройки
+            self._show_settings()
+            return
         
         # Игнорировать нажатия во время показа окна при запуске
         if self._startup_window_visible:
@@ -596,8 +625,79 @@ class RapidWhisperApp(QObject):
         # ВАЖНО: Передаем self.floating_window как parent чтобы окно не закрывало приложение
         settings_window = SettingsWindow(self.config, parent=self.floating_window)
         # Подключить сигнал сохранения настроек
-        settings_window.settings_saved.connect(self._reload_settings)
+        settings_window.settings_saved.connect(self._on_settings_saved)
         settings_window.exec()
+    
+    def _on_settings_saved(self):
+        """
+        Обработчик сохранения настроек.
+        
+        Перезагружает настройки и проверяет наличие API ключа.
+        """
+        # Перезагрузить настройки
+        self._reload_settings()
+        
+        # Проверить что теперь есть API ключ
+        if self.config.has_api_key():
+            self._needs_setup = False
+            self.tray_icon.set_status("Готово! Нажмите Ctrl+Space для записи")
+            self.logger.info("API ключ установлен - приложение готово к работе")
+        else:
+            self.logger.warning("API ключ все еще не установлен")
+    
+    def _show_welcome_dialog(self):
+        """Показывает приветственное окно при первом запуске."""
+        from PyQt6.QtWidgets import QMessageBox
+        
+        msg = QMessageBox(self.floating_window)
+        msg.setWindowTitle("👋 Добро пожаловать в RapidWhisper!")
+        msg.setIcon(QMessageBox.Icon.Information)
+        
+        msg.setText(
+            "<h2>Добро пожаловать в RapidWhisper!</h2>"
+            "<p>Для начала работы необходимо настроить API ключ.</p>"
+        )
+        
+        msg.setInformativeText(
+            "<b>Где получить API ключи:</b><br><br>"
+            "• <b>Groq</b> (рекомендуется - бесплатный и быстрый):<br>"
+            "  <a href='https://console.groq.com/keys'>console.groq.com/keys</a><br><br>"
+            "• <b>OpenAI</b>:<br>"
+            "  <a href='https://platform.openai.com/api-keys'>platform.openai.com/api-keys</a><br><br>"
+            "• <b>GLM</b>:<br>"
+            "  <a href='https://open.bigmodel.cn/usercenter/apikeys'>open.bigmodel.cn/usercenter/apikeys</a><br><br>"
+            "<p>После получения ключа откройте настройки и добавьте его.</p>"
+        )
+        
+        msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg.setDefaultButton(QMessageBox.StandardButton.Ok)
+        
+        # Применить темный стиль
+        msg.setStyleSheet("""
+            QMessageBox {
+                background-color: #1e1e1e;
+                color: #ffffff;
+            }
+            QLabel {
+                color: #ffffff;
+                font-size: 12px;
+            }
+            QPushButton {
+                background-color: #0078d4;
+                color: #ffffff;
+                border: none;
+                border-radius: 4px;
+                padding: 8px 16px;
+                font-size: 12px;
+                font-weight: bold;
+                min-width: 80px;
+            }
+            QPushButton:hover {
+                background-color: #1084d8;
+            }
+        """)
+        
+        msg.exec()
     
     def _reload_settings(self):
         """
@@ -731,19 +831,41 @@ class RapidWhisperApp(QObject):
         if not self._initialized:
             raise RuntimeError("Приложение не инициализировано. Вызовите initialize() сначала.")
         
-        # Показать окно при запуске на 2 секунды
-        self.floating_window.show_at_center()
-        self.floating_window.set_status("RapidWhisper загружен!")
-        
-        # Установить флаг что идет инициализация
-        self._startup_window_visible = True
-        
-        # Автоматически скрыть через 2 секунды и сбросить флаг
-        def hide_startup_window():
-            self._startup_window_visible = False
-            self.floating_window.hide_with_animation()
-        
-        QTimer.singleShot(2000, hide_startup_window)
+        # Проверить необходимость первоначальной настройки
+        if self._needs_setup:
+            self.logger.info("Первый запуск - требуется настройка API ключа")
+            
+            # Показать приветственное окно с инструкциями
+            self._show_welcome_dialog()
+            
+            # Показать уведомление в трее
+            self.tray_icon.show_message(
+                "👋 Добро пожаловать в RapidWhisper!",
+                "Для начала работы необходимо установить API ключ.\n\n"
+                "Откройте настройки и добавьте ключ для выбранного провайдера.",
+                duration=10000
+            )
+            
+            # Обновить статус трея
+            self.tray_icon.set_status("⚠️ Требуется настройка API ключа")
+            
+            # Открыть настройки
+            QTimer.singleShot(500, self._show_settings)
+            
+        else:
+            # Показать окно при запуске на 2 секунды
+            self.floating_window.show_at_center()
+            self.floating_window.set_status("RapidWhisper загружен!")
+            
+            # Установить флаг что идет инициализация
+            self._startup_window_visible = True
+            
+            # Автоматически скрыть через 2 секунды и сбросить флаг
+            def hide_startup_window():
+                self._startup_window_visible = False
+                self.floating_window.hide_with_animation()
+            
+            QTimer.singleShot(2000, hide_startup_window)
         
         self.logger.info("RapidWhisper запущен")
         return QApplication.instance().exec()

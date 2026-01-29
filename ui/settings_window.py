@@ -443,6 +443,8 @@ class SettingsWindow(QDialog):
     def _save_settings(self):
         """Сохраняет настройки в .env файл."""
         try:
+            from core.config import get_env_path
+            
             # Получить новые значения
             new_config = {
                 "AI_PROVIDER": self.provider_combo.currentText(),
@@ -457,8 +459,8 @@ class SettingsWindow(QDialog):
                 "CHUNK_SIZE": self.chunk_size_combo.currentText(),
             }
             
-            # Прочитать текущий .env файл
-            env_path = ".env"
+            # Использовать правильный путь к .env (AppData для production)
+            env_path = str(get_env_path())
             env_lines = []
             
             if os.path.exists(env_path):
@@ -484,7 +486,7 @@ class SettingsWindow(QDialog):
             with open(env_path, 'w', encoding='utf-8') as f:
                 f.writelines(env_lines)
             
-            logger.info("Настройки сохранены в .env файл")
+            logger.info(f"Настройки сохранены в {env_path}")
             
             # Показать сообщение
             QMessageBox.information(

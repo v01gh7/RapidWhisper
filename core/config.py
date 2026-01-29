@@ -7,7 +7,103 @@
 
 import os
 from typing import List, Optional
+from pathlib import Path
 from dotenv import load_dotenv
+
+
+def get_config_dir() -> Path:
+    """
+    Возвращает путь к директории конфигурации приложения.
+    
+    Для Windows: %APPDATA%/RapidWhisper
+    Для macOS: ~/Library/Application Support/RapidWhisper
+    Для Linux: ~/.config/RapidWhisper
+    
+    Returns:
+        Path: Путь к директории конфигурации
+    """
+    if os.name == 'nt':  # Windows
+        base_dir = Path(os.getenv('APPDATA', '~'))
+    elif os.sys.platform == 'darwin':  # macOS
+        base_dir = Path.home() / 'Library' / 'Application Support'
+    else:  # Linux
+        base_dir = Path.home() / '.config'
+    
+    config_dir = base_dir / 'RapidWhisper'
+    config_dir.mkdir(parents=True, exist_ok=True)
+    return config_dir
+
+
+def get_env_path() -> Path:
+    """
+    Возвращает путь к файлу .env.
+    
+    Сначала проверяет текущую директорию (для разработки),
+    затем директорию конфигурации (для production).
+    
+    Returns:
+        Path: Путь к файлу .env
+    """
+    # Для разработки - проверяем текущую директорию
+    local_env = Path('.env')
+    if local_env.exists():
+        return local_env
+    
+    # Для production - используем AppData
+    config_dir = get_config_dir()
+    return config_dir / '.env'
+
+
+def create_default_env() -> None:
+    """
+    Создает файл .env с настройками по умолчанию если его нет.
+    """
+    env_path = get_env_path()
+    
+    if not env_path.exists():
+        default_content = """# ============================================
+# AI Provider Configuration (REQUIRED)
+# ============================================
+# AI provider for transcription
+# Default: groq (free and fast!)
+# Options: openai, groq, glm
+AI_PROVIDER=groq
+
+# OpenAI API Key (for provider=openai)
+# Get from: https://platform.openai.com/api-keys
+OPENAI_API_KEY=
+
+# Groq API Key (for provider=groq)
+# Get from: https://console.groq.com/keys
+GROQ_API_KEY=
+
+# GLM API Key (for provider=glm)
+# Get from: https://open.bigmodel.cn/usercenter/apikeys
+GLM_API_KEY=
+
+# ============================================
+# Application Settings (OPTIONAL)
+# ============================================
+# Global hotkey for activating the application
+# Default: ctrl+space
+HOTKEY=ctrl+space
+
+# Silence detection threshold (RMS value)
+# Default: 0.02
+# Range: 0.01 - 0.1 (lower = more sensitive)
+SILENCE_THRESHOLD=0.02
+
+# Silence duration before stopping recording (seconds)
+# Default: 1.5
+# Range: 0.5 - 5.0
+SILENCE_DURATION=1.5
+
+# Auto-hide delay after displaying result (seconds)
+# Default: 2.5
+# Range: 1.0 - 10.0
+AUTO_HIDE_DELAY=2.5
+"""
+        env_path.write_text(default_content, encoding='utf-8')
 
 
 class Config:
@@ -71,7 +167,7 @@ class Config:
         значение по умолчанию.
         
         Args:
-            env_path: Путь к .env файлу. Если None, ищет .env в текущей директории.
+            env_path: Путь к .env файлу. Если None, использует get_env_path().
         
         Returns:
             Config: Объект конфигурации с загруженными параметрами.
@@ -79,13 +175,17 @@ class Config:
         Example:
             >>> config = Config.load_from_env()
             >>> print(config.hotkey)
-            'F1'
+            'ctrl+space'
         """
+        # Создать .env если его нет
+        create_default_env()
+        
+        # Определить путь к .env
+        if env_path is None:
+            env_path = str(get_env_path())
+        
         # Загрузить переменные окружения из .env файла
-        if env_path:
-            load_dotenv(env_path, override=True)
-        else:
-            load_dotenv(override=True)
+        load_dotenv(env_path, override=True)
         
         # Создать объект конфигурации
         config = Config()
@@ -208,6 +308,21 @@ class Config:
             errors.append(f"LOG_LEVEL должен быть одним из {valid_log_levels}, получено: {self.log_level}")
         
         return errors
+    
+    def has_api_key(self) -> bool:
+        """
+        Проверяет наличие API ключа для текущего провайдера.
+        
+        Returns:
+            bool: True если ключ установлен, False иначе
+        """
+        if self.ai_provider == "openai":
+            return bool(self.openai_api_key)
+        elif self.ai_provider == "groq":
+            return bool(self.groq_api_key)
+        elif self.ai_provider == "glm":
+            return bool(self.glm_api_key)
+        return False
     
     def __repr__(self) -> str:
         """Возвращает строковое представление конфигурации."""
