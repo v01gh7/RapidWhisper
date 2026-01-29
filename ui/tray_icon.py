@@ -88,13 +88,16 @@ class TrayIcon(QObject):
     def _show_about(self) -> None:
         """Показывает информацию о программе."""
         from PyQt6.QtWidgets import QMessageBox
+        # Используем parent() если доступен, иначе None
+        parent_widget = self.parent() if self.parent() else None
         QMessageBox.information(
-            None,
+            parent_widget,
             "О программе RapidWhisper",
             "RapidWhisper v1.0\n\n"
             "Быстрая транскрипция речи с микрофона\n"
-            "используя Zhipu GLM API.\n\n"
-            "Горячая клавиша: Ctrl+Space\n\n"
+            "используя AI API (Groq, OpenAI, GLM).\n\n"
+            "Горячая клавиша: Ctrl+Space\n"
+            "Отмена записи: ESC\n\n"
             "© 2026 RapidWhisper"
         )
     

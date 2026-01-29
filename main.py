@@ -135,8 +135,8 @@ class RapidWhisperApp(QObject):
         self.floating_window = FloatingWindow()
         self.floating_window.apply_blur_effect()
         
-        # Tray Icon
-        self.tray_icon = TrayIcon()
+        # Tray Icon - передаем floating_window как parent
+        self.tray_icon = TrayIcon(parent=self.floating_window)
         self.tray_icon.show_settings.connect(self._show_settings)
         self.tray_icon.quit_app.connect(self._quit_app)
         
@@ -757,9 +757,7 @@ class RapidWhisperApp(QObject):
         Requirements: 12.2, 12.3, 12.4
         """
         try:
-            import traceback
             self.logger.info("Завершение работы RapidWhisper...")
-            self.logger.debug("Traceback вызова shutdown:\n" + ''.join(traceback.format_stack()))
             
             # Скрыть иконку трея
             if self.tray_icon:
@@ -826,6 +824,10 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationName("RapidWhisper")
     app.setOrganizationName("RapidWhisper")
+    
+    # ВАЖНО: Не закрывать приложение при закрытии последнего окна
+    # Приложение работает в трее и должно закрываться только через меню
+    app.setQuitOnLastWindowClosed(False)
     
     # Создать и инициализировать приложение
     rapid_whisper = RapidWhisperApp()
