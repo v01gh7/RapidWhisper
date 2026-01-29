@@ -235,10 +235,10 @@ class RapidWhisperApp(QObject):
         if self.state_manager.current_state == AppState.RECORDING:
             self.logger.info("Отмена записи по ESC")
             
-            # Остановить поток записи
+            # Остановить поток записи БЕЗ сохранения файла
             if self.recording_thread and self.recording_thread.isRunning():
-                self.recording_thread.stop()
-                self.logger.info("Поток записи остановлен")
+                self.recording_thread.cancel()  # Используем cancel вместо stop
+                self.logger.info("Поток записи отменен (без сохранения)")
             
             # Скрыть окно
             self._hide_window_signal.emit()

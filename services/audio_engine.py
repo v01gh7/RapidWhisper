@@ -366,6 +366,7 @@ class AudioRecordingThread(QThread):
         self.audio_engine = AudioEngine()
         self.silence_detector = silence_detector
         self._should_stop = False
+        self._cancelled = False  # Флаг отмены (не сохранять файл)
         self._update_interval = 0.05  # 50ms между обновлениями RMS
     
     def run(self) -> None:
@@ -402,9 +403,13 @@ class AudioRecordingThread(QThread):
                 # Небольшая задержка между обновлениями
                 time.sleep(self._update_interval)
             
-            # Остановить запись и сохранить файл
-            filepath = self.audio_engine.stop_recording()
-            self.recording_stopped.emit(filepath)
+            # Остановить запись и сохранить файл ТОЛЬКО если не отменено
+            if not self._cancelled:
+                filepath = self.audio_engine.stop_recording()
+                self.recording_stopped.emit(filepath)
+            else:
+                # Просто остановить без сохранения
+                self.audio_engine.cleanup()
             
         except Exception as e:
             # Отправить сигнал об ошибке
@@ -420,4 +425,13 @@ class AudioRecordingThread(QThread):
         
         Устанавливает флаг остановки, который прерывает главный цикл.
         """
+        self._should_stop = True
+    
+    def cancel(self) -> None:
+        """
+        Отменяет запись без сохранения файла.
+        
+        Устанавливает флаги остановки и отмены.
+        """
+        self._cancelled = True
         self._should_stop = True
