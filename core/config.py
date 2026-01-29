@@ -38,7 +38,7 @@ class Config:
         self.glm_api_key: str = ""
         
         # Параметры приложения
-        self.hotkey: str = "F1"
+        self.hotkey: str = "ctrl+space"
         self.silence_threshold: float = 0.02
         self.silence_duration: float = 1.5
         self.auto_hide_delay: float = 2.5

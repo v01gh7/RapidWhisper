@@ -72,30 +72,47 @@ class FloatingWindow(QWidget):
         
         # Размер окна
         self.setFixedSize(self.window_width, self.window_height)
+        
+        # ВАЖНО: Добавляем стили для видимости окна
+        # border-radius применяется только к главному виджету
+        self.setStyleSheet("""
+            FloatingWindow {
+                background-color: rgba(30, 30, 30, 240);
+                border-radius: 5px;
+                border: 2px solid rgba(255, 255, 255, 100);
+            }
+            QLabel {
+                color: white;
+                font-size: 14px;
+                font-family: 'Segoe UI', Arial, sans-serif;
+                background: transparent;
+                padding: 5px;
+                border: none;
+            }
+            WaveformWidget {
+                background: transparent;
+                border: none;
+            }
+        """)
     
     def _create_ui(self) -> None:
         """Создает UI компоненты окна."""
         # Главный layout
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(20, 15, 20, 15)
-        layout.setSpacing(10)
+        layout.setContentsMargins(15, 10, 15, 10)
+        layout.setSpacing(5)
         
-        # Виджет визуализации волны
+        # Виджет визуализации волны - ФИКСИРОВАННАЯ ВЫСОТА
         self.waveform_widget = WaveformWidget(self)
+        self.waveform_widget.setFixedHeight(50)  # Фиксированная высота для волны
         layout.addWidget(self.waveform_widget)
         
         # Метка статуса/текста
         self.status_label = QLabel("", self)
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.status_label.setWordWrap(True)
-        self.status_label.setStyleSheet("""
-            QLabel {
-                color: white;
-                font-size: 14px;
-                font-family: 'Segoe UI', Arial, sans-serif;
-                background: transparent;
-            }
-        """)
+        self.status_label.setFixedHeight(40)  # Фиксированная высота для текста
+        # Убираем отдельные стили для label - они уже в setStyleSheet окна
         layout.addWidget(self.status_label)
         
         self.setLayout(layout)
@@ -110,20 +127,25 @@ class FloatingWindow(QWidget):
         Requirements: 2.2, 2.7
         """
         # Получаем геометрию экрана
-        screen = self.screen()
-        if screen:
-            screen_geometry = screen.availableGeometry()
-            
-            # Вычисляем центр
-            x = (screen_geometry.width() - self.window_width) // 2
-            y = (screen_geometry.height() - self.window_height) // 2
-            
-            # Позиционируем окно
-            self.move(x, y)
+        from PyQt6.QtWidgets import QApplication
+        app = QApplication.instance()
+        if app:
+            screen = app.primaryScreen()
+            if screen:
+                geometry = screen.availableGeometry()
+                
+                # Вычисляем центр
+                x = geometry.center().x() - self.window_width // 2
+                y = geometry.center().y() - self.window_height // 2
+                
+                # Позиционируем окно
+                self.move(x, y)
         
         # Показываем окно с анимацией
         self.show()
-        self._fade_in()
+        self.raise_()  # Поднять окно наверх
+        self.activateWindow()  # Активировать окно
+        self._fade_in()  # Запустить анимацию появления
     
     def hide_with_animation(self) -> None:
         """
@@ -186,7 +208,7 @@ class FloatingWindow(QWidget):
         """
         Отрисовывает скругленный фон окна.
         
-        Рисует полупрозрачный скругленный прямоугольник в форме пилюли.
+        Рисует полупрозрачный скругленный прямоугольник с радиусом 5px.
         
         Args:
             event: Событие отрисовки
@@ -196,13 +218,19 @@ class FloatingWindow(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
-        # Создаем путь для скругленного прямоугольника
+        # Создать путь со скругленными углами
         path = QPainterPath()
-        rect = QRect(0, 0, self.width(), self.height())
-        path.addRoundedRect(rect, 30, 30)  # Радиус скругления 30px
+        rect = self.rect()
+        path.addRoundedRect(float(rect.x()), float(rect.y()), 
+                           float(rect.width()), float(rect.height()), 
+                           5.0, 5.0)  # border-radius: 5px
         
-        # Заливаем полупрозрачным черным цветом
-        painter.fillPath(path, QColor(0, 0, 0, 150))
+        # Заполнить фон
+        painter.fillPath(path, QColor(30, 30, 30, 240))
+        
+        # Нарисовать границу
+        painter.setPen(QColor(255, 255, 255, 100))
+        painter.drawPath(path)
     
     def set_status(self, text: str) -> None:
         """

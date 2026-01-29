@@ -392,9 +392,9 @@ class AudioRecordingThread(QThread):
                 # Проверить тишину если детектор доступен
                 if self.silence_detector:
                     current_time = time.time()
-                    self.silence_detector.update(rms, current_time)
+                    is_silent = self.silence_detector.update(rms, current_time)
                     
-                    if self.silence_detector.is_silence_detected():
+                    if is_silent:
                         # Обнаружена тишина - отправить сигнал
                         self.silence_detected.emit()
                         break

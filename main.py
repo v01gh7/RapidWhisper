@@ -7,7 +7,7 @@ RapidWhisper - Главное приложение.
 
 import sys
 from PyQt6.QtWidgets import QApplication
-from PyQt6.QtCore import QObject
+from PyQt6.QtCore import QObject, pyqtSignal, QTimer
 
 from core.config import Config
 from core.state_manager import StateManager, AppState
@@ -17,6 +17,7 @@ from services.glm_client import TranscriptionThread
 from services.clipboard_manager import ClipboardManager
 from services.silence_detector import SilenceDetector
 from ui.floating_window import FloatingWindow
+from ui.tray_icon import TrayIcon
 from utils.logger import get_logger
 
 
@@ -35,6 +36,19 @@ class RapidWhisperApp(QObject):
     Requirements: 12.1, 12.2, 12.6
     """
     
+    # Сигналы для безопасного вызова UI методов из других потоков
+    _show_window_signal = pyqtSignal()
+    _hide_window_signal = pyqtSignal()
+    _set_status_signal = pyqtSignal(str)
+    _set_result_signal = pyqtSignal(str)
+    _start_recording_animation_signal = pyqtSignal()
+    _start_loading_animation_signal = pyqtSignal()
+    _stop_animation_signal = pyqtSignal()
+    _start_auto_hide_signal = pyqtSignal(int)
+    
+    # ВАЖНО: Сигнал для обработки нажатия горячей клавиши из другого потока
+    _hotkey_pressed_signal = pyqtSignal()
+    
     def __init__(self):
         """Инициализирует приложение."""
         super().__init__()
@@ -51,6 +65,7 @@ class RapidWhisperApp(QObject):
         self.floating_window: FloatingWindow = None
         self.clipboard_manager: ClipboardManager = None
         self.silence_detector: SilenceDetector = None
+        self.tray_icon: TrayIcon = None
         
         # Потоки
         self.recording_thread: AudioRecordingThread = None
@@ -100,6 +115,11 @@ class RapidWhisperApp(QObject):
         self.floating_window = FloatingWindow()
         self.floating_window.apply_blur_effect()
         
+        # Tray Icon
+        self.tray_icon = TrayIcon()
+        self.tray_icon.show_settings.connect(self._show_settings)
+        self.tray_icon.quit_app.connect(self._quit_app)
+        
         # Clipboard Manager
         self.clipboard_manager = ClipboardManager()
         
@@ -134,6 +154,19 @@ class RapidWhisperApp(QObject):
         # State Manager signal
         self.state_manager.state_changed.connect(self._on_state_changed)
         
+        # Подключаем внутренние сигналы к UI методам
+        self._show_window_signal.connect(self.floating_window.show_at_center)
+        self._hide_window_signal.connect(self.floating_window.hide_with_animation)
+        self._set_status_signal.connect(self.floating_window.set_status)
+        self._set_result_signal.connect(lambda text: self.floating_window.set_result_text(text, max_length=100))
+        self._start_recording_animation_signal.connect(self.floating_window.get_waveform_widget().start_recording_animation)
+        self._start_loading_animation_signal.connect(self.floating_window.get_waveform_widget().start_loading_animation)
+        self._stop_animation_signal.connect(self.floating_window.get_waveform_widget().stop_animation)
+        self._start_auto_hide_signal.connect(self.floating_window.start_auto_hide_timer)
+        
+        # ВАЖНО: Подключаем сигнал горячей клавиши к обработчику в главном потоке
+        self._hotkey_pressed_signal.connect(self._handle_hotkey_in_main_thread)
+        
         self.logger.info("Сигналы подключены")
     
     def _register_hotkey(self) -> None:
@@ -159,10 +192,38 @@ class RapidWhisperApp(QObject):
         """
         Обработчик нажатия горячей клавиши.
         
+        Вызывается из потока keyboard, поэтому использует сигнал
+        для безопасной передачи в главный поток Qt.
+        
         Requirements: 1.2
         """
         self.logger.info("Горячая клавиша нажата")
-        self.state_manager.on_hotkey_pressed()
+        # Отправляем сигнал в главный поток Qt
+        self._hotkey_pressed_signal.emit()
+    
+    def _handle_hotkey_in_main_thread(self) -> None:
+        """
+        Обрабатывает нажатие горячей клавиши в главном потоке Qt.
+        
+        Этот метод вызывается через сигнал из главного потока.
+        Повторное нажатие останавливает запись.
+        """
+        self.logger.info("Обработка горячей клавиши в главном потоке Qt")
+        
+        # Проверяем текущее состояние
+        current_state = self.state_manager.current_state
+        
+        if current_state == AppState.RECORDING:
+            # Если идет запись - останавливаем её
+            self.logger.info("Остановка записи по нажатию горячей клавиши")
+            self._stop_recording()
+            # Переходим к обработке
+            self.state_manager.on_silence_detected()
+        else:
+            # Иначе обрабатываем как обычно
+            self.state_manager.on_hotkey_pressed()
+        
+        self.logger.info("StateManager.on_hotkey_pressed() вызван")
     
     def _on_state_changed(self, new_state: AppState) -> None:
         """
@@ -182,12 +243,18 @@ class RapidWhisperApp(QObject):
         Requirements: 3.1, 4.1
         """
         try:
-            # Показать окно
-            self.floating_window.show_at_center()
-            self.floating_window.set_status("Запись...")
+            self.logger.info("_start_recording вызван")
+            
+            # Показать окно через сигнал (безопасно для потоков)
+            self.logger.info("Отправка сигнала показа окна...")
+            self._show_window_signal.emit()
+            
+            self.logger.info("Отправка сигнала установки статуса...")
+            self._set_status_signal.emit("Запись...")
             
             # Запустить анимацию записи
-            self.floating_window.get_waveform_widget().start_recording_animation()
+            self.logger.info("Отправка сигнала запуска анимации...")
+            self._start_recording_animation_signal.emit()
             
             # Сбросить детектор тишины
             self.silence_detector.reset()
@@ -216,6 +283,8 @@ class RapidWhisperApp(QObject):
             
         except Exception as e:
             self.logger.error(f"Ошибка начала записи: {e}")
+            import traceback
+            self.logger.error(traceback.format_exc())
             self.state_manager.on_error(e)
     
     def _stop_recording(self) -> None:
@@ -229,6 +298,9 @@ class RapidWhisperApp(QObject):
                 self.recording_thread.stop()
                 self.logger.info("Запись остановлена")
                 
+                # СРАЗУ СКРЫТЬ ОКНО после остановки записи
+                self._hide_window_signal.emit()
+                
         except Exception as e:
             self.logger.error(f"Ошибка остановки записи: {e}")
             self.state_manager.on_error(e)
@@ -241,10 +313,13 @@ class RapidWhisperApp(QObject):
             audio_file_path: Путь к сохраненному аудио файлу
         """
         self.logger.info(f"Запись сохранена: {audio_file_path}")
-        self.state_manager.on_silence_detected()
         
         # Сохранить путь для транскрипции
         self._audio_file_path = audio_file_path
+        
+        # Переход к транскрипции
+        self.logger.info("Вызов state_manager.on_silence_detected()")
+        self.state_manager.on_silence_detected()
     
     def _on_recording_error(self, error: Exception) -> None:
         """
@@ -265,15 +340,22 @@ class RapidWhisperApp(QObject):
         Requirements: 6.3, 7.1
         """
         try:
-            # Показать индикатор загрузки
-            self.floating_window.set_status("Обработка...")
-            self.floating_window.get_waveform_widget().start_loading_animation()
+            self.logger.info(f"_start_transcription вызван, файл: {self._audio_file_path}")
+            
+            # СКРЫТЬ ОКНО при обработке
+            self._hide_window_signal.emit()
+            
+            # Показать статус в трее
+            self.tray_icon.set_status("Обработка аудио...")
+            self.logger.info("Статус трея обновлен: Обработка аудио...")
             
             # Создать и запустить поток транскрипции
             self.transcription_thread = TranscriptionThread(
                 self._audio_file_path,
                 api_key=self.config.glm_api_key
             )
+            
+            self.logger.info("TranscriptionThread создан")
             
             # Подключить сигналы потока
             self.transcription_thread.transcription_complete.connect(
@@ -283,13 +365,17 @@ class RapidWhisperApp(QObject):
                 self._on_transcription_error
             )
             
+            self.logger.info("Сигналы TranscriptionThread подключены")
+            
             # Запустить поток
             self.transcription_thread.start()
             
-            self.logger.info("Транскрипция начата")
+            self.logger.info("TranscriptionThread запущен")
             
         except Exception as e:
             self.logger.error(f"Ошибка начала транскрипции: {e}")
+            import traceback
+            self.logger.error(traceback.format_exc())
             self.state_manager.on_error(e)
     
     def _on_transcription_complete(self, text: str) -> None:
@@ -322,19 +408,23 @@ class RapidWhisperApp(QObject):
         Requirements: 8.1, 8.2, 8.3, 8.6
         """
         try:
+            # Сбросить статус трея
+            self.tray_icon.set_status("Готово! Нажмите Ctrl+Space для записи")
+            
+            # Показать окно с результатом
+            self._show_window_signal.emit()
+            
             # Остановить анимацию загрузки
-            self.floating_window.get_waveform_widget().stop_animation()
+            self._stop_animation_signal.emit()
             
             # Отобразить текст (с усечением если нужно)
-            self.floating_window.set_result_text(text, max_length=100)
+            self._set_result_signal.emit(text)
             
             # Скопировать в буфер обмена
             self.clipboard_manager.copy_to_clipboard(text)
             
             # Запустить таймер автоскрытия
-            self.floating_window.start_auto_hide_timer(
-                self.config.auto_hide_delay
-            )
+            self._start_auto_hide_signal.emit(self.config.auto_hide_delay)
             
             self.logger.info("Результат отображен")
             
@@ -349,7 +439,9 @@ class RapidWhisperApp(QObject):
         Requirements: 2.8
         """
         try:
-            self.floating_window.hide_with_animation()
+            self._hide_window_signal.emit()
+            # Сбросить статус трея
+            self.tray_icon.set_status("Готово! Нажмите Ctrl+Space для записи")
             self.logger.info("Окно скрыто")
             
         except Exception as e:
@@ -366,19 +458,38 @@ class RapidWhisperApp(QObject):
         """
         try:
             # Остановить анимации
-            self.floating_window.get_waveform_widget().stop_animation()
+            self._stop_animation_signal.emit()
             
             # Показать сообщение об ошибке
             error_message = f"Ошибка: {str(error)}"
-            self.floating_window.set_status(error_message)
+            self._set_status_signal.emit(error_message)
             
             # Автоматически скрыть через 3 секунды
-            self.floating_window.start_auto_hide_timer(3000)
+            self._start_auto_hide_signal.emit(3000)
             
             self.logger.error(f"Показана ошибка: {error}")
             
         except Exception as e:
             self.logger.error(f"Ошибка показа ошибки: {e}")
+    
+    def _show_settings(self) -> None:
+        """Показывает окно настроек."""
+        from PyQt6.QtWidgets import QMessageBox
+        QMessageBox.information(
+            None,
+            "Настройки",
+            f"Текущие настройки:\n\n"
+            f"Горячая клавиша: {self.config.hotkey}\n"
+            f"Порог тишины: {self.config.silence_threshold}\n"
+            f"Длительность тишины: {self.config.silence_duration}с\n"
+            f"Автоскрытие: {self.config.auto_hide_delay}мс\n\n"
+            f"Для изменения настроек отредактируйте файл .env"
+        )
+    
+    def _quit_app(self) -> None:
+        """Выход из приложения."""
+        self.logger.info("Запрос на выход из приложения")
+        QApplication.instance().quit()
     
     def run(self) -> int:
         """
@@ -391,6 +502,13 @@ class RapidWhisperApp(QObject):
         """
         if not self._initialized:
             raise RuntimeError("Приложение не инициализировано. Вызовите initialize() сначала.")
+        
+        # Показать окно при запуске на 2 секунды
+        self.floating_window.show_at_center()
+        self.floating_window.set_status("RapidWhisper загружен!")
+        
+        # Автоматически скрыть через 2 секунды
+        QTimer.singleShot(2000, self.floating_window.hide_with_animation)
         
         self.logger.info("RapidWhisper запущен")
         return QApplication.instance().exec()
@@ -405,6 +523,10 @@ class RapidWhisperApp(QObject):
         """
         try:
             self.logger.info("Завершение работы RapidWhisper...")
+            
+            # Скрыть иконку трея
+            if self.tray_icon:
+                self.tray_icon.hide()
             
             # Остановить потоки
             if self.recording_thread and self.recording_thread.isRunning():
