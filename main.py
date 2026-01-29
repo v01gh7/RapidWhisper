@@ -74,6 +74,9 @@ class RapidWhisperApp(QObject):
         
         # Флаг инициализации
         self._initialized = False
+        
+        # Флаг показа окна при запуске
+        self._startup_window_visible = False
     
     def initialize(self) -> None:
         """
@@ -222,6 +225,11 @@ class RapidWhisperApp(QObject):
         Повторное нажатие останавливает запись.
         """
         self.logger.info("Обработка горячей клавиши в главном потоке Qt")
+        
+        # Игнорировать нажатия во время показа окна при запуске
+        if self._startup_window_visible:
+            self.logger.info("Игнорирование нажатия - окно запуска еще видимо")
+            return
         
         # Проверяем текущее состояние
         current_state = self.state_manager.current_state
@@ -449,7 +457,8 @@ class RapidWhisperApp(QObject):
             # Показать уведомление в трее
             self.tray_icon.show_message(
                 "✅ Готово!",
-                f"Текст скопирован в буфер обмена\n\n{text[:100]}{'...' if len(text) > 100 else ''}"
+                f"Текст скопирован в буфер обмена\n\n{text[:100]}{'...' if len(text) > 100 else ''}",
+                duration=5000  # 5 секунд
             )
             
             # Сбросить статус трея
@@ -496,7 +505,8 @@ class RapidWhisperApp(QObject):
             error_message = f"Ошибка: {str(error)}"
             self.tray_icon.show_message(
                 "❌ Ошибка",
-                error_message
+                error_message,
+                duration=5000  # 5 секунд
             )
             
             # Сбросить статус трея
@@ -558,8 +568,15 @@ class RapidWhisperApp(QObject):
         self.floating_window.show_at_center()
         self.floating_window.set_status("RapidWhisper загружен!")
         
-        # Автоматически скрыть через 2 секунды
-        QTimer.singleShot(2000, self.floating_window.hide_with_animation)
+        # Установить флаг что идет инициализация
+        self._startup_window_visible = True
+        
+        # Автоматически скрыть через 2 секунды и сбросить флаг
+        def hide_startup_window():
+            self._startup_window_visible = False
+            self.floating_window.hide_with_animation()
+        
+        QTimer.singleShot(2000, hide_startup_window)
         
         self.logger.info("RapidWhisper запущен")
         return QApplication.instance().exec()

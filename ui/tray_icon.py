@@ -98,19 +98,20 @@ class TrayIcon(QObject):
             "© 2026 RapidWhisper"
         )
     
-    def show_message(self, title: str, message: str) -> None:
+    def show_message(self, title: str, message: str, duration: int = 5000) -> None:
         """
         Показывает уведомление в трее.
         
         Args:
             title: Заголовок уведомления
             message: Текст уведомления
+            duration: Длительность показа в миллисекундах (по умолчанию 5 секунд)
         """
         self.tray_icon.showMessage(
             title,
             message,
             QSystemTrayIcon.MessageIcon.Information,
-            3000  # 3 секунды
+            duration
         )
     
     def hide(self) -> None:
