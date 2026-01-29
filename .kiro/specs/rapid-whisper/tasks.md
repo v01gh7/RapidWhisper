@@ -137,8 +137,8 @@
     - **Property 1: Глобальная активация горячей клавиши**
     - **Validates: Requirements 1.2, 1.4**
 
-- [ ] 9. Реализация менеджера состояний
-  - [~] 9.1 Создать StateManager в core/state_manager.py
+- [x] 9. Реализация менеджера состояний
+  - [x] 9.1 Создать StateManager в core/state_manager.py
     - Реализовать enum AppState с состояниями (IDLE, RECORDING, PROCESSING, DISPLAYING, ERROR)
     - Реализовать класс StateManager с PyQt Signal для state_changed
     - Реализовать метод transition_to(new_state) с валидацией переходов
@@ -147,13 +147,13 @@
     - Реализовать метод cleanup_resources() для освобождения ресурсов
     - _Requirements: 1.2, 1.3, 5.5, 10.6_
   
-  - [~] 9.2 Написать unit-тесты для StateManager
+  - [x] 9.2 Написать unit-тесты для StateManager
     - Тест переходов между состояниями
     - Тест обработки нажатия горячей клавиши в разных состояниях
     - Тест восстановления после ошибки
     - _Requirements: 1.2, 1.3, 10.6_
   
-  - [~] 9.3 Написать property-тесты для переходов состояний
+  - [x] 9.3 Написать property-тесты для переходов состояний
     - **Property 15: Переход к обработке при тишине**
     - **Property 31: Восстановление после ошибки**
     - **Validates: Requirements 5.5, 10.6**
