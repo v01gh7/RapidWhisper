@@ -160,11 +160,17 @@ class StateManager(QObject):
         
         if self.current_state == AppState.RECORDING:
             # RECORDING → PROCESSING
-            if self._on_stop_recording:
-                audio_path = self._on_stop_recording()
-                if audio_path and self._on_start_transcription:
-                    self._on_start_transcription(audio_path)
+            logger.info("Переход RECORDING → PROCESSING")
             self.transition_to(AppState.PROCESSING)
+            
+            # Вызвать callback для начала транскрипции
+            if self._on_start_transcription:
+                logger.info("Вызов callback _on_start_transcription")
+                self._on_start_transcription()
+            else:
+                logger.warning("Callback _on_start_transcription не установлен!")
+        else:
+            logger.warning(f"Тишина обнаружена в неправильном состоянии: {self.current_state.value}")
     
     def on_transcription_complete(self, text: str) -> None:
         """

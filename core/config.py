@@ -19,7 +19,10 @@ class Config:
     параметров.
     
     Attributes:
-        glm_api_key (str): API ключ для Zhipu GLM API (обязательный)
+        glm_api_key (str): API ключ для Zhipu GLM API (опциональный)
+        openai_api_key (str): API ключ для OpenAI API (опциональный)
+        groq_api_key (str): API ключ для Groq API (опциональный)
+        ai_provider (str): Провайдер AI для транскрипции (openai, groq, glm)
         hotkey (str): Глобальная горячая клавиша для активации приложения
         silence_threshold (float): Порог RMS для определения тишины
         silence_duration (float): Длительность тишины в секундах для остановки записи
@@ -34,8 +37,11 @@ class Config:
     
     def __init__(self):
         """Инициализирует конфигурацию со значениями по умолчанию."""
-        # Обязательные параметры
+        # AI Provider параметры
+        self.ai_provider: str = "groq"  # Groq по умолчанию (бесплатный и быстрый)
         self.glm_api_key: str = ""
+        self.openai_api_key: str = ""
+        self.groq_api_key: str = ""
         
         # Параметры приложения
         self.hotkey: str = "ctrl+space"
@@ -84,8 +90,11 @@ class Config:
         # Создать объект конфигурации
         config = Config()
         
-        # Загрузить обязательные параметры
+        # Загрузить AI Provider параметры
+        config.ai_provider = os.getenv("AI_PROVIDER", config.ai_provider).lower()
         config.glm_api_key = os.getenv("GLM_API_KEY", "")
+        config.openai_api_key = os.getenv("OPENAI_API_KEY", "")
+        config.groq_api_key = os.getenv("GROQ_API_KEY", "")
         
         # Загрузить параметры приложения
         config.hotkey = os.getenv("HOTKEY", config.hotkey)
@@ -159,8 +168,17 @@ class Config:
         """
         errors: List[str] = []
         
-        # Проверка обязательных параметров
-        if not self.glm_api_key:
+        # Проверка AI Provider
+        valid_providers = ["openai", "groq", "glm"]
+        if self.ai_provider not in valid_providers:
+            errors.append(f"AI_PROVIDER должен быть одним из {valid_providers}, получено: {self.ai_provider}")
+        
+        # Проверка API ключей в зависимости от провайдера
+        if self.ai_provider == "openai" and not self.openai_api_key:
+            errors.append("OPENAI_API_KEY не найден в .env файле. Получите ключ на https://platform.openai.com/api-keys")
+        elif self.ai_provider == "groq" and not self.groq_api_key:
+            errors.append("GROQ_API_KEY не найден в .env файле. Получите ключ на https://console.groq.com/keys")
+        elif self.ai_provider == "glm" and not self.glm_api_key:
             errors.append("GLM_API_KEY не найден в .env файле. Получите ключ на https://open.bigmodel.cn/")
         
         # Проверка корректности значений
@@ -194,7 +212,8 @@ class Config:
     def __repr__(self) -> str:
         """Возвращает строковое представление конфигурации."""
         return (
-            f"Config(hotkey='{self.hotkey}', "
+            f"Config(ai_provider='{self.ai_provider}', "
+            f"hotkey='{self.hotkey}', "
             f"silence_threshold={self.silence_threshold}, "
             f"silence_duration={self.silence_duration}, "
             f"auto_hide_delay={self.auto_hide_delay}, "

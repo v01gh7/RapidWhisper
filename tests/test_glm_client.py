@@ -9,7 +9,7 @@ import os
 from unittest.mock import Mock, patch, mock_open, MagicMock
 from openai import AuthenticationError, APIConnectionError, APITimeoutError
 
-from services.glm_client import GLMClient
+from services.transcription_client import TranscriptionClient as GLMClient
 from utils.exceptions import (
     APIError,
     APIAuthenticationError,

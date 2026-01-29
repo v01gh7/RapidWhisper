@@ -13,7 +13,7 @@ from core.config import Config
 from core.state_manager import StateManager, AppState
 from services.hotkey_manager import HotkeyManager
 from services.audio_engine import AudioRecordingThread
-from services.glm_client import TranscriptionThread
+from services.transcription_client import TranscriptionThread
 from services.clipboard_manager import ClipboardManager
 from services.silence_detector import SilenceDetector
 from ui.floating_window import FloatingWindow
@@ -84,11 +84,23 @@ class RapidWhisperApp(QObject):
         """
         try:
             # Загрузить конфигурацию
-            self.config = Config()
-            self.config.load_from_env()
-            self.config.validate()
+            self.config = Config.load_from_env()
+            errors = self.config.validate()
+            
+            if errors:
+                for error in errors:
+                    self.logger.error(f"Ошибка конфигурации: {error}")
+                raise ValueError("Ошибки в конфигурации. Проверьте .env файл")
             
             self.logger.info("Конфигурация загружена успешно")
+            
+            # Логировать информацию о провайдере
+            api_key = self._get_api_key_for_provider()
+            if api_key:
+                self.logger.info(f"AI Provider: {self.config.ai_provider}")
+                self.logger.info(f"API ключ загружен: {api_key[:10]}...")
+            else:
+                self.logger.warning(f"API ключ для провайдера {self.config.ai_provider} не найден!")
             
             # Создать компоненты
             self._create_components()
@@ -216,9 +228,18 @@ class RapidWhisperApp(QObject):
         if current_state == AppState.RECORDING:
             # Если идет запись - останавливаем её
             self.logger.info("Остановка записи по нажатию горячей клавиши")
-            self._stop_recording()
-            # Переходим к обработке
-            self.state_manager.on_silence_detected()
+            
+            # СРАЗУ СКРЫТЬ ОКНО
+            self._hide_window_signal.emit()
+            
+            # Остановить поток записи - он сам вызовет _on_recording_stopped
+            # который запустит транскрипцию
+            if self.recording_thread and self.recording_thread.isRunning():
+                self.recording_thread.stop()
+                self.logger.info("Поток записи остановлен, ожидаем сохранения файла...")
+            
+            # Переход к обработке
+            self.state_manager.transition_to(AppState.PROCESSING)
         else:
             # Иначе обрабатываем как обычно
             self.state_manager.on_hotkey_pressed()
@@ -298,9 +319,6 @@ class RapidWhisperApp(QObject):
                 self.recording_thread.stop()
                 self.logger.info("Запись остановлена")
                 
-                # СРАЗУ СКРЫТЬ ОКНО после остановки записи
-                self._hide_window_signal.emit()
-                
         except Exception as e:
             self.logger.error(f"Ошибка остановки записи: {e}")
             self.state_manager.on_error(e)
@@ -317,9 +335,15 @@ class RapidWhisperApp(QObject):
         # Сохранить путь для транскрипции
         self._audio_file_path = audio_file_path
         
-        # Переход к транскрипции
-        self.logger.info("Вызов state_manager.on_silence_detected()")
-        self.state_manager.on_silence_detected()
+        # Если мы уже в состоянии PROCESSING (остановлено вручную),
+        # запустить транскрипцию
+        if self.state_manager.current_state == AppState.PROCESSING:
+            self.logger.info("Состояние уже PROCESSING, запуск транскрипции...")
+            self._start_transcription()
+        else:
+            # Иначе вызвать state manager для перехода
+            self.logger.info("Вызов state_manager.on_silence_detected()")
+            self.state_manager.on_silence_detected()
     
     def _on_recording_error(self, error: Exception) -> None:
         """
@@ -352,7 +376,8 @@ class RapidWhisperApp(QObject):
             # Создать и запустить поток транскрипции
             self.transcription_thread = TranscriptionThread(
                 self._audio_file_path,
-                api_key=self.config.glm_api_key
+                provider=self.config.ai_provider,
+                api_key=self._get_api_key_for_provider()
             )
             
             self.logger.info("TranscriptionThread создан")
@@ -472,6 +497,21 @@ class RapidWhisperApp(QObject):
         except Exception as e:
             self.logger.error(f"Ошибка показа ошибки: {e}")
     
+    def _get_api_key_for_provider(self) -> Optional[str]:
+        """
+        Возвращает API ключ для текущего провайдера.
+        
+        Returns:
+            API ключ или None
+        """
+        if self.config.ai_provider == "openai":
+            return self.config.openai_api_key
+        elif self.config.ai_provider == "groq":
+            return self.config.groq_api_key
+        elif self.config.ai_provider == "glm":
+            return self.config.glm_api_key
+        return None
+    
     def _show_settings(self) -> None:
         """Показывает окно настроек."""
         from PyQt6.QtWidgets import QMessageBox
@@ -479,10 +519,11 @@ class RapidWhisperApp(QObject):
             None,
             "Настройки",
             f"Текущие настройки:\n\n"
+            f"AI Provider: {self.config.ai_provider}\n"
             f"Горячая клавиша: {self.config.hotkey}\n"
             f"Порог тишины: {self.config.silence_threshold}\n"
             f"Длительность тишины: {self.config.silence_duration}с\n"
-            f"Автоскрытие: {self.config.auto_hide_delay}мс\n\n"
+            f"Автоскрытие: {self.config.auto_hide_delay}с\n\n"
             f"Для изменения настроек отредактируйте файл .env"
         )
     
