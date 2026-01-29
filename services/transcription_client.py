@@ -144,12 +144,12 @@ class TranscriptionClient:
             logger.error(f"Ошибка подключения к API: {e}")
             raise APINetworkError(str(e))
         
-        except Exception as e:
+        except Exception as ex:
             # Обработать другие ошибки
-            logger.error(f"Неожиданная ошибка API: {e}")
+            logger.error(f"Неожиданная ошибка API: {ex}")
             import traceback
             logger.error(traceback.format_exc())
-            error_message = self._handle_api_error(e)
+            error_message = self._handle_api_error(ex)
             raise APIError(error_message)
         
         finally:
@@ -158,10 +158,8 @@ class TranscriptionClient:
                 try:
                     audio_file.close()
                     logger.info("Аудио файл закрыт")
-                except Exception as e:
-                    logger.warning(f"Не удалось закрыть файл: {e}")
-            error_message = self._handle_api_error(e)
-            raise APIError(error_message)
+                except Exception as close_error:
+                    logger.warning(f"Не удалось закрыть файл: {close_error}")
     
     def _prepare_audio_file(self, filepath: str) -> BinaryIO:
         """

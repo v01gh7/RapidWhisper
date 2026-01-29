@@ -336,15 +336,18 @@ class RapidWhisperApp(QObject):
         # Сохранить путь для транскрипции
         self._audio_file_path = audio_file_path
         
-        # Если мы уже в состоянии PROCESSING (остановлено вручную),
+        # Если мы в состоянии PROCESSING (остановлено вручную или по тишине),
         # запустить транскрипцию
         if self.state_manager.current_state == AppState.PROCESSING:
-            self.logger.info("Состояние уже PROCESSING, запуск транскрипции...")
+            self.logger.info("Состояние PROCESSING, запуск транскрипции...")
             self._start_transcription()
-        else:
-            # Иначе вызвать state manager для перехода
+        elif self.state_manager.current_state == AppState.RECORDING:
+            # Если еще в RECORDING, значит остановка по тишине еще не обработана
             self.logger.info("Вызов state_manager.on_silence_detected()")
             self.state_manager.on_silence_detected()
+            # После перехода в PROCESSING запустить транскрипцию
+            if self.state_manager.current_state == AppState.PROCESSING:
+                self._start_transcription()
     
     def _on_recording_error(self, error: Exception) -> None:
         """
@@ -365,6 +368,12 @@ class RapidWhisperApp(QObject):
         Requirements: 6.3, 7.1
         """
         try:
+            # Проверить что файл существует
+            if not hasattr(self, '_audio_file_path') or not self._audio_file_path:
+                self.logger.error("Нет аудио файла для транскрипции!")
+                self.state_manager.on_error(Exception("Аудио файл не найден"))
+                return
+            
             self.logger.info(f"_start_transcription вызван, файл: {self._audio_file_path}")
             
             # СКРЫТЬ ОКНО при обработке
@@ -480,15 +489,18 @@ class RapidWhisperApp(QObject):
         Requirements: 10.6
         """
         try:
-            # Остановить анимации
-            self._stop_animation_signal.emit()
+            # СКРЫТЬ ОКНО при ошибке
+            self._hide_window_signal.emit()
             
-            # Показать сообщение об ошибке
+            # Показать уведомление в трее вместо окна
             error_message = f"Ошибка: {str(error)}"
-            self._set_status_signal.emit(error_message)
+            self.tray_icon.show_message(
+                "❌ Ошибка",
+                error_message
+            )
             
-            # Автоматически скрыть через 3 секунды
-            self._start_auto_hide_signal.emit(3000)
+            # Сбросить статус трея
+            self.tray_icon.set_status("Готово! Нажмите Ctrl+Space для записи")
             
             self.logger.error(f"Показана ошибка: {error}")
             
