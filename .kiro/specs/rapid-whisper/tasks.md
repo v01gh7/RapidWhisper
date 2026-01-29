@@ -110,7 +110,7 @@
     - Тест обработки таймаута
     - _Requirements: 6.2, 6.6, 6.7, 6.8_
   
-  - [~] 7.3 Написать property-тесты для GLMClient
+  - [x] 7.3 Написать property-тесты для GLMClient
     - **Property 16: Извлечение текста из ответа API**
     - **Property 17: Отправка аудио на транскрипцию**
     - **Validates: Requirements 6.3, 6.6**

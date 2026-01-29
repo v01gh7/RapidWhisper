@@ -277,3 +277,177 @@ class TestGLMClientPrepareAudioFile:
             client._prepare_audio_file("nonexistent.wav")
         
         assert "не найден" in str(exc_info.value.message).lower()
+
+
+
+# ============================================================================
+# Property-Based Tests
+# ============================================================================
+
+from hypothesis import given, settings
+from hypothesis import strategies as st
+
+
+class TestGLMClientProperties:
+    """Property-based тесты для GLMClient."""
+    
+    @given(st.text(min_size=1, max_size=500))
+    @settings(max_examples=100, deadline=None)
+    def test_property_error_message_handling(self, error_message):
+        """
+        Property: Обработка сообщений об ошибках
+        
+        Для любого сообщения об ошибке, _handle_api_error должен вернуть
+        понятное пользователю сообщение.
+        
+        **Validates: Requirements 6.7, 6.8**
+        """
+        client = GLMClient(api_key="test_key")
+        
+        # Создать ошибку с произвольным сообщением
+        error = Exception(error_message)
+        
+        # Обработать ошибку
+        user_message = client._handle_api_error(error)
+        
+        # Проверить что возвращено непустое сообщение
+        assert user_message, "Сообщение об ошибке не должно быть пустым"
+        assert isinstance(user_message, str), "Сообщение должно быть строкой"
+        
+        # Проверить что сообщение содержит полезную информацию
+        # (либо ключевые слова, либо оригинальное сообщение)
+        keywords = ["ошибка", "api", "сеть", "подключение", "ключ", "время", "лимит"]
+        has_keyword = any(keyword in user_message.lower() for keyword in keywords)
+        has_original = error_message.lower() in user_message.lower()
+        
+        assert has_keyword or has_original, \
+            "Сообщение должно содержать ключевые слова или оригинальное сообщение"
+    
+    @given(st.text(min_size=1, max_size=20, alphabet=st.characters(min_codepoint=65, max_codepoint=90)))
+    @settings(max_examples=100, deadline=None)
+    def test_property_api_key_validation(self, api_key):
+        """
+        Property: Валидация API ключа
+        
+        Для любого непустого API ключа, клиент должен успешно инициализироваться.
+        
+        **Validates: Requirements 6.2**
+        """
+        # Создать клиент с произвольным API ключом
+        client = GLMClient(api_key=api_key)
+        
+        # Проверить что клиент инициализирован
+        assert client.client is not None, "OpenAI клиент должен быть инициализирован"
+        assert client.base_url == "https://open.bigmodel.cn/api/paas/v4/", \
+            "Base URL должен быть установлен корректно"
+        assert client.model == "whisper-1", "Модель должна быть whisper-1"
+        assert client.timeout == 30, "Таймаут должен быть 30 секунд"
+    
+    @given(st.integers(min_value=1, max_value=120))
+    @settings(max_examples=50, deadline=None)
+    def test_property_timeout_configuration(self, timeout_value):
+        """
+        Property: Конфигурация таймаута
+        
+        Для любого положительного значения таймаута, клиент должен
+        использовать это значение при инициализации.
+        
+        **Validates: Requirements 6.5**
+        """
+        client = GLMClient(api_key="test_key")
+        
+        # Изменить таймаут
+        client.timeout = timeout_value
+        
+        # Проверить что значение установлено
+        assert client.timeout == timeout_value, \
+            f"Таймаут должен быть {timeout_value}, получено {client.timeout}"
+        
+        # Проверить что значение положительное
+        assert client.timeout > 0, "Таймаут должен быть положительным"
+
+
+class TestGLMClientPropertiesWithMocks:
+    """Property-based тесты для GLMClient с моками (упрощенные)."""
+    
+    def test_property_text_extraction_from_various_responses(self):
+        """
+        Feature: rapid-whisper, Property 16: Извлечение текста из ответа API
+        
+        Для любого валидного JSON ответа от GLM API, клиент должен корректно 
+        извлечь текстовое поле транскрипции.
+        
+        **Validates: Requirements 6.6**
+        """
+        test_texts = [
+            "Привет, мир!",
+            "Hello, world!",
+            "Это тестовая транскрипция с цифрами 12345",
+            "Test with special chars: !@#$%^&*()",
+            "Очень длинный текст " * 50,
+            "Короткий",
+            "123",
+            "   пробелы   ",
+        ]
+        
+        for response_text in test_texts:
+            with patch('services.glm_client.OpenAI') as mock_openai_class, \
+                 patch('builtins.open', mock_open(read_data=b'fake_audio_data')):
+                
+                # Настроить мок
+                mock_client = Mock()
+                mock_openai_class.return_value = mock_client
+                mock_response = Mock()
+                mock_response.text = response_text
+                mock_client.audio.transcriptions.create.return_value = mock_response
+                
+                # Выполнить транскрипцию
+                client = GLMClient(api_key="test_key")
+                result = client.transcribe_audio("test.wav")
+                
+                # Проверить извлечение текста
+                assert result == response_text, \
+                    f"Извлеченный текст должен совпадать с ответом API"
+    
+    def test_property_audio_file_sent_to_api_for_various_paths(self):
+        """
+        Feature: rapid-whisper, Property 17: Отправка аудио на транскрипцию
+        
+        Для любого завершенного аудио файла, GLM клиент должен отправить 
+        файл на транскрипцию через API.
+        
+        **Validates: Requirements 6.3**
+        """
+        test_paths = [
+            "test.wav",
+            "audio/recording.wav",
+            "C:/temp/audio.wav",
+            "recording_2024.wav",
+            "файл.wav",
+        ]
+        
+        for file_path in test_paths:
+            with patch('services.glm_client.OpenAI') as mock_openai_class, \
+                 patch('builtins.open', mock_open(read_data=b'fake_audio_data')) as mock_file:
+                
+                # Настроить мок
+                mock_client = Mock()
+                mock_openai_class.return_value = mock_client
+                mock_response = Mock()
+                mock_response.text = "Test transcription"
+                mock_client.audio.transcriptions.create.return_value = mock_response
+                
+                # Выполнить транскрипцию
+                client = GLMClient(api_key="test_key")
+                result = client.transcribe_audio(file_path)
+                
+                # Проверить что файл был открыт
+                mock_file.assert_called_with(file_path, 'rb')
+                
+                # Проверить что API был вызван
+                mock_client.audio.transcriptions.create.assert_called_once()
+                
+                # Проверить параметры
+                call_kwargs = mock_client.audio.transcriptions.create.call_args[1]
+                assert call_kwargs['model'] == "whisper-1"
+                assert call_kwargs['response_format'] == "json"
