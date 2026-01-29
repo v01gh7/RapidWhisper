@@ -104,6 +104,7 @@ class TranscriptionClient:
         from utils.logger import get_logger
         logger = get_logger()
         
+        audio_file = None
         try:
             logger.info(f"Подготовка аудио файла: {audio_file_path}")
             
@@ -148,6 +149,17 @@ class TranscriptionClient:
             logger.error(f"Неожиданная ошибка API: {e}")
             import traceback
             logger.error(traceback.format_exc())
+            error_message = self._handle_api_error(e)
+            raise APIError(error_message)
+        
+        finally:
+            # ВАЖНО: Закрыть файл после использования
+            if audio_file:
+                try:
+                    audio_file.close()
+                    logger.info("Аудио файл закрыт")
+                except Exception as e:
+                    logger.warning(f"Не удалось закрыть файл: {e}")
             error_message = self._handle_api_error(e)
             raise APIError(error_message)
     
@@ -279,6 +291,9 @@ class TranscriptionThread(QThread):
             # Удалить временный файл
             try:
                 if os.path.exists(self.audio_file_path):
+                    # Небольшая задержка перед удалением
+                    import time
+                    time.sleep(0.1)
                     os.remove(self.audio_file_path)
                     logger.info(f"Временный файл удален: {self.audio_file_path}")
             except Exception as e:

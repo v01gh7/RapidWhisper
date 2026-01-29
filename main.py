@@ -6,6 +6,7 @@ RapidWhisper - Главное приложение.
 """
 
 import sys
+from typing import Optional
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import QObject, pyqtSignal, QTimer
 
@@ -427,31 +428,28 @@ class RapidWhisperApp(QObject):
         """
         Отображает результат транскрипции.
         
-        Показывает текст в окне, копирует в буфер обмена и
-        запускает таймер автоскрытия.
+        Копирует текст в буфер обмена и показывает уведомление в трее.
         
         Requirements: 8.1, 8.2, 8.3, 8.6
         """
         try:
+            # Скопировать в буфер обмена
+            self.clipboard_manager.copy_to_clipboard(text)
+            self.logger.info(f"Текст скопирован в буфер обмена: {text[:50]}...")
+            
+            # Показать уведомление в трее
+            self.tray_icon.show_message(
+                "✅ Готово!",
+                f"Текст скопирован в буфер обмена\n\n{text[:100]}{'...' if len(text) > 100 else ''}"
+            )
+            
             # Сбросить статус трея
             self.tray_icon.set_status("Готово! Нажмите Ctrl+Space для записи")
             
-            # Показать окно с результатом
-            self._show_window_signal.emit()
+            self.logger.info("Результат обработан")
             
-            # Остановить анимацию загрузки
-            self._stop_animation_signal.emit()
-            
-            # Отобразить текст (с усечением если нужно)
-            self._set_result_signal.emit(text)
-            
-            # Скопировать в буфер обмена
-            self.clipboard_manager.copy_to_clipboard(text)
-            
-            # Запустить таймер автоскрытия
-            self._start_auto_hide_signal.emit(self.config.auto_hide_delay)
-            
-            self.logger.info("Результат отображен")
+            # Вернуться в IDLE состояние
+            self.state_manager.transition_to(AppState.IDLE)
             
         except Exception as e:
             self.logger.error(f"Ошибка отображения результата: {e}")
