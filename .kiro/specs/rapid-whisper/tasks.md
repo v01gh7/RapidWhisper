@@ -190,8 +190,8 @@
     - **Property 20: Скрытие индикатора после ответа**
     - **Validates: Requirements 7.1, 7.2, 7.5**
 
-- [ ] 12. Реализация плавающего окна
-  - [~] 12.1 Создать FloatingWindow в ui/floating_window.py
+- [x] 12. Реализация плавающего окна
+  - [x] 12.1 Создать FloatingWindow в ui/floating_window.py
     - Наследовать от QWidget
     - Реализовать setup_window_properties() для настройки флагов (FramelessWindowHint, WindowStaysOnTopHint, Tool)
     - Реализовать метод show_at_center() для центрирования на экране
@@ -203,32 +203,32 @@
     - Реализовать стилизацию через QSS (border-radius, background-color)
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8_
   
-  - [~] 12.2 Написать unit-тесты для FloatingWindow
+  - [x] 12.2 Написать unit-тесты для FloatingWindow
     - Тест установки правильных флагов окна
     - Тест центрирования окна на экране
     - Тест применения стилей
     - _Requirements: 2.2, 2.4, 2.5, 2.6_
   
-  - [~] 12.3 Написать property-тесты для окна
+  - [x] 12.3 Написать property-тесты для окна
     - **Property 2: Центрирование окна**
     - **Property 3: Анимация прозрачности**
     - **Validates: Requirements 2.2, 2.7, 2.8**
 
-- [ ] 13. Реализация платформо-зависимых эффектов размытия
-  - [~] 13.1 Создать platform_utils.py в utils/
+- [x] 13. Реализация платформо-зависимых эффектов размытия
+  - [x] 13.1 Создать platform_utils.py в utils/
     - Реализовать функцию apply_windows_blur(hwnd) для Windows 11 Acrylic
     - Реализовать функцию apply_macos_blur(window) для macOS NSVisualEffectView
     - Реализовать функцию apply_linux_blur(window) для Linux композитинга
     - Реализовать функцию detect_platform() для определения ОС
     - _Requirements: 2.3_
   
-  - [~] 13.2 Написать unit-тесты для платформо-зависимых утилит
+  - [x] 13.2 Написать unit-тесты для платформо-зависимых утилит
     - Тест определения платформы
     - Тест применения blur эффекта (с моками для каждой ОС)
     - _Requirements: 2.3_
 
-- [ ] 14. Реализация многопоточности
-  - [~] 14.1 Создать AudioRecordingThread в services/audio_engine.py
+- [x] 14. Реализация многопоточности
+  - [x] 14.1 Создать AudioRecordingThread в services/audio_engine.py
     - Наследовать от QThread
     - Реализовать сигналы rms_updated и recording_stopped
     - Реализовать метод run() для главного цикла записи
@@ -236,27 +236,27 @@
     - Интегрировать с SilenceDetector
     - _Requirements: 4.7, 9.1_
   
-  - [~] 14.2 Создать TranscriptionThread в services/glm_client.py
+  - [x] 14.2 Создать TranscriptionThread в services/glm_client.py
     - Наследовать от QThread
     - Реализовать сигналы transcription_complete и transcription_error
     - Реализовать метод run() для выполнения транскрипции
     - Добавить удаление временного файла в finally блоке
     - _Requirements: 9.2_
   
-  - [~] 14.3 Написать property-тесты для многопоточности
+  - [x] 14.3 Написать property-тесты для многопоточности
     - **Property 26: Многопоточная архитектура**
     - **Property 28: Неблокирующий UI**
     - **Validates: Requirements 9.1, 9.2, 4.7, 9.5**
 
-- [~] 15. Checkpoint - Проверка UI компонентов
+- [x] 15. Checkpoint - Проверка UI компонентов
   - Убедиться, что все тесты UI компонентов проходят
   - Проверить, что FloatingWindow корректно отображается
   - Проверить, что WaveformWidget корректно анимируется
   - Проверить, что многопоточность работает без блокировки UI
   - Спросить пользователя, если возникли вопросы
 
-- [ ] 16. Реализация главного приложения
-  - [~] 16.1 Создать RapidWhisperApp в main.py
+- [~] 16. Реализация главного приложения
+  - [-] 16.1 Создать RapidWhisperApp в main.py
     - Реализовать инициализацию QApplication
     - Реализовать метод initialize() для настройки всех компонентов
     - Реализовать метод run() для запуска главного цикла событий

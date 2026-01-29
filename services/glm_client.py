@@ -152,3 +152,72 @@ class GLMClient:
             return "Превышен лимит запросов к API"
         else:
             return f"Ошибка API: {error}"
+
+
+
+from PyQt6.QtCore import QThread, pyqtSignal
+
+
+class TranscriptionThread(QThread):
+    """
+    Поток для транскрипции аудио в фоновом режиме.
+    
+    Наследуется от QThread для неблокирующей транскрипции аудио.
+    Отправляет сигналы при завершении транскрипции или при ошибке.
+    
+    Signals:
+        transcription_complete: Сигнал с результатом транскрипции (str)
+        transcription_error: Сигнал при ошибке транскрипции (Exception)
+    
+    Requirements: 9.2
+    """
+    
+    # Сигналы
+    transcription_complete = pyqtSignal(str)  # Транскрибированный текст
+    transcription_error = pyqtSignal(Exception)  # Ошибка транскрипции
+    
+    def __init__(self, audio_file_path: str, api_key: Optional[str] = None):
+        """
+        Инициализирует поток транскрипции.
+        
+        Args:
+            audio_file_path: Путь к аудио файлу для транскрипции
+            api_key: API ключ для Zhipu AI (опционально)
+        """
+        super().__init__()
+        self.audio_file_path = audio_file_path
+        self.api_key = api_key
+        self.glm_client: Optional[GLMClient] = None
+    
+    def run(self) -> None:
+        """
+        Выполняет транскрипцию аудио файла.
+        
+        Создает GLMClient, отправляет аудио на транскрипцию
+        и отправляет сигнал с результатом или ошибкой.
+        Удаляет временный файл после завершения.
+        
+        Requirements: 9.2
+        """
+        try:
+            # Создать GLM клиент
+            self.glm_client = GLMClient(api_key=self.api_key)
+            
+            # Выполнить транскрипцию
+            text = self.glm_client.transcribe_audio(self.audio_file_path)
+            
+            # Отправить сигнал с результатом
+            self.transcription_complete.emit(text)
+            
+        except Exception as e:
+            # Отправить сигнал об ошибке
+            self.transcription_error.emit(e)
+            
+        finally:
+            # Удалить временный файл
+            try:
+                if os.path.exists(self.audio_file_path):
+                    os.remove(self.audio_file_path)
+            except Exception:
+                # Игнорировать ошибки удаления файла
+                pass

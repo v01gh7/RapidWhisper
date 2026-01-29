@@ -326,3 +326,98 @@ class AudioEngine:
         # Очистить буфер
         self.audio_buffer = []
         self._current_rms = 0.0
+
+
+
+from PyQt6.QtCore import QThread, pyqtSignal
+
+
+class AudioRecordingThread(QThread):
+    """
+    Поток для записи аудио в фоновом режиме.
+    
+    Наследуется от QThread для неблокирующей записи аудио.
+    Периодически отправляет сигналы с RMS значениями для визуализации
+    и сигнал при обнаружении тишины.
+    
+    Signals:
+        rms_updated: Сигнал с текущим RMS значением (float)
+        recording_stopped: Сигнал при остановке записи с путем к файлу (str)
+        recording_error: Сигнал при ошибке записи (Exception)
+        silence_detected: Сигнал при обнаружении тишины
+    
+    Requirements: 4.7, 9.1
+    """
+    
+    # Сигналы
+    rms_updated = pyqtSignal(float)  # RMS значение для визуализации
+    recording_stopped = pyqtSignal(str)  # Путь к сохраненному файлу
+    recording_error = pyqtSignal(Exception)  # Ошибка записи
+    silence_detected = pyqtSignal()  # Обнаружена тишина
+    
+    def __init__(self, silence_detector=None):
+        """
+        Инициализирует поток записи.
+        
+        Args:
+            silence_detector: Экземпляр SilenceDetector для определения тишины
+        """
+        super().__init__()
+        self.audio_engine = AudioEngine()
+        self.silence_detector = silence_detector
+        self._should_stop = False
+        self._update_interval = 0.05  # 50ms между обновлениями RMS
+    
+    def run(self) -> None:
+        """
+        Главный цикл потока записи.
+        
+        Запускает запись, периодически обновляет RMS значения
+        и проверяет условие остановки (тишина или ручная остановка).
+        
+        Requirements: 4.7, 9.1
+        """
+        try:
+            # Начать запись
+            self.audio_engine.start_recording()
+            
+            # Главный цикл записи
+            while not self._should_stop:
+                # Получить текущее RMS значение
+                rms = self.audio_engine.get_current_rms()
+                
+                # Отправить сигнал для визуализации
+                self.rms_updated.emit(rms)
+                
+                # Проверить тишину если детектор доступен
+                if self.silence_detector:
+                    current_time = time.time()
+                    self.silence_detector.update(rms, current_time)
+                    
+                    if self.silence_detector.is_silence_detected():
+                        # Обнаружена тишина - отправить сигнал
+                        self.silence_detected.emit()
+                        break
+                
+                # Небольшая задержка между обновлениями
+                time.sleep(self._update_interval)
+            
+            # Остановить запись и сохранить файл
+            filepath = self.audio_engine.stop_recording()
+            self.recording_stopped.emit(filepath)
+            
+        except Exception as e:
+            # Отправить сигнал об ошибке
+            self.recording_error.emit(e)
+            
+        finally:
+            # Очистить ресурсы
+            self.audio_engine.cleanup()
+    
+    def stop(self) -> None:
+        """
+        Останавливает запись.
+        
+        Устанавливает флаг остановки, который прерывает главный цикл.
+        """
+        self._should_stop = True
