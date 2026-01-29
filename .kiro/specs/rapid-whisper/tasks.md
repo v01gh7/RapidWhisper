@@ -93,7 +93,7 @@
   - Спросить пользователя, если возникли вопросы
 
 - [ ] 7. Реализация GLM API клиента
-  - [-] 7.1 Создать GLMClient в services/glm_client.py
+  - [x] 7.1 Создать GLMClient в services/glm_client.py
     - Реализовать инициализацию OpenAI клиента с base_url для Zhipu AI
     - Реализовать метод transcribe_audio(audio_file_path) для транскрипции
     - Реализовать метод _prepare_audio_file для подготовки файла

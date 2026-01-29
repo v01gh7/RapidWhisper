@@ -269,10 +269,11 @@ class TestGLMClientIntegration:
         client = GLMClient(api_key="test_key")
         
         # Первый вызов - ошибка
+        mock_request = Mock()
         with patch.object(
             client.client.audio.transcriptions, 
             'create', 
-            side_effect=openai.APIConnectionError("Network error")
+            side_effect=openai.APIConnectionError(request=mock_request)
         ):
             with pytest.raises(APIConnectionError):
                 client.transcribe_audio(str(audio_file))
