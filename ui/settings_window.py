@@ -110,20 +110,21 @@ class SettingsWindow(QDialog):
                 color: #ffffff;
                 border: 1px solid #3d3d3d;
                 border-radius: 8px;
-                margin-top: 16px;
+                margin-top: 20px;
                 font-weight: bold;
-                padding-top: 16px;
+                padding-top: 20px;
                 background-color: #252525;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
                 subcontrol-position: top left;
-                padding: 6px 12px;
-                background-color: transparent;
-                color: #888888;
-                font-size: 11px;
-                font-weight: normal;
-                text-transform: uppercase;
+                padding: 8px 16px;
+                background-color: #2d2d2d;
+                color: #ffffff;
+                font-size: 13px;
+                font-weight: bold;
+                border-radius: 4px;
+                border: 1px solid #0078d4;
             }
             QListWidget {
                 background-color: #1a1a1a;
