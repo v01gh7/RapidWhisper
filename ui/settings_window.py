@@ -108,7 +108,14 @@ class SettingsWindow(QDialog):
                 color: #ffffff;
                 font-size: {label_font_size}px;
             }}
-            QLineEdit, QDoubleSpinBox, QComboBox {{
+            QLineEdit, QDoubleSpinBox {{
+                background-color: #2d2d2d;
+                color: #ffffff;
+                border: 1px solid #3d3d3d;
+                border-radius: 6px;
+                padding: 8px;
+            }}
+            QComboBox {{
                 background-color: #2d2d2d;
                 color: #ffffff;
                 border: 1px solid #3d3d3d;

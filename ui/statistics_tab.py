@@ -89,16 +89,12 @@ class StatisticsTab(QWidget):
         filter_layout = QHBoxLayout()
         filter_label = QLabel(t('settings.statistics.time_period_label'))
         filter_label.setStyleSheet("color: #ffffff;")
-        filter_label.setFont(QFont("Segoe UI", 14))
+        # НЕ устанавливаем шрифт программно - используем стандартный из settings_window
         
         self.period_combo = QComboBox()
         
-        # Установить шрифт программно для QComboBox
-        combo_font = QFont("Segoe UI", 12)
-        self.period_combo.setFont(combo_font)
-        
-        # Установить шрифт для выпадающего списка
-        self.period_combo.view().setFont(combo_font)
+        # НЕ устанавливаем шрифт программно - используем стандартный из settings_window
+        # Это позволит QComboBox выглядеть одинаково во всём приложении
         
         # Простой stylesheet БЕЗ кастомизации стрелочки - Qt сам её нарисует
         self.period_combo.setStyleSheet("""
