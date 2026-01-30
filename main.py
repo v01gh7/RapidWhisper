@@ -21,6 +21,7 @@ from ui.floating_window import FloatingWindow
 from ui.tray_icon import TrayIcon
 from utils.logger import get_logger
 from utils.single_instance import SingleInstance
+from utils.i18n import t
 
 
 class RapidWhisperApp(QObject):
@@ -75,6 +76,9 @@ class RapidWhisperApp(QObject):
         # Потоки
         self.recording_thread: AudioRecordingThread = None
         self.transcription_thread: TranscriptionThread = None
+        
+        # Окно настроек (единственный экземпляр)
+        self.settings_window = None
         
         # Флаг инициализации
         self._initialized = False
@@ -265,8 +269,8 @@ class RapidWhisperApp(QObject):
             
             # Показать уведомление
             self.tray_icon.show_message(
-                "🚫 Отменено",
-                "Запись отменена",
+                t("tray.notification.recording_cancelled"),
+                t("tray.notification.recording_cancelled_message"),
                 duration=3000
             )
             
@@ -274,7 +278,7 @@ class RapidWhisperApp(QObject):
             self.state_manager.transition_to(AppState.IDLE)
             
             # Сбросить статус трея
-            self.tray_icon.set_status("Готово! Нажмите Ctrl+Space для записи")
+            self.tray_icon.set_status(t("tray.tooltip.ready", hotkey=self.config.hotkey))
         else:
             self.logger.info(f"ESC нажат в состоянии {self.state_manager.current_state.value}, игнорируем")
     
@@ -306,9 +310,8 @@ class RapidWhisperApp(QObject):
             
             # Показать уведомление
             self.tray_icon.show_message(
-                "⚠️ API ключ не установлен",
-                "Для работы приложения необходимо установить API ключ.\n\n"
-                "Откройте настройки и добавьте ключ для выбранного провайдера.",
+                t("tray.notification.no_api_key"),
+                t("tray.notification.no_api_key_message"),
                 duration=5000
             )
             
@@ -395,7 +398,7 @@ class RapidWhisperApp(QObject):
             self._show_window_signal.emit()
             
             self.logger.info("Отправка сигнала установки статуса...")
-            self._set_status_signal.emit("Запись...")
+            self._set_status_signal.emit(t("status.recording"))
             
             # Запустить анимацию записи
             self.logger.info("Отправка сигнала запуска анимации...")
@@ -516,7 +519,7 @@ class RapidWhisperApp(QObject):
             self._hide_window_signal.emit()
             
             # Показать статус в трее
-            self.tray_icon.set_status("Обработка аудио...")
+            self.tray_icon.set_status(t("status.processing"))
             self.logger.info("Статус трея обновлен: Обработка аудио...")
             
             # Создать и запустить поток транскрипции
@@ -586,13 +589,13 @@ class RapidWhisperApp(QObject):
             
             # Показать уведомление в трее
             self.tray_icon.show_message(
-                "✅ Готово!",
-                f"Текст скопирован в буфер обмена\n\n{text[:100]}{'...' if len(text) > 100 else ''}",
+                t("common.success"),
+                f"{t('tray.notification.text_copied')}\n\n{text[:100]}{'...' if len(text) > 100 else ''}",
                 duration=5000  # 5 секунд
             )
             
             # Сбросить статус трея
-            self.tray_icon.set_status("Готово! Нажмите Ctrl+Space для записи")
+            self.tray_icon.set_status(t("tray.tooltip.ready", hotkey=self.config.hotkey))
             
             self.logger.info("Результат обработан")
             
@@ -614,7 +617,7 @@ class RapidWhisperApp(QObject):
         try:
             self._hide_window_signal.emit()
             # Сбросить статус трея
-            self.tray_icon.set_status("Готово! Нажмите Ctrl+Space для записи")
+            self.tray_icon.set_status(t("tray.tooltip.ready", hotkey=self.config.hotkey))
             self.logger.info("Окно скрыто")
             
         except Exception as e:
@@ -634,15 +637,15 @@ class RapidWhisperApp(QObject):
             self._hide_window_signal.emit()
             
             # Показать уведомление в трее вместо окна
-            error_message = f"Ошибка: {str(error)}"
+            error_message = f"{t('errors.transcription_failed', error=str(error))}"
             self.tray_icon.show_message(
-                "❌ Ошибка",
+                t("tray.notification.error_occurred"),
                 error_message,
                 duration=5000  # 5 секунд
             )
             
             # Сбросить статус трея
-            self.tray_icon.set_status("Готово! Нажмите Ctrl+Space для записи")
+            self.tray_icon.set_status(t("tray.tooltip.ready", hotkey=self.config.hotkey))
             
             self.logger.error(f"Показана ошибка: {error}")
             
@@ -668,17 +671,45 @@ class RapidWhisperApp(QObject):
     
     def _show_settings(self) -> None:
         """Показывает окно настроек."""
+        # Если окно уже существует и видимо - просто активируем его
+        if self.settings_window is not None:
+            if self.settings_window.isVisible():
+                # Окно уже открыто - активируем его
+                self.settings_window.raise_()
+                self.settings_window.activateWindow()
+                self.logger.info("Окно настроек уже открыто - активация")
+                return
+            else:
+                # Окно существует но скрыто - удаляем его
+                self.settings_window.deleteLater()
+                self.settings_window = None
+        
+        # Создаем новое окно настроек
         from ui.settings_window import SettingsWindow
         
         # ВАЖНО: Передаем self.floating_window как parent чтобы окно не закрывало приложение
-        settings_window = SettingsWindow(self.config, parent=self.floating_window)
+        # Также передаем tray_icon для показа уведомлений
+        self.settings_window = SettingsWindow(self.config, tray_icon=self.tray_icon, parent=self.floating_window)
+        
         # Подключить сигнал сохранения настроек
-        settings_window.settings_saved.connect(self._on_settings_saved)
+        self.settings_window.settings_saved.connect(self._on_settings_saved)
+        
+        # Подключить сигнал закрытия окна для очистки ссылки
+        self.settings_window.finished.connect(self._on_settings_window_closed)
         
         # Центрировать окно настроек на экране
-        settings_window.center_on_screen()
+        self.settings_window.center_on_screen()
         
-        settings_window.exec()
+        self.settings_window.show()
+        self.logger.info("Окно настроек создано и показано")
+    
+    def _on_settings_window_closed(self) -> None:
+        """Обработчик закрытия окна настроек."""
+        self.logger.info("Окно настроек закрыто")
+        # Очищаем ссылку на окно
+        if self.settings_window is not None:
+            self.settings_window.deleteLater()
+            self.settings_window = None
     
     def _on_settings_saved(self):
         """
@@ -692,7 +723,7 @@ class RapidWhisperApp(QObject):
         # Проверить что теперь есть API ключ
         if self.config.has_api_key():
             self._needs_setup = False
-            self.tray_icon.set_status("Готово! Нажмите Ctrl+Space для записи")
+            self.tray_icon.set_status(t("tray.tooltip.ready", hotkey=self.config.hotkey))
             self.logger.info("API ключ установлен - приложение готово к работе")
         else:
             self.logger.warning("API ключ все еще не установлен")
@@ -779,8 +810,8 @@ class RapidWhisperApp(QObject):
                 
                 # Показать уведомление об ошибке
                 self.tray_icon.show_message(
-                    "⚠️ Ошибка настроек",
-                    "Некоторые настройки некорректны. Проверьте логи.",
+                    t("tray.notification.settings_error"),
+                    t("tray.notification.settings_error_message"),
                     duration=5000
                 )
                 return
@@ -835,8 +866,8 @@ class RapidWhisperApp(QObject):
                         self.config.hotkey = old_config.hotkey
                         
                         self.tray_icon.show_message(
-                            "⚠️ Ошибка",
-                            f"Не удалось зарегистрировать горячую клавишу {new_config.hotkey}. Используется старая: {old_config.hotkey}",
+                            t("tray.notification.hotkey_error"),
+                            t("tray.notification.hotkey_error_message", new_hotkey=new_config.hotkey, old_hotkey=old_config.hotkey),
                             duration=5000
                         )
                         return
@@ -861,13 +892,7 @@ class RapidWhisperApp(QObject):
             if old_config.manual_stop != new_config.manual_stop:
                 self.logger.info(f"Режим ручной остановки изменен: {old_config.manual_stop} -> {new_config.manual_stop}")
             
-            # Показать уведомление об успешном обновлении
-            self.tray_icon.show_message(
-                "✅ Настройки обновлены",
-                "Новые настройки применены успешно!",
-                duration=3000
-            )
-            
+            # НЕ показываем уведомление здесь - оно уже показано в settings_window.py
             self.logger.info("Настройки успешно перезагружены")
             
         except Exception as e:
@@ -877,8 +902,8 @@ class RapidWhisperApp(QObject):
             
             # Показать уведомление об ошибке
             self.tray_icon.show_message(
-                "❌ Ошибка",
-                f"Не удалось применить настройки: {str(e)}",
+                t("tray.notification.settings_apply_error"),
+                t("tray.notification.settings_apply_error_message", error=str(e)),
                 duration=5000
             )
     
@@ -908,9 +933,8 @@ class RapidWhisperApp(QObject):
             
             # Показать уведомление в трее
             self.tray_icon.show_message(
-                "👋 Добро пожаловать в RapidWhisper!",
-                "Для начала работы необходимо установить API ключ.\n\n"
-                "Откройте настройки и добавьте ключ для выбранного провайдера.",
+                t("tray.notification.welcome"),
+                t("tray.notification.welcome_message"),
                 duration=10000
             )
             
@@ -923,7 +947,7 @@ class RapidWhisperApp(QObject):
         else:
             # Показать окно при запуске на 2 секунды - ВСЕГДА ПО ЦЕНТРУ
             self.floating_window.show_at_center(use_saved_position=False)
-            self.floating_window.set_startup_message("RapidWhisper загружен!")
+            self.floating_window.set_startup_message(t("tray.notification.launched"))
             
             # Установить флаг что идет инициализация
             self._startup_window_visible = True
@@ -983,6 +1007,22 @@ class RapidWhisperApp(QObject):
 
 def main():
     """Точка входа в приложение."""
+    # ВАЖНО: Установить AppUserModelID для Windows уведомлений
+    # Это нужно сделать ДО создания QApplication
+    try:
+        import ctypes
+        # Загрузить конфиг чтобы получить APP_USER_MODEL_ID
+        from core.config import Config, get_env_path
+        from dotenv import load_dotenv
+        env_path = str(get_env_path())
+        load_dotenv(env_path, override=True)
+        temp_config = Config.load_from_env()
+        
+        # Установить AppUserModelID для правильного отображения в Windows уведомлениях
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(temp_config.app_user_model_id)
+    except Exception:
+        pass  # Игнорируем ошибки на не-Windows системах
+    
     # Проверить что приложение еще не запущено
     single_instance = SingleInstance("RapidWhisper")
     
@@ -996,10 +1036,8 @@ def main():
             temp_app = QApplication(sys.argv)
             QMessageBox.warning(
                 None,
-                "RapidWhisper уже запущен",
-                "RapidWhisper уже запущен!\n\n"
-                "Проверьте иконку в системном трее.\n"
-                "Если приложение не отвечает, завершите процесс через диспетчер задач.",
+                t("errors.already_running_title"),
+                t("errors.already_running_message"),
                 QMessageBox.StandardButton.Ok
             )
         except Exception:
@@ -1016,6 +1054,7 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationName("RapidWhisper")
     app.setOrganizationName("RapidWhisper")
+    app.setApplicationDisplayName("RapidWhisper")
     
     # ВАЖНО: Не закрывать приложение при закрытии последнего окна
     # Приложение работает в трее и должно закрываться только через меню

@@ -7,6 +7,7 @@
 from PyQt6.QtWidgets import QSystemTrayIcon, QMenu
 from PyQt6.QtGui import QIcon, QAction
 from PyQt6.QtCore import QObject, pyqtSignal
+from utils.i18n import t
 
 
 class TrayIcon(QObject):
@@ -72,7 +73,7 @@ class TrayIcon(QObject):
         self.tray_icon.show()
         
         # Подсказка при наведении
-        self.tray_icon.setToolTip("RapidWhisper - Готово! Нажмите Ctrl+Space для записи")
+        self.tray_icon.setToolTip(t("tray.tooltip.ready", hotkey="Ctrl+Space"))
     
     def set_status(self, status: str) -> None:
         """
@@ -99,7 +100,7 @@ class TrayIcon(QObject):
         menu = QMenu()
         
         # Действие: Настройки
-        settings_action = QAction("⚙️ Настройки", menu)
+        settings_action = QAction(t("tray.menu.settings"), menu)
         settings_action.triggered.connect(self.show_settings.emit)
         menu.addAction(settings_action)
         
@@ -107,7 +108,7 @@ class TrayIcon(QObject):
         menu.addSeparator()
         
         # Действие: О программе
-        about_action = QAction("ℹ️ О программе", menu)
+        about_action = QAction(t("tray.menu.about"), menu)
         about_action.triggered.connect(self._show_about)
         menu.addAction(about_action)
         
@@ -115,7 +116,7 @@ class TrayIcon(QObject):
         menu.addSeparator()
         
         # Действие: Выход
-        quit_action = QAction("❌ Выход", menu)
+        quit_action = QAction(t("tray.menu.quit"), menu)
         quit_action.triggered.connect(self.quit_app.emit)
         menu.addAction(quit_action)
         
@@ -129,7 +130,7 @@ class TrayIcon(QObject):
         
         # Создаем окно БЕЗ parent, чтобы оно центрировалось на экране
         msg = QMessageBox()
-        msg.setWindowTitle("О программе RapidWhisper")
+        msg.setWindowTitle(t("tray.about_title"))
         msg.setIcon(QMessageBox.Icon.Information)
         
         # Установить иконку окна
@@ -147,14 +148,7 @@ class TrayIcon(QObject):
         except Exception:
             pass
         
-        msg.setText(
-            "RapidWhisper v1.0\n\n"
-            "Быстрая транскрипция речи с микрофона\n"
-            "используя AI API (Groq, OpenAI, GLM).\n\n"
-            "Горячая клавиша: Ctrl+Space\n"
-            "Отмена записи: ESC\n\n"
-            "© 2026 RapidWhisper"
-        )
+        msg.setText(t("tray.about_text"))
         msg.setStandardButtons(QMessageBox.StandardButton.Ok)
         
         # Центрируем окно на экране
@@ -173,14 +167,15 @@ class TrayIcon(QObject):
         Показывает уведомление в трее.
         
         Args:
-            title: Заголовок уведомления
-            message: Текст уведомления
+            title: Заголовок уведомления (контент)
+            message: Текст уведомления (контент)
             duration: Длительность показа в миллисекундах (по умолчанию 5 секунд)
         """
+        # Показываем уведомление с NoIcon - Windows использует иконку приложения
         self.tray_icon.showMessage(
             title,
             message,
-            QSystemTrayIcon.MessageIcon.Information,
+            QSystemTrayIcon.MessageIcon.NoIcon,
             duration
         )
     

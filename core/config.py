@@ -313,6 +313,7 @@ class Config:
         self.custom_model: str = "whisper-1"
         
         # Параметры приложения
+        self.app_user_model_id: str = "RapidWhisper.VoiceTranscription.App.1.0"  # Windows App User Model ID
         self.hotkey: str = "ctrl+space"
         self.silence_threshold: float = 0.02
         self.silence_duration: float = 1.5
@@ -356,12 +357,11 @@ class Config:
         self.enable_post_processing: bool = False  # Включить дополнительную обработку текста
         self.post_processing_provider: str = "groq"  # Провайдер для постобработки (groq, openai, glm, llm)
         self.post_processing_model: str = "llama-3.3-70b-versatile"  # Модель для постобработки (по умолчанию Groq)
-        self.post_processing_prompt: str = (
-            "Ты - редактор текста. Твоя задача: исправить грамматические ошибки, "
-            "добавить знаки препинания и улучшить читаемость текста. "
-            "Сохрани оригинальный смысл и стиль. Не добавляй ничего лишнего. "
-            "Верни только исправленный текст без комментариев."
-        )
+        
+        # Дефолтный промпт - используем перевод
+        from utils.i18n import t
+        self.post_processing_prompt: str = t("settings.processing.prompt_default")
+        
         self.glm_use_coding_plan: bool = False  # Использовать Coding Plan endpoint для GLM
         self.llm_base_url: str = "http://localhost:1234/v1/"  # Base URL для локальных LLM моделей
         self.llm_api_key: str = "local"  # API ключ для локальных LLM (может быть любым)
@@ -412,6 +412,7 @@ class Config:
         config.custom_model = os.getenv("CUSTOM_MODEL", config.custom_model)
         
         # Загрузить параметры приложения
+        config.app_user_model_id = os.getenv("APP_USER_MODEL_ID", config.app_user_model_id)
         config.hotkey = os.getenv("HOTKEY", config.hotkey)
         
         # Загрузить числовые параметры с обработкой ошибок
@@ -496,7 +497,7 @@ class Config:
         keep_rec = os.getenv("KEEP_RECORDINGS", "false").lower()
         config.keep_recordings = keep_rec in ("true", "1", "yes")
         
-        config.recordings_path = os.getenv("RECORDINGS_PATH", "")
+        config.recordings_path = os.getenv("RECORDINGS_PATH", "").strip().strip("'\"")
         
         # Загрузить настройки ручной остановки
         manual_stop = os.getenv("MANUAL_STOP", "false").lower()
@@ -523,7 +524,8 @@ class Config:
         interface_lang_env = os.getenv("INTERFACE_LANGUAGE", "")
         if interface_lang_env:
             # Язык был установлен вручную в .env
-            config.interface_language = interface_lang_env
+            # Убрать кавычки если они есть
+            config.interface_language = interface_lang_env.strip().strip("'\"")
         else:
             # Язык не установлен, определяем из системы
             config.interface_language = get_system_language()

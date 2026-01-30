@@ -15,6 +15,7 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont, QIcon, QScreen
 from core.config import Config
 from utils.logger import get_logger
+from utils.i18n import t
 from ui.hotkey_input import HotkeyInput
 from pathlib import Path
 import os
@@ -34,17 +35,19 @@ class SettingsWindow(QDialog):
     
     settings_saved = pyqtSignal()
     
-    def __init__(self, config: Config, parent=None):
+    def __init__(self, config: Config, tray_icon=None, parent=None):
         """
         Инициализирует окно настроек.
         
         Args:
             config: Текущая конфигурация приложения
+            tray_icon: Иконка трея для показа уведомлений
             parent: Родительский виджет
         """
         super().__init__(parent)
         self.config = config
-        self.setWindowTitle("Настройки RapidWhisper")
+        self.tray_icon = tray_icon
+        self.setWindowTitle(t("settings.title"))
         self.setMinimumWidth(950)  # Увеличена ширина для новых кнопок
         self.setMinimumHeight(650)  # Увеличена высота
         
@@ -231,13 +234,13 @@ class SettingsWindow(QDialog):
         
         # Добавить пункты меню
         items = [
-            ("🤖 AI Provider", "ai"),
-            ("⚡ Приложение", "app"),
-            ("🎤 Аудио", "audio"),
-            ("✨ Обработка", "processing"),
-            ("🌍 Языки", "languages"),
-            ("🎙️ Записи", "recordings"),
-            ("ℹ️ О программе", "about")
+            (f"🤖 {t('settings.ai_provider.title')}", "ai"),
+            (f"⚡ {t('settings.app.title')}", "app"),
+            (f"🎤 {t('settings.audio.title')}", "audio"),
+            (f"✨ {t('settings.processing.title')}", "processing"),
+            (f"🌍 {t('settings.languages.title')}", "languages"),
+            (f"🎙️ {t('settings.recordings.title')}", "recordings"),
+            (f"ℹ️ {t('settings.about.title')}", "about")
         ]
         
         for text, data in items:
@@ -277,13 +280,13 @@ class SettingsWindow(QDialog):
         buttons_layout = QHBoxLayout()
         buttons_layout.addStretch()
         
-        cancel_btn = QPushButton("Отмена")
+        cancel_btn = QPushButton(t("common.cancel"))
         cancel_btn.setObjectName("cancelButton")
         cancel_btn.setCursor(Qt.CursorShape.PointingHandCursor)  # Курсор "рука"
         cancel_btn.clicked.connect(self.reject)
         buttons_layout.addWidget(cancel_btn)
         
-        save_btn = QPushButton("💾 Сохранить")
+        save_btn = QPushButton(t("common.save"))
         save_btn.setCursor(Qt.CursorShape.PointingHandCursor)  # Курсор "рука"
         save_btn.clicked.connect(self._save_settings)
         buttons_layout.addWidget(save_btn)
@@ -326,12 +329,12 @@ class SettingsWindow(QDialog):
         layout.setSpacing(20)
         
         # Заголовок
-        title = QLabel("AI Provider")
+        title = QLabel(t("settings.ai_provider.title"))
         title.setObjectName("pageTitle")  # Применить стиль
         layout.addWidget(title)
         
         # Группа: Выбор провайдера
-        provider_group = QGroupBox("Провайдер")
+        provider_group = QGroupBox(t("settings.ai_provider.title"))
         provider_layout = QFormLayout()
         provider_layout.setSpacing(12)
         
@@ -339,20 +342,20 @@ class SettingsWindow(QDialog):
         self.provider_combo.addItems(["groq", "openai", "glm", "custom"])
         self.provider_combo.currentTextChanged.connect(self._on_provider_changed)
         self.provider_combo.setCursor(Qt.CursorShape.PointingHandCursor)  # Курсор "рука"
-        provider_layout.addRow("Провайдер:", self.provider_combo)
+        provider_layout.addRow(t("settings.ai_provider.label"), self.provider_combo)
         
         provider_group.setLayout(provider_layout)
         layout.addWidget(provider_group)
         
         # Группа: API ключи
-        keys_group = QGroupBox("API Ключи")
+        keys_group = QGroupBox(t("settings.ai_provider.title"))
         keys_layout = QFormLayout()
         
         # Groq API Key
         groq_layout = QHBoxLayout()
         self.groq_key_edit = QLineEdit()
         self.groq_key_edit.setEchoMode(QLineEdit.EchoMode.Password)
-        self.groq_key_edit.setPlaceholderText("Введите Groq API ключ")
+        self.groq_key_edit.setPlaceholderText(t("settings.ai_provider.groq_key_placeholder"))
         groq_layout.addWidget(self.groq_key_edit)
         
         groq_show_btn = QPushButton("👁")
@@ -366,15 +369,15 @@ class SettingsWindow(QDialog):
         )
         groq_layout.addWidget(groq_show_btn)
         
-        groq_label = QLabel("Groq API Key:")
-        groq_label.setToolTip("Получите на https://console.groq.com/keys")
+        groq_label = QLabel(t("settings.ai_provider.groq_key"))
+        groq_label.setToolTip(t("settings.ai_provider.groq_key_tooltip"))
         keys_layout.addRow(groq_label, groq_layout)
         
         # OpenAI API Key
         openai_layout = QHBoxLayout()
         self.openai_key_edit = QLineEdit()
         self.openai_key_edit.setEchoMode(QLineEdit.EchoMode.Password)
-        self.openai_key_edit.setPlaceholderText("Введите OpenAI API ключ")
+        self.openai_key_edit.setPlaceholderText(t("settings.ai_provider.openai_key_placeholder"))
         openai_layout.addWidget(self.openai_key_edit)
         
         openai_show_btn = QPushButton("👁")
@@ -388,15 +391,15 @@ class SettingsWindow(QDialog):
         )
         openai_layout.addWidget(openai_show_btn)
         
-        openai_label = QLabel("OpenAI API Key:")
-        openai_label.setToolTip("Получите на https://platform.openai.com/api-keys")
+        openai_label = QLabel(t("settings.ai_provider.openai_key"))
+        openai_label.setToolTip(t("settings.ai_provider.openai_key_tooltip"))
         keys_layout.addRow(openai_label, openai_layout)
         
         # GLM API Key
         glm_layout = QHBoxLayout()
         self.glm_key_edit = QLineEdit()
         self.glm_key_edit.setEchoMode(QLineEdit.EchoMode.Password)
-        self.glm_key_edit.setPlaceholderText("Введите GLM API ключ")
+        self.glm_key_edit.setPlaceholderText(t("settings.ai_provider.glm_key_placeholder"))
         glm_layout.addWidget(self.glm_key_edit)
         
         glm_show_btn = QPushButton("👁")
@@ -410,15 +413,15 @@ class SettingsWindow(QDialog):
         )
         glm_layout.addWidget(glm_show_btn)
         
-        glm_label = QLabel("GLM API Key:")
-        glm_label.setToolTip("Получите на https://open.bigmodel.cn/usercenter/apikeys")
+        glm_label = QLabel(t("settings.ai_provider.glm_key"))
+        glm_label.setToolTip(t("settings.ai_provider.glm_key_tooltip"))
         keys_layout.addRow(glm_label, glm_layout)
         
         # Custom API Key
         custom_layout = QHBoxLayout()
         self.custom_key_edit = QLineEdit()
         self.custom_key_edit.setEchoMode(QLineEdit.EchoMode.Password)
-        self.custom_key_edit.setPlaceholderText("Введите Custom API ключ")
+        self.custom_key_edit.setPlaceholderText(t("settings.ai_provider.custom_key_placeholder"))
         custom_layout.addWidget(self.custom_key_edit)
         
         custom_show_btn = QPushButton("👁")
@@ -432,41 +435,29 @@ class SettingsWindow(QDialog):
         )
         custom_layout.addWidget(custom_show_btn)
         
-        custom_label = QLabel("Custom API Key:")
-        custom_label.setToolTip("API ключ для кастомного OpenAI-совместимого API")
+        custom_label = QLabel(t("settings.ai_provider.custom_key"))
+        custom_label.setToolTip(t("settings.ai_provider.custom_key_tooltip"))
         keys_layout.addRow(custom_label, custom_layout)
         
         # Custom Base URL
         self.custom_url_edit = QLineEdit()
-        self.custom_url_edit.setPlaceholderText("http://localhost:1234/v1/")
-        custom_url_label = QLabel("Custom Base URL:")
-        custom_url_label.setToolTip("URL endpoint для кастомного API (например, LM Studio, Ollama)")
+        self.custom_url_edit.setPlaceholderText(t("settings.ai_provider.custom_url_placeholder"))
+        custom_url_label = QLabel(t("settings.ai_provider.custom_url"))
+        custom_url_label.setToolTip(t("settings.ai_provider.custom_url_tooltip"))
         keys_layout.addRow(custom_url_label, self.custom_url_edit)
         
         # Custom Model
         self.custom_model_edit = QLineEdit()
-        self.custom_model_edit.setPlaceholderText("whisper-1")
-        custom_model_label = QLabel("Custom Model:")
-        custom_model_label.setToolTip("Название модели для кастомного API")
+        self.custom_model_edit.setPlaceholderText(t("settings.ai_provider.custom_model_placeholder"))
+        custom_model_label = QLabel(t("settings.ai_provider.custom_model"))
+        custom_model_label.setToolTip(t("settings.ai_provider.custom_model_tooltip"))
         keys_layout.addRow(custom_model_label, self.custom_model_edit)
         
         keys_group.setLayout(keys_layout)
         layout.addWidget(keys_group)
         
         # Информация с кликабельными ссылками
-        info_label = QLabel(
-            "💡 <b>Совет:</b> Groq предоставляет бесплатный и быстрый API.<br>"
-            "Рекомендуется для начала использования.<br><br>"
-            "<b>Получить API ключи:</b><br>"
-            "• Groq: <a href='https://console.groq.com/keys'>console.groq.com/keys</a><br>"
-            "• OpenAI: <a href='https://platform.openai.com/api-keys'>platform.openai.com/api-keys</a><br>"
-            "• GLM: <a href='https://open.bigmodel.cn/usercenter/apikeys'>open.bigmodel.cn/usercenter/apikeys</a><br><br>"
-            "<b>Custom провайдер:</b><br>"
-            "Поддерживает любые OpenAI-совместимые API:<br>"
-            "• LM Studio: <a href='https://lmstudio.ai'>lmstudio.ai</a><br>"
-            "• Ollama: <a href='https://ollama.ai'>ollama.ai</a><br>"
-            "• vLLM, LocalAI и другие"
-        )
+        info_label = QLabel(t("settings.ai_provider.info"))
         info_label.setWordWrap(True)
         info_label.setOpenExternalLinks(True)  # Открывать ссылки в браузере
         info_label.setToolTip("Кликните на ссылку чтобы открыть в браузере")
@@ -489,38 +480,38 @@ class SettingsWindow(QDialog):
         layout.setSpacing(20)  # Возвращен отступ в 20
         
         # Заголовок
-        title = QLabel("Приложение")
+        title = QLabel(t("settings.app.title"))
         title.setObjectName("pageTitle")  # Применить стиль
         layout.addWidget(title)
         
         # Группа: Горячие клавиши
-        hotkey_group = QGroupBox("Горячие клавиши")
+        hotkey_group = QGroupBox(t("settings.app.hotkey"))
         hotkey_layout = QFormLayout()
         hotkey_layout.setSpacing(12)
         
         # Поле ввода горячей клавиши с кнопкой сброса
         hotkey_container = QHBoxLayout()
         self.hotkey_edit = HotkeyInput()
-        self.hotkey_edit.setPlaceholderText("Нажмите сочетание клавиш...")
+        self.hotkey_edit.setPlaceholderText(t("settings.app.hotkey_placeholder"))
         hotkey_container.addWidget(self.hotkey_edit)
         
         # Кнопка сброса
         reset_hotkey_btn = QPushButton("🔄")
         reset_hotkey_btn.setMaximumWidth(40)
-        reset_hotkey_btn.setToolTip("Сбросить на текущее сохраненное значение")
+        reset_hotkey_btn.setToolTip(t("common.reset"))
         reset_hotkey_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         reset_hotkey_btn.clicked.connect(self._reset_hotkey)
         hotkey_container.addWidget(reset_hotkey_btn)
         
-        hotkey_label = QLabel("Горячая клавиша:")
-        hotkey_label.setToolTip("Нажмите сочетание клавиш для записи (например: Ctrl+Space, F1, Ctrl+Shift+R)")
+        hotkey_label = QLabel(t("settings.app.hotkey"))
+        hotkey_label.setToolTip(t("settings.app.hotkey_tooltip"))
         hotkey_layout.addRow(hotkey_label, hotkey_container)
         
         hotkey_group.setLayout(hotkey_layout)
         layout.addWidget(hotkey_group)
         
         # Группа: Интерфейс
-        ui_group = QGroupBox("Интерфейс")
+        ui_group = QGroupBox(t("settings.app.title"))
         ui_layout = QFormLayout()
         ui_layout.setSpacing(12)
         
@@ -528,32 +519,32 @@ class SettingsWindow(QDialog):
         self.auto_hide_spin.setRange(1.0, 10.0)
         self.auto_hide_spin.setSingleStep(0.5)
         self.auto_hide_spin.setDecimals(1)
-        self.auto_hide_spin.setSuffix(" сек")
-        hide_label = QLabel("Автоскрытие:")
-        hide_label.setToolTip("Задержка автоматического скрытия окна (1.0-10.0)")
+        self.auto_hide_spin.setSuffix(f" {t('common.seconds')}")
+        hide_label = QLabel(t("settings.app.auto_hide"))
+        hide_label.setToolTip(t("settings.app.auto_hide_tooltip"))
         ui_layout.addRow(hide_label, self.auto_hide_spin)
         
         # Чекбокс для запоминания позиции окна
         self.remember_position_check = QCheckBox()
         self.remember_position_check.setCursor(Qt.CursorShape.PointingHandCursor)
         self.remember_position_check.toggled.connect(self._on_remember_position_changed)
-        remember_label = QLabel("Запоминать позицию окна:")
-        remember_label.setToolTip("Если включено, окно записи будет появляться в том месте, куда вы его перетащили")
+        remember_label = QLabel(t("settings.app.remember_position"))
+        remember_label.setToolTip(t("settings.app.remember_position_tooltip"))
         ui_layout.addRow(remember_label, self.remember_position_check)
         
         # Выпадающий список предустановленных позиций
         self.window_position_combo = QComboBox()
         self.window_position_combo.addItems([
-            "Центр",
-            "Левый верхний угол",
-            "Правый верхний угол",
-            "Левый нижний угол",
-            "Правый нижний угол",
-            "Пользовательская"
+            t("settings.app.position_center"),
+            t("settings.app.position_top_left"),
+            t("settings.app.position_top_right"),
+            t("settings.app.position_bottom_left"),
+            t("settings.app.position_bottom_right"),
+            t("settings.app.position_custom")
         ])
         self.window_position_combo.setCursor(Qt.CursorShape.PointingHandCursor)
-        position_label = QLabel("Позиция окна:")
-        position_label.setToolTip("Выберите где будет появляться окно записи")
+        position_label = QLabel(t("settings.app.window_position"))
+        position_label.setToolTip(t("settings.app.window_position_tooltip"))
         ui_layout.addRow(position_label, self.window_position_combo)
         
         ui_group.setLayout(ui_layout)
@@ -572,34 +563,34 @@ class SettingsWindow(QDialog):
         layout.setSpacing(20)
         
         # Заголовок
-        title = QLabel("Аудио")
+        title = QLabel(t("settings.audio.title"))
         title.setObjectName("pageTitle")  # Применить стиль
         layout.addWidget(title)
         
         # Группа: Параметры записи
-        audio_group = QGroupBox("Параметры записи")
+        audio_group = QGroupBox(t("settings.audio.title"))
         audio_layout = QFormLayout()
         audio_layout.setSpacing(12)
         
         self.sample_rate_combo = QComboBox()
         self.sample_rate_combo.addItems(["16000", "44100", "48000"])
         self.sample_rate_combo.setCursor(Qt.CursorShape.PointingHandCursor)  # Курсор "рука"
-        rate_label = QLabel("Частота дискретизации:")
-        rate_label.setToolTip("Гц. 16000 рекомендуется для речи")
+        rate_label = QLabel(t("settings.audio.sample_rate"))
+        rate_label.setToolTip(t("settings.audio.sample_rate_tooltip"))
         audio_layout.addRow(rate_label, self.sample_rate_combo)
         
         self.chunk_size_combo = QComboBox()
         self.chunk_size_combo.addItems(["256", "512", "1024", "2048", "4096"])
         self.chunk_size_combo.setCursor(Qt.CursorShape.PointingHandCursor)  # Курсор "рука"
-        chunk_label = QLabel("Размер чанка:")
-        chunk_label.setToolTip("Фреймов. 1024 - оптимальное значение")
+        chunk_label = QLabel(t("settings.audio.chunk_size"))
+        chunk_label.setToolTip(t("settings.audio.chunk_size_tooltip"))
         audio_layout.addRow(chunk_label, self.chunk_size_combo)
         
         audio_group.setLayout(audio_layout)
         layout.addWidget(audio_group)
         
         # Группа: Определение тишины
-        silence_group = QGroupBox("Определение тишины")
+        silence_group = QGroupBox(t("settings.audio.title"))
         silence_layout = QFormLayout()
         silence_layout.setSpacing(12)
         
@@ -607,21 +598,12 @@ class SettingsWindow(QDialog):
         self.manual_stop_check = QCheckBox()
         self.manual_stop_check.setCursor(Qt.CursorShape.PointingHandCursor)
         self.manual_stop_check.toggled.connect(self._on_manual_stop_changed)
-        manual_stop_label = QLabel("Ручная остановка:")
-        manual_stop_label.setToolTip(
-            "Если включено:\n"
-            "• Запись НЕ останавливается автоматически по тишине\n"
-            "• Вы сами останавливаете запись повторным нажатием горячей клавиши\n"
-            "• Вся тишина автоматически удаляется перед отправкой"
-        )
+        manual_stop_label = QLabel(t("settings.audio.manual_stop"))
+        manual_stop_label.setToolTip(t("settings.audio.manual_stop_tooltip"))
         silence_layout.addRow(manual_stop_label, self.manual_stop_check)
         
         # Описание режима
-        manual_stop_info = QLabel(
-            "💡 <b>Ручная остановка:</b> Запись продолжается даже при тишине. "
-            "Остановите запись сами, нажав горячую клавишу повторно. "
-            "Вся тишина будет автоматически удалена."
-        )
+        manual_stop_info = QLabel(t("settings.audio.manual_stop_info"))
         manual_stop_info.setWordWrap(True)
         manual_stop_info.setStyleSheet(
             "color: #888888; "
@@ -636,39 +618,33 @@ class SettingsWindow(QDialog):
         self.silence_threshold_spin.setRange(0.01, 0.1)
         self.silence_threshold_spin.setSingleStep(0.01)
         self.silence_threshold_spin.setDecimals(2)
-        threshold_label = QLabel("Порог тишины:")
-        threshold_label.setToolTip("RMS значение (0.01-0.1). Меньше = более чувствительно")
+        threshold_label = QLabel(t("settings.audio.silence_threshold"))
+        threshold_label.setToolTip(t("settings.audio.silence_threshold_tooltip"))
         silence_layout.addRow(threshold_label, self.silence_threshold_spin)
         
         self.silence_duration_spin = QDoubleSpinBox()
         self.silence_duration_spin.setRange(0.5, 5.0)
         self.silence_duration_spin.setSingleStep(0.5)
         self.silence_duration_spin.setDecimals(1)
-        self.silence_duration_spin.setSuffix(" сек")
-        duration_label = QLabel("Длительность тишины:")
-        duration_label.setToolTip("Секунды тишины перед остановкой записи (0.5-5.0)")
+        self.silence_duration_spin.setSuffix(f" {t('common.seconds')}")
+        duration_label = QLabel(t("settings.audio.silence_duration"))
+        duration_label.setToolTip(t("settings.audio.silence_duration_tooltip"))
         silence_layout.addRow(duration_label, self.silence_duration_spin)
         
         self.silence_padding_spin = QDoubleSpinBox()
         self.silence_padding_spin.setRange(100, 1000)
         self.silence_padding_spin.setSingleStep(50)
         self.silence_padding_spin.setDecimals(0)
-        self.silence_padding_spin.setSuffix(" мс")
-        padding_label = QLabel("Паддинг обрезки:")
-        padding_label.setToolTip(
-            "Отступ в миллисекундах перед и после звука при удалении тишины.\n"
-            "Предотвращает обрезание на полуслове. (100-1000 мс)"
-        )
+        self.silence_padding_spin.setSuffix(f" {t('common.milliseconds')}")
+        padding_label = QLabel(t("settings.audio.silence_padding"))
+        padding_label.setToolTip(t("settings.audio.silence_padding_tooltip"))
         silence_layout.addRow(padding_label, self.silence_padding_spin)
         
         silence_group.setLayout(silence_layout)
         layout.addWidget(silence_group)
         
         # Информация
-        info_label = QLabel(
-            "⚠️ Внимание: Изменение параметров аудио может повлиять на качество записи.\n"
-            "Рекомендуется оставить значения по умолчанию."
-        )
+        info_label = QLabel(t("settings.audio.warning"))
         info_label.setWordWrap(True)
         info_label.setStyleSheet("color: #ff8800; font-size: 11px; padding: 8px;")
         layout.addWidget(info_label)
@@ -686,37 +662,24 @@ class SettingsWindow(QDialog):
         layout.setSpacing(20)
         
         # Заголовок
-        title = QLabel("Обработка")
+        title = QLabel(t("settings.processing.title"))
         title.setObjectName("pageTitle")
         layout.addWidget(title)
         
         # Группа: Постобработка транскрипции
-        post_processing_group = QGroupBox("Постобработка транскрипции")
+        post_processing_group = QGroupBox(t("settings.processing.title"))
         post_processing_layout = QVBoxLayout()
         post_processing_layout.setSpacing(12)
         
         # Чекбокс включения постобработки
-        self.enable_post_processing_check = QCheckBox("Включить дополнительную обработку текста")
+        self.enable_post_processing_check = QCheckBox(t("settings.processing.enable"))
         self.enable_post_processing_check.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.enable_post_processing_check.setToolTip(
-            "После транскрипции текст будет отправлен на дополнительную обработку\n"
-            "для исправления ошибок, добавления пунктуации и улучшения читаемости"
-        )
+        self.enable_post_processing_check.setToolTip(t("settings.processing.enable_tooltip"))
         self.enable_post_processing_check.toggled.connect(self._on_post_processing_toggled)
         post_processing_layout.addWidget(self.enable_post_processing_check)
         
         # Описание
-        info_label = QLabel(
-            "💡 <b>Что делает постобработка:</b><br>"
-            "• Исправляет грамматические ошибки<br>"
-            "• Добавляет знаки препинания<br>"
-            "• Улучшает структуру текста<br>"
-            "• Сохраняет смысл и содержание<br><br>"
-            "✅ <b>Groq</b> - бесплатный и быстрый (рекомендуется)<br>"
-            "⚠️ <b>OpenAI</b> - платный, высокое качество<br>"
-            "⚠️ <b>GLM</b> - обычный API (требует баланс) или Coding Plan<br>"
-            "🖥️ <b>LLM</b> - локальные модели (LM Studio, Ollama, etc.)"
-        )
+        info_label = QLabel(t("settings.processing.info"))
         info_label.setWordWrap(True)
         info_label.setStyleSheet(
             "color: #888888; "
@@ -736,49 +699,39 @@ class SettingsWindow(QDialog):
         self.post_processing_provider_combo.addItems(["groq", "openai", "glm", "llm"])
         self.post_processing_provider_combo.setCursor(Qt.CursorShape.PointingHandCursor)
         self.post_processing_provider_combo.currentTextChanged.connect(self._on_post_processing_provider_changed)
-        provider_label = QLabel("Провайдер:")
-        provider_label.setToolTip(
-            "AI провайдер для обработки текста\n\n"
-            "💡 Groq - бесплатный и быстрый (рекомендуется)\n"
-            "⚠️ OpenAI - платный, высокое качество\n"
-            "⚠️ GLM - обычный API или Coding Plan (чекбокс ниже)\n"
-            "🖥️ LLM - локальные модели (LM Studio, Ollama)"
-        )
+        provider_label = QLabel(t("settings.processing.provider"))
+        provider_label.setToolTip(t("settings.processing.provider_tooltip"))
         settings_form.addRow(provider_label, self.post_processing_provider_combo)
         
         # Выбор модели
         self.post_processing_model_combo = QComboBox()
         self.post_processing_model_combo.setCursor(Qt.CursorShape.PointingHandCursor)
-        model_label = QLabel("Модель:")
-        model_label.setToolTip("Модель для обработки текста")
+        model_label = QLabel(t("settings.processing.model"))
+        model_label.setToolTip(t("settings.processing.model_tooltip"))
         settings_form.addRow(model_label, self.post_processing_model_combo)
         
         # GLM Coding Plan чекбокс (показывается только для GLM)
-        self.glm_coding_plan_check = QCheckBox("Использовать Coding Plan подписку")
+        self.glm_coding_plan_check = QCheckBox(t("settings.processing.glm_coding_plan"))
         self.glm_coding_plan_check.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.glm_coding_plan_check.setToolTip(
-            "Если у вас есть подписка GLM Coding Plan,\n"
-            "включите эту опцию для использования специального endpoint'а\n"
-            "с доступом к моделям glm-4.5, glm-4.6, glm-4.7"
-        )
+        self.glm_coding_plan_check.setToolTip(t("settings.processing.glm_coding_plan_tooltip"))
         self.glm_coding_plan_check.toggled.connect(lambda: self._on_post_processing_provider_changed(self.post_processing_provider_combo.currentText()))
         self.glm_coding_plan_check.setVisible(False)  # Скрыто по умолчанию
         settings_form.addRow("", self.glm_coding_plan_check)
         
         # LLM Base URL (показывается только для LLM)
-        self.llm_base_url_label = QLabel("LLM Base URL:")
-        self.llm_base_url_label.setToolTip("URL локального LLM сервера (например, LM Studio, Ollama)")
+        self.llm_base_url_label = QLabel(t("settings.processing.llm_base_url"))
+        self.llm_base_url_label.setToolTip(t("settings.processing.llm_base_url_tooltip"))
         self.llm_base_url_edit = QLineEdit()
-        self.llm_base_url_edit.setPlaceholderText("http://localhost:1234/v1/")
+        self.llm_base_url_edit.setPlaceholderText(t("settings.processing.llm_base_url_placeholder"))
         self.llm_base_url_edit.setVisible(False)  # Скрыто по умолчанию
         self.llm_base_url_label.setVisible(False)
         settings_form.addRow(self.llm_base_url_label, self.llm_base_url_edit)
         
         # LLM API Key (показывается только для LLM)
-        self.llm_api_key_label = QLabel("LLM API Key:")
-        self.llm_api_key_label.setToolTip("API ключ для локального LLM (обычно не требуется, можно оставить 'local')")
+        self.llm_api_key_label = QLabel(t("settings.processing.llm_api_key"))
+        self.llm_api_key_label.setToolTip(t("settings.processing.llm_api_key_tooltip"))
         self.llm_api_key_edit = QLineEdit()
-        self.llm_api_key_edit.setPlaceholderText("local")
+        self.llm_api_key_edit.setPlaceholderText(t("settings.processing.llm_api_key_placeholder"))
         self.llm_api_key_edit.setVisible(False)  # Скрыто по умолчанию
         self.llm_api_key_label.setVisible(False)
         settings_form.addRow(self.llm_api_key_label, self.llm_api_key_edit)
@@ -786,13 +739,13 @@ class SettingsWindow(QDialog):
         post_processing_layout.addLayout(settings_form)
         
         # Системный промпт (редактируемый)
-        prompt_label = QLabel("Системный промпт:")
-        prompt_label.setToolTip("Инструкция для модели по обработке текста")
+        prompt_label = QLabel(t("settings.processing.prompt"))
+        prompt_label.setToolTip(t("settings.processing.prompt_tooltip"))
         post_processing_layout.addWidget(prompt_label)
         
         from PyQt6.QtWidgets import QTextEdit
         self.post_processing_prompt_edit = QTextEdit()
-        self.post_processing_prompt_edit.setPlaceholderText("Введите системный промпт для обработки текста...")
+        self.post_processing_prompt_edit.setPlaceholderText(t("settings.processing.prompt_placeholder"))
         self.post_processing_prompt_edit.setMinimumHeight(100)
         self.post_processing_prompt_edit.setMaximumHeight(150)
         self.post_processing_prompt_edit.setStyleSheet("""
@@ -826,21 +779,17 @@ class SettingsWindow(QDialog):
         layout.setSpacing(20)
         
         # Заголовок
-        title = QLabel("Языки")
+        title = QLabel(t("settings.languages.title"))
         title.setObjectName("pageTitle")
         layout.addWidget(title)
         
         # Группа: Выбор языка
-        language_group = QGroupBox("Язык интерфейса")
+        language_group = QGroupBox(t("settings.languages.interface_language"))
         language_layout = QVBoxLayout()
         language_layout.setSpacing(16)
         
         # Описание
-        info_label = QLabel(
-            "💡 <b>Язык интерфейса:</b><br>"
-            "Выберите язык для будущей локализации интерфейса приложения.<br>"
-            "Это НЕ влияет на язык транскрипции - вы можете говорить на любом языке."
-        )
+        info_label = QLabel(t("settings.languages.info"))
         info_label.setWordWrap(True)
         info_label.setStyleSheet(
             "color: #888888; "
@@ -863,7 +812,8 @@ class SettingsWindow(QDialog):
         
         # Топ-15 языков мира с кодами
         languages = [
-            ("GB", "English", "en"),
+            ("GB", "English", "en-gb"),
+            ("US", "English", "en-us"),
             ("CN", "中文", "zh"),
             ("IN", "हिन्दी", "hi"),
             ("ES", "Español", "es"),
@@ -880,7 +830,7 @@ class SettingsWindow(QDialog):
             ("KR", "한국어", "ko"),
         ]
         
-        # Добавить языки в сетку (5 колонок)
+        # Добавить языки в сетку (4 колонки)
         row = 0
         col = 0
         for idx, (code, name, lang_code) in enumerate(languages):
@@ -954,8 +904,8 @@ class SettingsWindow(QDialog):
         
         language_layout.addLayout(grid_layout)
         
-        # Выбрать русский по умолчанию (индекс 7)
-        default_button = self.language_button_group.button(7)  # RU
+        # Выбрать русский по умолчанию (индекс 8)
+        default_button = self.language_button_group.button(8)  # RU
         if default_button:
             default_button.setChecked(True)
         
@@ -963,12 +913,7 @@ class SettingsWindow(QDialog):
         layout.addWidget(language_group)
         
         # Информация о будущей функциональности
-        future_info = QLabel(
-            "🚧 <b>В разработке:</b><br>"
-            "• Перевод интерфейса на выбранный язык<br>"
-            "• Локализация всех текстов и сообщений<br>"
-            "• Адаптация форматов даты и времени"
-        )
+        future_info = QLabel(t("settings.languages.future_info"))
         future_info.setWordWrap(True)
         future_info.setStyleSheet(
             "color: #888888; "
@@ -1002,19 +947,19 @@ class SettingsWindow(QDialog):
         layout.setSpacing(20)
         
         # Заголовок
-        title = QLabel("Записи")
+        title = QLabel(t("settings.recordings.title"))
         title.setObjectName("pageTitle")  # Применить стиль
         layout.addWidget(title)
         
         # Группа: Настройки сохранения
-        save_group = QGroupBox("Настройки сохранения")
+        save_group = QGroupBox(t("settings.recordings.title"))
         save_layout = QVBoxLayout()
         save_layout.setSpacing(12)
         
         # Чекбокс для сохранения записей
-        self.keep_recordings_check = QCheckBox("Сохранять записи после транскрипции")
+        self.keep_recordings_check = QCheckBox(t("settings.recordings.keep_recordings"))
         self.keep_recordings_check.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.keep_recordings_check.setToolTip("Если включено, аудиозаписи будут сохраняться в папку recordings")
+        self.keep_recordings_check.setToolTip(t("settings.recordings.keep_recordings_tooltip"))
         save_layout.addWidget(self.keep_recordings_check)
         
         # Информация о папке с кнопкой изменения
@@ -1031,16 +976,16 @@ class SettingsWindow(QDialog):
         self.recordings_path_label.setToolTip("Кликните чтобы открыть папку\n\nАудио: recordings/audio/\nТранскрипции: recordings/transcriptions/")
         folder_container.addWidget(self.recordings_path_label, 1)
         
-        change_folder_btn = QPushButton("📁 Изменить папку")
+        change_folder_btn = QPushButton(t("settings.recordings.change_folder"))
         change_folder_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        change_folder_btn.setToolTip("Выбрать другую папку для сохранения записей")
+        change_folder_btn.setToolTip(t("settings.recordings.change_folder_tooltip"))
         change_folder_btn.clicked.connect(self._change_recordings_folder)
         change_folder_btn.setMaximumWidth(150)
         folder_container.addWidget(change_folder_btn)
         
-        reset_folder_btn = QPushButton("🔄")
+        reset_folder_btn = QPushButton(t("settings.recordings.reset_folder"))
         reset_folder_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        reset_folder_btn.setToolTip("Сбросить на папку по умолчанию")
+        reset_folder_btn.setToolTip(t("settings.recordings.reset_folder_tooltip"))
         reset_folder_btn.clicked.connect(self._reset_recordings_folder)
         reset_folder_btn.setMaximumWidth(40)
         folder_container.addWidget(reset_folder_btn)
@@ -1051,7 +996,7 @@ class SettingsWindow(QDialog):
         layout.addWidget(save_group)
         
         # Группа: Сохраненные записи
-        recordings_group = QGroupBox("Сохраненные записи")
+        recordings_group = QGroupBox(t("settings.recordings.title"))
         recordings_layout = QVBoxLayout()
         recordings_layout.setSpacing(12)
         
@@ -1091,34 +1036,34 @@ class SettingsWindow(QDialog):
         buttons_layout = QHBoxLayout()
         buttons_layout.setSpacing(8)  # Отступ между кнопками
         
-        refresh_btn = QPushButton("🔄")
+        refresh_btn = QPushButton(t("settings.recordings.refresh"))
         refresh_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        refresh_btn.setToolTip("Обновить список записей")
+        refresh_btn.setToolTip(t("settings.recordings.refresh_tooltip"))
         refresh_btn.clicked.connect(self._refresh_recordings_list)
         refresh_btn.setMaximumWidth(50)
         buttons_layout.addWidget(refresh_btn)
         
-        play_btn = QPushButton("▶️ Аудио")
+        play_btn = QPushButton(t("settings.recordings.play_audio"))
         play_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        play_btn.setToolTip("Открыть выбранную аудиозапись в проигрывателе по умолчанию")
+        play_btn.setToolTip(t("settings.recordings.play_audio_tooltip"))
         play_btn.clicked.connect(self._open_recording)
         buttons_layout.addWidget(play_btn)
         
-        self.text_btn = QPushButton("📝 Текст")
+        self.text_btn = QPushButton(t("settings.recordings.open_text"))
         self.text_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.text_btn.setToolTip("Открыть транскрипцию в текстовом редакторе")
+        self.text_btn.setToolTip(t("settings.recordings.open_text_tooltip"))
         self.text_btn.clicked.connect(self._open_transcription)
         buttons_layout.addWidget(self.text_btn)
         
-        folder_btn = QPushButton("📁 Папка")
+        folder_btn = QPushButton(t("settings.recordings.open_folder"))
         folder_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        folder_btn.setToolTip("Открыть папку с записями в проводнике")
+        folder_btn.setToolTip(t("settings.recordings.open_folder_tooltip"))
         folder_btn.clicked.connect(self._open_recordings_folder)
         buttons_layout.addWidget(folder_btn)
         
-        delete_btn = QPushButton("🗑️ Удалить")
+        delete_btn = QPushButton(t("settings.recordings.delete"))
         delete_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        delete_btn.setToolTip("Удалить выбранную запись (аудио и транскрипцию)")
+        delete_btn.setToolTip(t("settings.recordings.delete_tooltip"))
         delete_btn.setStyleSheet("""
             QPushButton {
                 background-color: #d13438;
@@ -1161,7 +1106,7 @@ class SettingsWindow(QDialog):
         recordings = sorted(audio_dir.glob("*.wav"), reverse=True)  # Новые сверху
         
         if not recordings:
-            item = QListWidgetItem("📭 Нет сохраненных записей")
+            item = QListWidgetItem(t("settings.recordings.no_recordings"))
             item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsSelectable)  # Не выбираемый
             self.recordings_list.addItem(item)
         else:
@@ -1308,8 +1253,8 @@ class SettingsWindow(QDialog):
             logger.error(f"Не удалось открыть запись: {e}")
             QMessageBox.warning(
                 self,
-                "⚠️ Ошибка",
-                f"Не удалось открыть запись:\n{str(e)}",
+                t("settings.recordings.open_error_title"),
+                t("settings.recordings.open_error_message", error=str(e)),
                 QMessageBox.StandardButton.Ok
             )
     
@@ -1338,8 +1283,8 @@ class SettingsWindow(QDialog):
             logger.error(f"Не удалось открыть транскрипцию: {e}")
             QMessageBox.warning(
                 self,
-                "⚠️ Ошибка",
-                f"Не удалось открыть транскрипцию:\n{str(e)}",
+                t("settings.recordings.open_error_title"),
+                t("settings.recordings.open_text_error_message", error=str(e)),
                 QMessageBox.StandardButton.Ok
             )
     
@@ -1362,8 +1307,8 @@ class SettingsWindow(QDialog):
             logger.error(f"Не удалось открыть папку: {e}")
             QMessageBox.warning(
                 self,
-                "⚠️ Ошибка",
-                f"Не удалось открыть папку:\n{str(e)}",
+                t("settings.recordings.open_error_title"),
+                t("settings.recordings.open_folder_error_message", error=str(e)),
                 QMessageBox.StandardButton.Ok
             )
     
@@ -1381,13 +1326,13 @@ class SettingsWindow(QDialog):
         
         # Подтверждение удаления
         has_transcription = transcription_path is not None
-        message = f"Вы уверены что хотите удалить эту запись?\n\n{Path(recording_path).name}"
+        message = t("settings.recordings.delete_confirm_message", filename=Path(recording_path).name)
         if has_transcription:
-            message += "\n\n(Аудио и транскрипция будут удалены)"
+            message += t("settings.recordings.delete_confirm_with_text")
         
         reply = QMessageBox.question(
             self,
-            "🗑️ Удалить запись?",
+            t("settings.recordings.delete_confirm_title"),
             message,
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No
@@ -1410,8 +1355,8 @@ class SettingsWindow(QDialog):
                 logger.error(f"Не удалось удалить запись: {e}")
                 QMessageBox.critical(
                     self,
-                    "❌ Ошибка",
-                    f"Не удалось удалить запись:\n{str(e)}",
+                    t("settings.recordings.delete_error_title"),
+                    t("settings.recordings.delete_error_message", error=str(e)),
                     QMessageBox.StandardButton.Ok
                 )
     
@@ -1449,16 +1394,16 @@ class SettingsWindow(QDialog):
                 
                 QMessageBox.information(
                     self,
-                    "✅ Успешно",
-                    f"Папка для записей изменена на:\n{new_folder}\n\nНовые записи будут сохраняться в:\n• {new_folder}/audio/\n• {new_folder}/transcriptions/",
+                    t("settings.recordings.change_folder_success_title"),
+                    t("settings.recordings.change_folder_success_message", folder=new_folder),
                     QMessageBox.StandardButton.Ok
                 )
             except Exception as e:
                 logger.error(f"Не удалось изменить папку: {e}")
                 QMessageBox.critical(
                     self,
-                    "❌ Ошибка",
-                    f"Не удалось изменить папку:\n{str(e)}",
+                    t("settings.recordings.change_folder_error_title"),
+                    t("settings.recordings.change_folder_error_message", error=str(e)),
                     QMessageBox.StandardButton.Ok
                 )
     
@@ -1470,10 +1415,8 @@ class SettingsWindow(QDialog):
         # Подтверждение
         reply = QMessageBox.question(
             self,
-            "🔄 Сбросить папку?",
-            "Вы уверены что хотите вернуть папку записей по умолчанию?\n\n"
-            "Новые записи будут сохраняться в:\n"
-            f"{get_config_dir() / 'recordings'}",
+            t("settings.recordings.reset_folder_confirm_title"),
+            t("settings.recordings.reset_folder_confirm_message", folder=str(get_config_dir() / 'recordings')),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No
         )
@@ -1497,16 +1440,16 @@ class SettingsWindow(QDialog):
                 
                 QMessageBox.information(
                     self,
-                    "✅ Успешно",
-                    f"Папка записей сброшена на значение по умолчанию:\n{default_dir}",
+                    t("settings.recordings.reset_folder_success_title"),
+                    t("settings.recordings.reset_folder_success_message", folder=str(default_dir)),
                     QMessageBox.StandardButton.Ok
                 )
             except Exception as e:
                 logger.error(f"Не удалось сбросить папку: {e}")
                 QMessageBox.critical(
                     self,
-                    "❌ Ошибка",
-                    f"Не удалось сбросить папку:\n{str(e)}",
+                    t("settings.recordings.reset_folder_error_title"),
+                    t("settings.recordings.reset_folder_error_message", error=str(e)),
                     QMessageBox.StandardButton.Ok
                 )
     
@@ -1517,7 +1460,7 @@ class SettingsWindow(QDialog):
         layout.setSpacing(20)
         
         # Заголовок
-        title = QLabel("О программе")
+        title = QLabel(t("settings.about.title"))
         title.setObjectName("pageTitle")  # Применить стиль
         layout.addWidget(title)
         
@@ -1527,15 +1470,12 @@ class SettingsWindow(QDialog):
         info_layout.setSpacing(16)
         
         # Версия
-        version_label = QLabel("<b>Версия:</b> 1.3.0")
+        version_label = QLabel(t("settings.about.version"))
         version_label.setStyleSheet("font-size: 13px;")
         info_layout.addWidget(version_label)
         
         # Описание
-        desc_label = QLabel(
-            "Быстрая транскрипция речи с микрофона<br>"
-            "используя AI API (Groq, OpenAI, GLM, Custom)"
-        )
+        desc_label = QLabel(t("settings.about.description"))
         desc_label.setWordWrap(True)
         desc_label.setStyleSheet("color: #888888; font-size: 12px;")
         info_layout.addWidget(desc_label)
@@ -1544,12 +1484,7 @@ class SettingsWindow(QDialog):
         github_url = self.config.github_url
         docs_url = self.config.docs_url
         
-        links_label = QLabel(
-            f"<b>Ссылки:</b><br>"
-            f"• GitHub: <a href='{github_url}'>{github_url}</a><br>"
-            f"• Документация: <a href='{docs_url}'>docs/</a><br>"
-            f"• Поддержка: <a href='{github_url}/issues'>Создать issue</a>"
-        )
+        links_label = QLabel(t("settings.about.links", github_url=github_url, docs_url=docs_url))
         links_label.setWordWrap(True)
         links_label.setOpenExternalLinks(True)
         links_label.setStyleSheet("font-size: 12px;")
@@ -1559,24 +1494,11 @@ class SettingsWindow(QDialog):
         layout.addWidget(info_group)
         
         # Используемые библиотеки
-        libs_group = QGroupBox("Используемые библиотеки")
+        libs_group = QGroupBox(t("settings.about.libraries"))
         libs_layout = QVBoxLayout()
         libs_layout.setSpacing(12)
         
-        libs_label = QLabel(
-            "<b>Основные:</b><br>"
-            "• <a href='https://www.riverbankcomputing.com/software/pyqt/'>PyQt6</a> - GUI фреймворк<br>"
-            "• <a href='https://github.com/openai/openai-python'>OpenAI Python SDK</a> - API клиент<br>"
-            "• <a href='https://people.csail.mit.edu/hubert/pyaudio/'>PyAudio</a> - Запись аудио<br>"
-            "• <a href='https://numpy.org/'>NumPy</a> - Обработка аудио<br>"
-            "• <a href='https://github.com/boppreh/keyboard'>Keyboard</a> - Горячие клавиши<br>"
-            "• <a href='https://github.com/asweigart/pyperclip'>Pyperclip</a> - Буфер обмена<br>"
-            "• <a href='https://github.com/giampaolo/psutil'>Psutil</a> - Управление процессами<br>"
-            "• <a href='https://github.com/theskumar/python-dotenv'>Python-dotenv</a> - Конфигурация<br><br>"
-            "<b>Тестирование:</b><br>"
-            "• <a href='https://pytest.org/'>Pytest</a> - Фреймворк тестирования<br>"
-            "• <a href='https://hypothesis.readthedocs.io/'>Hypothesis</a> - Property-based testing"
-        )
+        libs_label = QLabel(t("settings.about.libraries_main"))
         libs_label.setWordWrap(True)
         libs_label.setOpenExternalLinks(True)
         libs_label.setStyleSheet("color: #888888; font-size: 11px;")
@@ -1586,22 +1508,11 @@ class SettingsWindow(QDialog):
         layout.addWidget(libs_group)
         
         # Поддерживаемые провайдеры
-        providers_group = QGroupBox("Поддерживаемые AI провайдеры")
+        providers_group = QGroupBox(t("settings.about.providers"))
         providers_layout = QVBoxLayout()
         providers_layout.setSpacing(12)
         
-        providers_label = QLabel(
-            "<b>Облачные:</b><br>"
-            "• <a href='https://console.groq.com'>Groq</a> - Бесплатный и быстрый (рекомендуется)<br>"
-            "• <a href='https://openai.com'>OpenAI</a> - Официальный Whisper API<br>"
-            "• <a href='https://open.bigmodel.cn'>GLM (Zhipu AI)</a> - Поддержка китайского<br><br>"
-            "<b>Локальные (Custom):</b><br>"
-            "• <a href='https://lmstudio.ai'>LM Studio</a> - Простой запуск локальных моделей<br>"
-            "• <a href='https://ollama.ai'>Ollama</a> - CLI для локальных моделей<br>"
-            "• <a href='https://github.com/vllm-project/vllm'>vLLM</a> - Высокопроизводительный inference<br>"
-            "• <a href='https://localai.io'>LocalAI</a> - Локальная альтернатива OpenAI<br>"
-            "• Любые OpenAI-совместимые API"
-        )
+        providers_label = QLabel(t("settings.about.providers_list"))
         providers_label.setWordWrap(True)
         providers_label.setOpenExternalLinks(True)
         providers_label.setStyleSheet("color: #888888; font-size: 11px;")
@@ -1611,10 +1522,10 @@ class SettingsWindow(QDialog):
         layout.addWidget(providers_group)
         
         # Лицензия
-        license_group = QGroupBox("Лицензия")
+        license_group = QGroupBox(t("settings.about.license"))
         license_layout = QVBoxLayout()
         
-        license_label = QLabel("© 2026 RapidWhisper. Все права защищены.")
+        license_label = QLabel(t("settings.about.license_text"))
         license_label.setStyleSheet("color: #888888; font-size: 11px;")
         license_layout.addWidget(license_label)
         
@@ -1705,9 +1616,9 @@ class SettingsWindow(QDialog):
                 found = True
                 break
         
-        # Если не найдено, выбрать русский по умолчанию (индекс 7)
+        # Если не найдено, выбрать русский по умолчанию (индекс 8)
         if not found:
-            default_button = self.language_button_group.button(7)  # RU
+            default_button = self.language_button_group.button(8)  # RU
             if default_button:
                 default_button.setChecked(True)
     
@@ -1840,10 +1751,181 @@ class SettingsWindow(QDialog):
             self.llm_api_key_edit.setVisible(provider == "llm")
             self.llm_api_key_label.setVisible(provider == "llm")
     
+    
+    def _reload_ui_texts(self):
+        """Перезагружает все тексты в интерфейсе после смены языка."""
+        # Обновить заголовок окна
+        self.setWindowTitle(t("settings.title"))
+        
+        # Обновить боковую панель
+        sidebar_items = [
+            (f"🤖 {t('settings.ai_provider.title')}", 0),
+            (f"⚡ {t('settings.app.title')}", 1),
+            (f"🎤 {t('settings.audio.title')}", 2),
+            (f"✨ {t('settings.processing.title')}", 3),
+            (f"🌍 {t('settings.languages.title')}", 4),
+            (f"🎙️ {t('settings.recordings.title')}", 5),
+            (f"ℹ️ {t('settings.about.title')}", 6)
+        ]
+        
+        for text, index in sidebar_items:
+            item = self.sidebar.item(index)
+            if item:
+                item.setText(text)
+        
+        # Обновить кнопки внизу
+        # Найти кнопки по objectName
+        for button in self.findChildren(QPushButton):
+            if button.objectName() == "cancelButton":
+                button.setText(t("common.cancel"))
+            elif button.text().startswith("💾"):
+                button.setText(t("common.save"))
+        
+        # Перезагрузить текущую страницу
+        current_index = self.content_stack.currentIndex()
+        
+        # Сохранить текущие значения полей
+        current_values = self._get_current_values()
+        
+        # Пересоздать страницы с новыми переводами
+        self.content_stack.removeWidget(self.content_stack.widget(0))
+        self.content_stack.insertWidget(0, self._wrap_in_scroll_area(self._create_ai_page()))
+        
+        self.content_stack.removeWidget(self.content_stack.widget(1))
+        self.content_stack.insertWidget(1, self._wrap_in_scroll_area(self._create_app_page()))
+        
+        self.content_stack.removeWidget(self.content_stack.widget(2))
+        self.content_stack.insertWidget(2, self._wrap_in_scroll_area(self._create_audio_page()))
+        
+        self.content_stack.removeWidget(self.content_stack.widget(3))
+        self.content_stack.insertWidget(3, self._wrap_in_scroll_area(self._create_processing_page()))
+        
+        self.content_stack.removeWidget(self.content_stack.widget(4))
+        self.content_stack.insertWidget(4, self._wrap_in_scroll_area(self._create_languages_page()))
+        
+        self.content_stack.removeWidget(self.content_stack.widget(5))
+        self.content_stack.insertWidget(5, self._wrap_in_scroll_area(self._create_recordings_page()))
+        
+        self.content_stack.removeWidget(self.content_stack.widget(6))
+        self.content_stack.insertWidget(6, self._wrap_in_scroll_area(self._create_about_page()))
+        
+        # Восстановить текущую страницу
+        self.content_stack.setCurrentIndex(current_index)
+        
+        # Восстановить значения полей
+        self._restore_current_values(current_values)
+    
+    def _get_current_values(self):
+        """Сохраняет текущие значения всех полей."""
+        return {
+            'provider': self.provider_combo.currentText(),
+            'groq_key': self.groq_key_edit.text(),
+            'openai_key': self.openai_key_edit.text(),
+            'glm_key': self.glm_key_edit.text(),
+            'custom_key': self.custom_key_edit.text(),
+            'custom_url': self.custom_url_edit.text(),
+            'custom_model': self.custom_model_edit.text(),
+            'hotkey': self.hotkey_edit.text(),
+            'silence_threshold': self.silence_threshold_spin.value(),
+            'silence_duration': self.silence_duration_spin.value(),
+            'manual_stop': self.manual_stop_check.isChecked(),
+            'auto_hide': self.auto_hide_spin.value(),
+            'remember_position': self.remember_position_check.isChecked(),
+            'window_position': self.window_position_combo.currentIndex(),
+            'sample_rate': self.sample_rate_combo.currentText(),
+            'chunk_size': self.chunk_size_combo.currentText(),
+            'silence_padding': self.silence_padding_spin.value(),
+            'keep_recordings': self.keep_recordings_check.isChecked(),
+            'enable_post_processing': self.enable_post_processing_check.isChecked(),
+            'post_processing_provider': self.post_processing_provider_combo.currentText(),
+            'post_processing_model': self.post_processing_model_combo.currentText(),
+            'post_processing_prompt': self.post_processing_prompt_edit.toPlainText(),
+            'glm_coding_plan': self.glm_coding_plan_check.isChecked(),
+            'llm_base_url': self.llm_base_url_edit.text(),
+            'llm_api_key': self.llm_api_key_edit.text(),
+        }
+    
+    def _restore_current_values(self, values):
+        """Восстанавливает значения всех полей."""
+        self.provider_combo.setCurrentText(values['provider'])
+        self.groq_key_edit.setText(values['groq_key'])
+        self.openai_key_edit.setText(values['openai_key'])
+        self.glm_key_edit.setText(values['glm_key'])
+        self.custom_key_edit.setText(values['custom_key'])
+        self.custom_url_edit.setText(values['custom_url'])
+        self.custom_model_edit.setText(values['custom_model'])
+        self.hotkey_edit.setText(values['hotkey'])
+        self.silence_threshold_spin.setValue(values['silence_threshold'])
+        self.silence_duration_spin.setValue(values['silence_duration'])
+        self.manual_stop_check.setChecked(values['manual_stop'])
+        self.auto_hide_spin.setValue(values['auto_hide'])
+        self.remember_position_check.setChecked(values['remember_position'])
+        self.window_position_combo.setCurrentIndex(values['window_position'])
+        self.sample_rate_combo.setCurrentText(values['sample_rate'])
+        self.chunk_size_combo.setCurrentText(values['chunk_size'])
+        self.silence_padding_spin.setValue(values['silence_padding'])
+        self.keep_recordings_check.setChecked(values['keep_recordings'])
+        self.enable_post_processing_check.setChecked(values['enable_post_processing'])
+        self.post_processing_provider_combo.setCurrentText(values['post_processing_provider'])
+        self.post_processing_model_combo.setCurrentText(values['post_processing_model'])
+        
+        # Проверить, является ли промпт дефолтным на любом языке
+        current_prompt = values['post_processing_prompt']
+        is_default_prompt = self._is_default_prompt(current_prompt)
+        
+        if is_default_prompt:
+            # Если промпт дефолтный, заменить на переведенную версию
+            self.post_processing_prompt_edit.setPlainText(t("settings.processing.prompt_default"))
+        else:
+            # Если промпт изменен пользователем, оставить как есть
+            self.post_processing_prompt_edit.setPlainText(current_prompt)
+        
+        self.glm_coding_plan_check.setChecked(values['glm_coding_plan'])
+        self.llm_base_url_edit.setText(values['llm_base_url'])
+        self.llm_api_key_edit.setText(values['llm_api_key'])
+        
+        # Восстановить выбранный язык
+        from utils.i18n import get_language
+        current_language = get_language()
+        for button in self.language_button_group.buttons():
+            if button.property("language_code") == current_language:
+                button.setChecked(True)
+                break
+        
+        # Обновить состояния
+        self._on_remember_position_changed(values['remember_position'])
+        self._on_manual_stop_changed(values['manual_stop'])
+        self._on_post_processing_toggled(values['enable_post_processing'])
+        self._on_provider_changed(values['provider'])
+        self._on_post_processing_provider_changed(values['post_processing_provider'])
+    
+    def _is_default_prompt(self, prompt: str) -> bool:
+        """
+        Проверяет, является ли промпт дефолтным на любом языке.
+        
+        Args:
+            prompt: Текст промпта для проверки
+            
+        Returns:
+            True если промпт совпадает с дефолтным на любом языке
+        """
+        # Список дефолтных промптов на всех языках
+        default_prompts = [
+            # English
+            "You are a text editor. Your task: fix grammatical errors, add punctuation and improve text readability. Preserve the original meaning and style. Don't add anything extra. Return only the corrected text without comments.",
+            # Russian
+            "Ты - редактор текста. Твоя задача: исправить грамматические ошибки, добавить знаки препинания и улучшить читаемость текста. Сохрани оригинальный смысл и стиль. Не добавляй ничего лишнего. Верни только исправленный текст без комментариев.",
+        ]
+        
+        # Проверить совпадение (игнорируя пробелы в начале/конце)
+        prompt_stripped = prompt.strip()
+        return any(prompt_stripped == default.strip() for default in default_prompts)
+    
     def _save_settings(self):
         """Сохраняет настройки в .env файл."""
         try:
             from core.config import get_env_path
+            from utils.i18n import set_language
             
             # Получить новые значения
             position_index = self.window_position_combo.currentIndex()
@@ -1856,6 +1938,10 @@ class SettingsWindow(QDialog):
                 language_code = checked_button.property("language_code")
                 if language_code:
                     selected_language = language_code
+            
+            # Проверить, изменился ли язык
+            old_language = self.config.interface_language
+            language_changed = (selected_language != old_language)
             
             new_config = {
                 "AI_PROVIDER": self.provider_combo.currentText(),
@@ -1915,27 +2001,52 @@ class SettingsWindow(QDialog):
             
             logger.info(f"Настройки сохранены в {env_path}")
             
-            # Показать сообщение
-            QMessageBox.information(
-                self,
-                "✅ Успешно",
-                "Настройки сохранены и применены!\n\n"
-                "Новые настройки вступили в силу.",
-                QMessageBox.StandardButton.Ok
-            )
+            # Если язык изменился, обновить интерфейс ПЕРЕД показом сообщения
+            if language_changed:
+                logger.info(f"Language changed from {old_language} to {selected_language}")
+                
+                # Установить новый язык в модуле i18n
+                set_language(selected_language)
+                
+                # Обновить конфигурацию
+                self.config.interface_language = selected_language
+                
+                # Перезагрузить все тексты в окне
+                self._reload_ui_texts()
+                
+                # Проверить что язык действительно изменился
+                from utils.i18n import get_language
+                current_lang = get_language()
+                logger.info(f"Current language after set_language: {current_lang}")
+                logger.info(f"Testing translation: {t('common.success')}")
+            
+            # Показать уведомление через tray icon (уже на новом языке если язык изменился)
+            if self.tray_icon:
+                success_title = t("tray.notification.settings_updated")
+                success_message = t("tray.notification.settings_updated_message")
+                logger.info(f"Notification title: {success_title}")
+                logger.info(f"Notification message: {success_message}")
+                
+                self.tray_icon.show_message(
+                    success_title,
+                    success_message,
+                    duration=3000
+                )
             
             # Испустить сигнал
             self.settings_saved.emit()
             
-            # Закрыть окно
-            self.accept()
+            # Закрыть окно только если язык НЕ изменился
+            # Если язык изменился, оставить окно открытым чтобы пользователь видел обновленный интерфейс
+            if not language_changed:
+                self.accept()
             
         except Exception as e:
             logger.error(f"Ошибка сохранения настроек: {e}")
             QMessageBox.critical(
                 self,
-                "❌ Ошибка",
-                f"Не удалось сохранить настройки:\n{str(e)}",
+                t("common.error"),
+                t("errors.save_settings_failed", error=str(e)),
                 QMessageBox.StandardButton.Ok
             )
     

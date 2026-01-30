@@ -11,6 +11,7 @@ from PyQt6.QtGui import QPainter, QColor, QPainterPath, QPaintEvent
 from ui.waveform_widget import WaveformWidget
 from ui.info_panel_widget import InfoPanelWidget
 from services.window_monitor import WindowMonitor
+from utils.i18n import t
 from typing import Optional
 
 
