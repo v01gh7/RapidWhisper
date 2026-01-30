@@ -34,9 +34,11 @@ class FloatingWindow(QWidget):
         """
         super().__init__(parent)
         
-        # Размеры окна
+        # Размеры окна (будут пересчитаны динамически)
         self.window_width = 400
         self.window_height = 120
+        self._min_width = 400  # Минимальная ширина
+        self._max_width_percent = 0.3  # Максимум 30% ширины экрана
         
         # Для перетаскивания окна
         self._drag_position = None
@@ -84,8 +86,9 @@ class FloatingWindow(QWidget):
         # Показывать окно даже когда приложение не в фокусе
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         
-        # Размер окна
-        self.setFixedSize(self.window_width, self.window_height)
+        # Размер окна - будет пересчитан динамически
+        self.setMinimumWidth(self._min_width)
+        self.setFixedHeight(self.window_height)
         
         # ВАЖНО: Добавляем стили для видимости окна
         # border-radius применяется только к главному виджету
@@ -155,13 +158,51 @@ class FloatingWindow(QWidget):
             
             # Обновить высоту окна с учетом info panel
             self.window_height = 120 + 40  # Исходная высота + высота info panel
-            self.setFixedSize(self.window_width, self.window_height)
+            self.setFixedHeight(self.window_height)
+            
+            # Пересчитать ширину окна
+            self._update_window_width()
             
         except Exception as e:
             # Логировать ошибку, но не прерывать работу
             from utils.logger import get_logger
             logger = get_logger()
             logger.error(f"Failed to initialize window monitor and info panel: {e}")
+    
+    def _update_window_width(self) -> None:
+        """
+        Обновляет ширину окна на основе контента.
+        
+        Автоматически подстраивает ширину под контент info panel,
+        но не превышает 30% ширины экрана.
+        """
+        if not self.info_panel:
+            return
+        
+        from PyQt6.QtWidgets import QApplication
+        
+        # Получить размер контента info panel
+        self.info_panel.adjustSize()
+        content_width = self.info_panel.sizeHint().width()
+        
+        # Добавить отступы окна (margins + padding)
+        total_width = content_width + 30  # 15px слева + 15px справа
+        
+        # Получить максимальную ширину (30% экрана)
+        app = QApplication.instance()
+        max_width = self._min_width
+        if app:
+            screen = app.primaryScreen()
+            if screen:
+                screen_width = screen.availableGeometry().width()
+                max_width = int(screen_width * self._max_width_percent)
+        
+        # Ограничить ширину
+        final_width = max(self._min_width, min(total_width, max_width))
+        
+        # Установить новую ширину
+        self.window_width = final_width
+        self.setFixedWidth(final_width)
     
     def show_at_center(self, use_saved_position: bool = True) -> None:
         """

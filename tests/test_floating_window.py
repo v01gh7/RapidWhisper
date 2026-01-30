@@ -34,7 +34,8 @@ class TestFloatingWindowInitialization:
         
         assert window.window_width == 400
         assert window.window_height == 120
-        assert window.width() == 400
+        # Ширина теперь динамическая, проверяем минимальную ширину
+        assert window.width() >= 400
         assert window.height() == 120
     
     def test_window_flags(self, qapp):
@@ -88,12 +89,12 @@ class TestWindowPositioning:
         assert window.y() >= 0
     
     def test_window_size_fixed(self, qapp):
-        """Тест фиксированного размера окна"""
+        """Тест размера окна"""
         window = FloatingWindow()
         
-        # Размер должен быть фиксированным
+        # Ширина теперь динамическая с минимумом 400px
         assert window.minimumWidth() == 400
-        assert window.maximumWidth() == 400
+        # Высота фиксированная
         assert window.minimumHeight() == 120
         assert window.maximumHeight() == 120
 

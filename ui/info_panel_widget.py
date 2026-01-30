@@ -76,14 +76,9 @@ class InfoPanelWidget(QWidget):
         # Главный layout
         main_layout = QHBoxLayout(self)
         main_layout.setContentsMargins(8, 6, 8, 6)
-        main_layout.setSpacing(0)
+        main_layout.setSpacing(8)  # Увеличиваем spacing между элементами
         
         # Левая часть: иконка + название приложения
-        left_widget = QWidget()
-        left_layout = QHBoxLayout(left_widget)
-        left_layout.setContentsMargins(0, 0, 0, 0)
-        left_layout.setSpacing(4)
-        
         self._app_icon_label = QLabel()
         self._app_icon_label.setFixedSize(20, 20)
         self._app_icon_label.setScaledContents(True)
@@ -91,16 +86,13 @@ class InfoPanelWidget(QWidget):
         self._app_name_label = QLabel("Нет активного окна")
         self._app_name_label.setFont(QFont("Segoe UI", 11))
         
-        left_layout.addWidget(self._app_icon_label)
-        left_layout.addWidget(self._app_name_label)
-        left_layout.addStretch()
+        main_layout.addWidget(self._app_icon_label)
+        main_layout.addWidget(self._app_name_label)
+        
+        # Добавить stretch между левой и правой частями
+        main_layout.addStretch()
         
         # Правая часть: горячие клавиши
-        right_widget = QWidget()
-        right_layout = QHBoxLayout(right_widget)
-        right_layout.setContentsMargins(0, 0, 0, 0)
-        right_layout.setSpacing(12)
-        
         # Кнопка записи
         self._record_hotkey_label = QLabel()
         self._record_hotkey_label.setFont(QFont("Segoe UI", 11))
@@ -110,13 +102,8 @@ class InfoPanelWidget(QWidget):
         self._close_hotkey_label = QLabel("Отменить Esc")
         self._close_hotkey_label.setFont(QFont("Segoe UI", 11))
         
-        right_layout.addWidget(self._record_hotkey_label)
-        right_layout.addWidget(self._close_hotkey_label)
-        
-        # Добавить в главный layout с stretch между левой и правой частями
-        main_layout.addWidget(left_widget, stretch=0)
-        main_layout.addStretch(1)  # Разделитель между левой и правой частями
-        main_layout.addWidget(right_widget, stretch=0)
+        main_layout.addWidget(self._record_hotkey_label)
+        main_layout.addWidget(self._close_hotkey_label)
         
         # Установить фиксированную высоту
         self.setFixedHeight(40)
