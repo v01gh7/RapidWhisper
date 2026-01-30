@@ -375,6 +375,9 @@ class RapidWhisperApp(QObject):
         try:
             self.logger.info("_start_recording вызван")
             
+            # Показать info panel при начале записи
+            self.floating_window.show_info_panel()
+            
             # Показать окно через сигнал (безопасно для потоков)
             self.logger.info("Отправка сигнала показа окна...")
             self._show_window_signal.emit()

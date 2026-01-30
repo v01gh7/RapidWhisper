@@ -156,6 +156,9 @@ class FloatingWindow(QWidget):
             # Добавить info panel в конец layout
             self._main_layout.addWidget(self.info_panel)
             
+            # СКРЫТЬ info panel по умолчанию (показывается только при записи)
+            self.info_panel.hide()
+            
             # Обновить высоту окна с учетом info panel
             self.window_height = 120 + 40  # Исходная высота + высота info panel
             self.setFixedHeight(self.window_height)
@@ -168,6 +171,16 @@ class FloatingWindow(QWidget):
             from utils.logger import get_logger
             logger = get_logger()
             logger.error(f"Failed to initialize window monitor and info panel: {e}")
+    
+    def show_info_panel(self) -> None:
+        """Показывает info panel."""
+        if self.info_panel and not self.info_panel.isVisible():
+            self.info_panel.show()
+    
+    def hide_info_panel(self) -> None:
+        """Скрывает info panel."""
+        if self.info_panel and self.info_panel.isVisible():
+            self.info_panel.hide()
     
     def _update_window_width(self) -> None:
         """
