@@ -881,8 +881,8 @@ class RapidWhisperApp(QObject):
             QTimer.singleShot(500, self._show_settings)
             
         else:
-            # Показать окно при запуске на 2 секунды
-            self.floating_window.show_at_center()
+            # Показать окно при запуске на 2 секунды - ВСЕГДА ПО ЦЕНТРУ
+            self.floating_window.show_at_center(use_saved_position=False)
             self.floating_window.set_status("RapidWhisper загружен!")
             
             # Установить флаг что идет инициализация
