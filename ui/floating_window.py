@@ -161,7 +161,7 @@ class FloatingWindow(QWidget):
             # Логировать ошибку, но не прерывать работу
             from utils.logger import get_logger
             logger = get_logger()
-            logger.error(f"Failed to initialize window monitor and info panel: {e}", exc_info=True)
+            logger.error(f"Failed to initialize window monitor and info panel: {e}")
     
     def show_at_center(self, use_saved_position: bool = True) -> None:
         """
@@ -557,7 +557,7 @@ class FloatingWindow(QWidget):
         except Exception as e:
             from utils.logger import get_logger
             logger = get_logger()
-            logger.error(f"Failed to start window monitoring: {e}", exc_info=True)
+            logger.error(f"Failed to start window monitoring: {e}")
     
     def _stop_window_monitoring(self) -> None:
         """
@@ -571,7 +571,7 @@ class FloatingWindow(QWidget):
         except Exception as e:
             from utils.logger import get_logger
             logger = get_logger()
-            logger.error(f"Failed to stop window monitoring: {e}", exc_info=True)
+            logger.error(f"Failed to stop window monitoring: {e}")
     
     def save_position(self) -> None:
         """

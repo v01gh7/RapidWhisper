@@ -173,7 +173,7 @@
     - **Property 7: Масштабирование иконок**
     - **Validates: Requirements 5.5**
 
-- [ ] 6. Интегрировать InfoPanelWidget в FloatingWindow
+- [x] 6. Интегрировать InfoPanelWidget в FloatingWindow
   - [x] 6.1 Модифицировать FloatingWindow для добавления InfoPanelWidget
     - Импортировать InfoPanelWidget и WindowMonitor в ui/floating_window.py
     - Создать экземпляр WindowMonitor через фабричный метод
@@ -189,39 +189,39 @@
     - Добавить обработку ошибок с логированием
     - _Requirements: 7.3, 7.4_
   
-  - [-] 6.3 Подключить обновление горячих клавиш
+  - [x] 6.3 Подключить обновление горячих клавиш
     - Подключить сигнал изменения конфигурации к info_panel.update_hotkey_display()
     - Если Config_Manager не имеет сигнала, создать его (config_changed)
     - Реализовать emit сигнала при изменении hotkey в Config_Manager
     - _Requirements: 3.4_
   
-  - [~] 6.4 Написать unit тесты для интеграции
+  - [x] 6.4 Написать unit тесты для интеграции
     - Тест добавления InfoPanelWidget в FloatingWindow
     - Тест запуска мониторинга при показе окна
     - Тест остановки мониторинга при закрытии окна
     - Тест обновления горячих клавиш при изменении конфигурации
     - _Requirements: 7.1, 7.3, 7.4, 3.4_
   
-  - [~] 6.5 Написать property тест для сохранения размеров WaveformWidget
+  - [x] 6.5 Написать property тест для сохранения размеров WaveformWidget
     - **Property 8: Сохранение размеров WaveformWidget**
     - **Validates: Requirements 7.2**
   
-  - [~] 6.6 Написать property тест для времени отклика UI
+  - [x] 6.6 Написать property тест для времени отклика UI
     - **Property 4: Своевременное обновление UI**
     - **Validates: Requirements 1.2, 3.4**
 
 - [ ] 7. Добавить зависимости и обновить документацию
-  - [~] 7.1 Обновить pyproject.toml
+  - [x] 7.1 Обновить pyproject.toml
     - Добавить pywin32 >= 306 в dependencies
     - Добавить psutil >= 5.9.0 в dependencies (если еще не добавлен)
     - Обновить версию проекта
   
-  - [~] 7.2 Создать иконку по умолчанию
+  - [x] 7.2 Создать иконку по умолчанию
     - Создать или найти иконку по умолчанию для неизвестных приложений
     - Сохранить в assets/default_app_icon.png (создать папку assets если нужно)
     - Загрузить иконку в InfoPanelWidget при инициализации
   
-  - [~] 7.3 Обновить README.md
+  - [x] 7.3 Обновить README.md
     - Добавить описание новой функции Active App Display
     - Добавить скриншот панели (если возможно)
     - Обновить список зависимостей

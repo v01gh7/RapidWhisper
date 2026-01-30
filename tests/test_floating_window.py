@@ -352,3 +352,299 @@ class TestFloatingWindowProperties:
         # Таймер должен быть отменен
         assert not window._auto_hide_timer.isActive(), \
             "Таймер автоскрытия должен быть отменен при наведении курсора"
+
+
+
+class TestInfoPanelIntegration:
+    """Тесты интеграции InfoPanelWidget в FloatingWindow"""
+    
+    def test_info_panel_added_to_window(self, qapp):
+        """
+        Тест добавления InfoPanelWidget в FloatingWindow.
+        
+        Requirements: 7.1
+        """
+        from core.config import Config
+        
+        window = FloatingWindow()
+        config = Config()
+        config.hotkey = "ctrl+space"
+        
+        # Установить конфигурацию
+        window.set_config(config)
+        
+        # Проверить что info_panel создан
+        assert window.info_panel is not None, \
+            "InfoPanelWidget должен быть создан"
+        
+        # Проверить что info_panel добавлен в layout
+        layout = window.layout()
+        assert layout.count() == 3, \
+            "Layout должен содержать 3 виджета: waveform, status_label, info_panel"
+        
+        # Проверить что info_panel последний в layout
+        last_widget = layout.itemAt(2).widget()
+        assert last_widget == window.info_panel, \
+            "InfoPanelWidget должен быть последним в layout"
+    
+    def test_window_monitor_created(self, qapp):
+        """
+        Тест создания WindowMonitor при установке конфигурации.
+        
+        Requirements: 7.1
+        """
+        from core.config import Config
+        
+        window = FloatingWindow()
+        config = Config()
+        
+        # Установить конфигурацию
+        window.set_config(config)
+        
+        # Проверить что window_monitor создан
+        assert window.window_monitor is not None, \
+            "WindowMonitor должен быть создан"
+    
+    def test_window_height_updated(self, qapp):
+        """
+        Тест обновления высоты окна после добавления InfoPanelWidget.
+        
+        Requirements: 7.1
+        """
+        from core.config import Config
+        
+        window = FloatingWindow()
+        original_height = window.window_height
+        
+        config = Config()
+        window.set_config(config)
+        
+        # Высота должна увеличиться на 40px (высота info_panel)
+        assert window.window_height == original_height + 40, \
+            f"Высота окна должна быть {original_height + 40}px"
+        assert window.height() == original_height + 40, \
+            f"Фактическая высота окна должна быть {original_height + 40}px"
+    
+    @patch('services.window_monitor.WindowMonitor.create')
+    def test_monitoring_starts_on_show(self, mock_create, qapp):
+        """
+        Тест запуска мониторинга при показе окна.
+        
+        Requirements: 7.3
+        """
+        from core.config import Config
+        from unittest.mock import MagicMock
+        
+        # Создать мок window_monitor
+        mock_monitor = MagicMock()
+        mock_create.return_value = mock_monitor
+        
+        window = FloatingWindow()
+        config = Config()
+        window.set_config(config)
+        
+        # Показать окно
+        window.show_at_center()
+        
+        # Проверить что start_monitoring был вызван
+        mock_monitor.start_monitoring.assert_called_once()
+        
+        # Проверить что callback передан
+        callback = mock_monitor.start_monitoring.call_args[0][0]
+        assert callback == window.info_panel.update_app_info, \
+            "Callback должен быть методом update_app_info из info_panel"
+    
+    @patch('services.window_monitor.WindowMonitor.create')
+    def test_monitoring_stops_on_hide(self, mock_create, qapp):
+        """
+        Тест остановки мониторинга при скрытии окна.
+        
+        Requirements: 7.4
+        """
+        from core.config import Config
+        from unittest.mock import MagicMock
+        
+        # Создать мок window_monitor
+        mock_monitor = MagicMock()
+        mock_create.return_value = mock_monitor
+        
+        window = FloatingWindow()
+        config = Config()
+        window.set_config(config)
+        
+        # Показать и скрыть окно
+        window.show_at_center()
+        window.hide_with_animation()
+        
+        # Проверить что stop_monitoring был вызван
+        mock_monitor.stop_monitoring.assert_called_once()
+    
+    @patch('services.window_monitor.WindowMonitor.create')
+    def test_monitoring_stops_on_close(self, mock_create, qapp):
+        """
+        Тест остановки мониторинга при закрытии окна.
+        
+        Requirements: 7.4
+        """
+        from core.config import Config
+        from unittest.mock import MagicMock
+        from PyQt6.QtGui import QCloseEvent
+        
+        # Создать мок window_monitor
+        mock_monitor = MagicMock()
+        mock_create.return_value = mock_monitor
+        
+        window = FloatingWindow()
+        config = Config()
+        window.set_config(config)
+        
+        # Закрыть окно
+        event = QCloseEvent()
+        window.closeEvent(event)
+        
+        # Проверить что stop_monitoring был вызван
+        mock_monitor.stop_monitoring.assert_called_once()
+    
+    def test_hotkey_display_updates(self, qapp):
+        """
+        Тест обновления отображения горячей клавиши при изменении конфигурации.
+        
+        Requirements: 3.4
+        """
+        from core.config import Config
+        
+        window = FloatingWindow()
+        config = Config()
+        config.hotkey = "ctrl+space"
+        window.set_config(config)
+        
+        # Проверить начальное отображение
+        initial_text = window.info_panel._record_hotkey_label.text()
+        assert "Ctrl+⎵Space" in initial_text, \
+            "Начальная горячая клавиша должна быть отформатирована"
+        
+        # Изменить конфигурацию
+        config.hotkey = "alt+f1"
+        window.info_panel.update_hotkey_display()
+        
+        # Проверить обновленное отображение
+        updated_text = window.info_panel._record_hotkey_label.text()
+        assert "Alt+F1" in updated_text, \
+            "Обновленная горячая клавиша должна быть отформатирована"
+    
+    @patch('services.window_monitor.WindowMonitor.create')
+    def test_error_handling_in_set_config(self, mock_create, qapp):
+        """
+        Тест обработки ошибок при установке конфигурации.
+        
+        Requirements: 7.5
+        """
+        from core.config import Config
+        
+        # Создать мок который выбрасывает исключение
+        mock_create.side_effect = Exception("Test error")
+        
+        window = FloatingWindow()
+        config = Config()
+        
+        # Установка конфигурации не должна прерывать работу
+        try:
+            window.set_config(config)
+            # Ошибка должна быть залогирована, но не выброшена
+        except Exception as e:
+            pytest.fail(f"set_config не должен выбрасывать исключение: {e}")
+    
+    @patch('services.window_monitor.WindowMonitor.create')
+    def test_error_handling_in_start_monitoring(self, mock_create, qapp):
+        """
+        Тест обработки ошибок при запуске мониторинга.
+        
+        Requirements: 7.5
+        """
+        from core.config import Config
+        from unittest.mock import MagicMock
+        
+        # Создать мок который выбрасывает исключение при start_monitoring
+        mock_monitor = MagicMock()
+        mock_monitor.start_monitoring.side_effect = Exception("Test error")
+        mock_create.return_value = mock_monitor
+        
+        window = FloatingWindow()
+        config = Config()
+        window.set_config(config)
+        
+        # Запуск мониторинга не должен прерывать работу
+        try:
+            window.show_at_center()
+            # Ошибка должна быть залогирована, но не выброшена
+        except Exception as e:
+            pytest.fail(f"show_at_center не должен выбрасывать исключение: {e}")
+    
+    @patch('services.window_monitor.WindowMonitor.create')
+    def test_error_handling_in_stop_monitoring(self, mock_create, qapp):
+        """
+        Тест обработки ошибок при остановке мониторинга.
+        
+        Requirements: 7.5
+        """
+        from core.config import Config
+        from unittest.mock import MagicMock
+        
+        # Создать мок который выбрасывает исключение при stop_monitoring
+        mock_monitor = MagicMock()
+        mock_monitor.stop_monitoring.side_effect = Exception("Test error")
+        mock_create.return_value = mock_monitor
+        
+        window = FloatingWindow()
+        config = Config()
+        window.set_config(config)
+        
+        # Остановка мониторинга не должна прерывать работу
+        try:
+            window.hide_with_animation()
+            # Ошибка должна быть залогирована, но не выброшена
+        except Exception as e:
+            pytest.fail(f"hide_with_animation не должен выбрасывать исключение: {e}")
+
+
+class TestInfoPanelIntegrationProperties:
+    """Property-тесты для интеграции InfoPanelWidget"""
+    
+    @given(st.text(min_size=1, max_size=50, alphabet=st.characters(
+        whitelist_categories=('Lu', 'Ll'), min_codepoint=97, max_codepoint=122
+    )))
+    @settings(max_examples=50)
+    def test_property_8_waveform_size_preserved(self, qapp, hotkey: str):
+        """
+        Property 8: Сохранение размеров WaveformWidget
+        
+        Для любого состояния FloatingWindow до и после добавления Info_Panel,
+        размер и позиция WaveformWidget должны оставаться неизменными.
+        
+        **Validates: Requirements 7.2**
+        """
+        from core.config import Config
+        
+        window = FloatingWindow()
+        
+        # Запомнить размер и позицию waveform до добавления info_panel
+        waveform_before = window.waveform_widget
+        size_before = waveform_before.size()
+        height_before = waveform_before.height()
+        
+        # Добавить info_panel
+        config = Config()
+        config.hotkey = hotkey
+        window.set_config(config)
+        
+        # Проверить размер и позицию waveform после добавления info_panel
+        waveform_after = window.waveform_widget
+        size_after = waveform_after.size()
+        height_after = waveform_after.height()
+        
+        assert waveform_before == waveform_after, \
+            "WaveformWidget должен быть тем же объектом"
+        assert height_before == height_after, \
+            f"Высота WaveformWidget должна остаться {height_before}px"
+        assert height_after == 50, \
+            "Высота WaveformWidget должна быть фиксированной 50px"

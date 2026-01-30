@@ -148,6 +148,9 @@ class RapidWhisperApp(QObject):
         self.floating_window = FloatingWindow()
         self.floating_window.apply_blur_effect()
         
+        # Установить конфигурацию для инициализации window monitor и info panel
+        self.floating_window.set_config(self.config)
+        
         # Tray Icon - передаем floating_window как parent
         self.tray_icon = TrayIcon(parent=self.floating_window)
         self.tray_icon.show_settings.connect(self._show_settings)
@@ -790,6 +793,11 @@ class RapidWhisperApp(QObject):
                         # Зарегистрировать ESC снова
                         self.hotkey_manager.register_hotkey("esc", self._on_cancel_pressed)
                         self.logger.info(f"Горячая клавиша обновлена: {new_config.hotkey}")
+                        
+                        # Обновить отображение горячей клавиши в info panel
+                        if self.floating_window.info_panel:
+                            self.floating_window.info_panel.update_hotkey_display()
+                            self.logger.info("Отображение горячей клавиши обновлено")
                     else:
                         self.logger.error(f"Не удалось зарегистрировать новую горячую клавишу: {new_config.hotkey}")
                         # Попытаться вернуть старую
