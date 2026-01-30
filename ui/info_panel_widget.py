@@ -200,6 +200,23 @@ class InfoPanelWidget(QWidget):
         """
         self._update_record_hotkey()
     
+    def reload_translations(self) -> None:
+        """
+        Перезагружает все переводы в панели.
+        
+        Вызывается при смене языка интерфейса для обновления
+        всех текстовых элементов.
+        """
+        # Обновить текст кнопки записи
+        self._update_record_hotkey()
+        
+        # Обновить текст кнопки отмены
+        self._close_hotkey_label.setText(t("common.cancel_esc"))
+        
+        # Обновить текст "Нет активного окна" если он отображается
+        if not self._app_name_label.text() or self._app_name_label.text() in ["No active window", "Нет активного окна"]:
+            self._app_name_label.setText(t("common.no_active_window"))
+    
     def set_default_icon(self, icon: QPixmap) -> None:
         """
         Установить иконку по умолчанию для неизвестных приложений.

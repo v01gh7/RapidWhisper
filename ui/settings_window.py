@@ -1781,6 +1781,11 @@ class SettingsWindow(QDialog):
             elif button.text().startswith("💾"):
                 button.setText(t("common.save"))
         
+        # Обновить info panel в floating window если доступен
+        parent_widget = self.parent()
+        if parent_widget and hasattr(parent_widget, 'info_panel') and parent_widget.info_panel:
+            parent_widget.info_panel.reload_translations()
+        
         # Перезагрузить текущую страницу
         current_index = self.content_stack.currentIndex()
         
