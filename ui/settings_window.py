@@ -760,6 +760,13 @@ class SettingsWindow(QDialog):
         """)
         recordings_layout.addWidget(self.recordings_list)
         
+        # Подключить двойной клик для открытия аудио
+        self.recordings_list.itemDoubleClicked.connect(self._open_recording)
+        
+        # Включить контекстное меню
+        self.recordings_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.recordings_list.customContextMenuRequested.connect(self._show_recordings_context_menu)
+        
         # Кнопки управления
         buttons_layout = QHBoxLayout()
         buttons_layout.setSpacing(8)  # Отступ между кнопками
@@ -894,6 +901,67 @@ class SettingsWindow(QDialog):
                     color: #808080;
                 }
             """)
+    
+    def _show_recordings_context_menu(self, position):
+        """Показывает контекстное меню для списка записей."""
+        from PyQt6.QtWidgets import QMenu
+        
+        # Получить элемент под курсором
+        item = self.recordings_list.itemAt(position)
+        if not item:
+            return
+        
+        # Проверить что это не пустой список
+        recording_path = item.data(Qt.ItemDataRole.UserRole)
+        if not recording_path:
+            return
+        
+        # Проверить наличие транскрипции
+        transcription_path = item.data(Qt.ItemDataRole.UserRole + 1)
+        has_transcription = transcription_path is not None
+        
+        # Создать контекстное меню
+        menu = QMenu(self)
+        menu.setStyleSheet("""
+            QMenu {
+                background-color: #2d2d2d;
+                color: #ffffff;
+                border: 1px solid #3d3d3d;
+                border-radius: 6px;
+                padding: 4px;
+            }
+            QMenu::item {
+                padding: 8px 24px;
+                border-radius: 4px;
+            }
+            QMenu::item:selected {
+                background-color: #0078d4;
+            }
+            QMenu::item:disabled {
+                color: #808080;
+            }
+        """)
+        
+        # Добавить действия
+        open_audio_action = menu.addAction("▶️ Открыть аудио")
+        open_audio_action.triggered.connect(self._open_recording)
+        
+        open_text_action = menu.addAction("📝 Открыть текст")
+        open_text_action.setEnabled(has_transcription)
+        open_text_action.triggered.connect(self._open_transcription)
+        
+        menu.addSeparator()
+        
+        open_folder_action = menu.addAction("📁 Открыть папку")
+        open_folder_action.triggered.connect(self._open_recordings_folder)
+        
+        menu.addSeparator()
+        
+        delete_action = menu.addAction("🗑️ Удалить")
+        delete_action.triggered.connect(self._delete_recording)
+        
+        # Показать меню в позиции курсора
+        menu.exec(self.recordings_list.mapToGlobal(position))
     
     def _open_recording(self):
         """Открывает выбранную аудиозапись в проигрывателе по умолчанию."""
