@@ -123,6 +123,9 @@ class RapidWhisperApp(QObject):
             else:
                 self.logger.warning(f"API ключ для провайдера {self.config.ai_provider} не найден!")
             
+            # Логировать режим ручной остановки
+            self.logger.info(f"Режим ручной остановки: {self.config.manual_stop}")
+            
             # Создать компоненты
             self._create_components()
             
@@ -375,6 +378,15 @@ class RapidWhisperApp(QObject):
         try:
             self.logger.info("_start_recording вызван")
             
+            # ВАЖНО: Перезагрузить конфигурацию перед записью
+            # чтобы применить последние изменения настроек
+            from dotenv import load_dotenv
+            from core.config import get_env_path
+            env_path = str(get_env_path())
+            load_dotenv(env_path, override=True)
+            self.config = Config.load_from_env()
+            self.logger.info(f"Конфигурация перезагружена: manual_stop={self.config.manual_stop}")
+            
             # Показать info panel при начале записи
             self.floating_window.show_info_panel()
             
@@ -393,15 +405,28 @@ class RapidWhisperApp(QObject):
             self.silence_detector.reset()
             
             # Создать и запустить поток записи
-            self.recording_thread = AudioRecordingThread(self.silence_detector)
+            # Передать флаг enable_silence_detection в зависимости от режима
+            enable_silence = not self.config.manual_stop
+            self.recording_thread = AudioRecordingThread(
+                self.silence_detector, 
+                enable_silence_detection=enable_silence
+            )
+            self.logger.info(f"AudioRecordingThread создан: enable_silence_detection={enable_silence}")
             
             # Подключить сигналы потока
             self.recording_thread.rms_updated.connect(
                 self.floating_window.get_waveform_widget().update_rms
             )
-            self.recording_thread.silence_detected.connect(
-                self.state_manager.on_silence_detected
-            )
+            
+            # Подключить сигнал тишины только если НЕ включен ручной режим
+            if not self.config.manual_stop:
+                self.logger.info("Режим автоматической остановки: подключаем сигнал тишины")
+                self.recording_thread.silence_detected.connect(
+                    self.state_manager.on_silence_detected
+                )
+            else:
+                self.logger.info("Режим ручной остановки: сигнал тишины НЕ подключается")
+            
             self.recording_thread.recording_stopped.connect(
                 self._on_recording_stopped
             )
@@ -831,6 +856,10 @@ class RapidWhisperApp(QObject):
                 self.logger.info(f"API ключ для {new_config.ai_provider} загружен: {api_key[:10]}...")
             else:
                 self.logger.warning(f"API ключ для провайдера {new_config.ai_provider} не найден!")
+            
+            # 5. Логировать изменение manual_stop
+            if old_config.manual_stop != new_config.manual_stop:
+                self.logger.info(f"Режим ручной остановки изменен: {old_config.manual_stop} -> {new_config.manual_stop}")
             
             # Показать уведомление об успешном обновлении
             self.tray_icon.show_message(

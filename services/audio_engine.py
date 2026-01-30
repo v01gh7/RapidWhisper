@@ -355,16 +355,18 @@ class AudioRecordingThread(QThread):
     recording_error = pyqtSignal(Exception)  # Ошибка записи
     silence_detected = pyqtSignal()  # Обнаружена тишина
     
-    def __init__(self, silence_detector=None):
+    def __init__(self, silence_detector=None, enable_silence_detection=True):
         """
         Инициализирует поток записи.
         
         Args:
             silence_detector: Экземпляр SilenceDetector для определения тишины
+            enable_silence_detection: Включить автоматическое определение тишины (по умолчанию True)
         """
         super().__init__()
         self.audio_engine = AudioEngine()
         self.silence_detector = silence_detector
+        self.enable_silence_detection = enable_silence_detection
         self._should_stop = False
         self._cancelled = False  # Флаг отмены (не сохранять файл)
         self._update_interval = 0.05  # 50ms между обновлениями RMS
@@ -390,8 +392,8 @@ class AudioRecordingThread(QThread):
                 # Отправить сигнал для визуализации
                 self.rms_updated.emit(rms)
                 
-                # Проверить тишину если детектор доступен
-                if self.silence_detector:
+                # Проверить тишину если детектор доступен И включено определение тишины
+                if self.silence_detector and self.enable_silence_detection:
                     current_time = time.time()
                     is_silent = self.silence_detector.update(rms, current_time)
                     

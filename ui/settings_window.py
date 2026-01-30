@@ -488,6 +488,35 @@ class SettingsWindow(QDialog):
         silence_layout = QFormLayout()
         silence_layout.setSpacing(12)
         
+        # Чекбокс ручной остановки
+        self.manual_stop_check = QCheckBox()
+        self.manual_stop_check.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.manual_stop_check.toggled.connect(self._on_manual_stop_changed)
+        manual_stop_label = QLabel("Ручная остановка:")
+        manual_stop_label.setToolTip(
+            "Если включено:\n"
+            "• Запись НЕ останавливается автоматически по тишине\n"
+            "• Вы сами останавливаете запись повторным нажатием горячей клавиши\n"
+            "• Тишина в начале и конце автоматически обрезается перед отправкой"
+        )
+        silence_layout.addRow(manual_stop_label, self.manual_stop_check)
+        
+        # Описание режима
+        manual_stop_info = QLabel(
+            "💡 <b>Ручная остановка:</b> Запись продолжается даже при тишине. "
+            "Остановите запись сами, нажав горячую клавишу повторно. "
+            "Тишина в начале и конце будет автоматически обрезана."
+        )
+        manual_stop_info.setWordWrap(True)
+        manual_stop_info.setStyleSheet(
+            "color: #888888; "
+            "font-size: 11px; "
+            "padding: 8px; "
+            "background-color: #2d2d2d; "
+            "border-radius: 4px;"
+        )
+        silence_layout.addRow("", manual_stop_info)
+        
         self.silence_threshold_spin = QDoubleSpinBox()
         self.silence_threshold_spin.setRange(0.01, 0.1)
         self.silence_threshold_spin.setSingleStep(0.01)
@@ -960,6 +989,7 @@ class SettingsWindow(QDialog):
         self.hotkey_edit.setText(self.config.hotkey)
         self.silence_threshold_spin.setValue(self.config.silence_threshold)
         self.silence_duration_spin.setValue(self.config.silence_duration)
+        self.manual_stop_check.setChecked(self.config.manual_stop)
         self.auto_hide_spin.setValue(self.config.auto_hide_delay)
         self.remember_position_check.setChecked(self.config.remember_window_position)
         
@@ -977,6 +1007,9 @@ class SettingsWindow(QDialog):
         
         # Обновить состояние выпадающего списка
         self._on_remember_position_changed(self.config.remember_window_position)
+        
+        # Обновить состояние настроек тишины
+        self._on_manual_stop_changed(self.config.manual_stop)
         
         # Аудио
         self.sample_rate_combo.setCurrentText(str(self.config.sample_rate))
@@ -997,6 +1030,16 @@ class SettingsWindow(QDialog):
         # Если чекбокс выключен, показываем выпадающий список
         # Если включен, скрываем (используется пользовательская позиция)
         self.window_position_combo.setEnabled(not checked)
+    
+    def _on_manual_stop_changed(self, checked: bool):
+        """
+        Обработчик изменения чекбокса ручной остановки.
+        
+        Включает/выключает настройки автоматического определения тишины.
+        """
+        # Если ручная остановка включена, отключаем настройки тишины
+        self.silence_threshold_spin.setEnabled(not checked)
+        self.silence_duration_spin.setEnabled(not checked)
     
     def _reset_hotkey(self):
         """
@@ -1061,6 +1104,7 @@ class SettingsWindow(QDialog):
                 "HOTKEY": self.hotkey_edit.text(),
                 "SILENCE_THRESHOLD": str(self.silence_threshold_spin.value()),
                 "SILENCE_DURATION": str(self.silence_duration_spin.value()),
+                "MANUAL_STOP": "true" if self.manual_stop_check.isChecked() else "false",
                 "AUTO_HIDE_DELAY": str(self.auto_hide_spin.value()),
                 "SAMPLE_RATE": self.sample_rate_combo.currentText(),
                 "CHUNK_SIZE": self.chunk_size_combo.currentText(),

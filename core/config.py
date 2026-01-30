@@ -155,6 +155,13 @@ WINDOW_POSITION_Y=
 # Default: false
 # Options: true, false
 KEEP_RECORDINGS=false
+
+# Manual stop mode (disable automatic silence detection)
+# When enabled, recording will only stop when you press the hotkey again
+# Silence at the beginning and end will be automatically trimmed
+# Default: false
+# Options: true, false
+MANUAL_STOP=false
 """
         env_path.write_text(default_content, encoding='utf-8')
 
@@ -228,6 +235,9 @@ class Config:
         
         # Сохранение записей
         self.keep_recordings: bool = False  # По умолчанию удалять записи после транскрипции
+        
+        # Ручная остановка записи
+        self.manual_stop: bool = False  # По умолчанию автоматическая остановка по тишине
     
     @staticmethod
     def load_from_env(env_path: Optional[str] = None) -> 'Config':
@@ -350,6 +360,10 @@ class Config:
         # Загрузить настройки сохранения записей
         keep_rec = os.getenv("KEEP_RECORDINGS", "false").lower()
         config.keep_recordings = keep_rec in ("true", "1", "yes")
+        
+        # Загрузить настройки ручной остановки
+        manual_stop = os.getenv("MANUAL_STOP", "false").lower()
+        config.manual_stop = manual_stop in ("true", "1", "yes")
         
         return config
     

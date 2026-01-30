@@ -286,6 +286,15 @@ class TranscriptionThread(QThread):
             logger.info(f"TranscriptionThread.run() начат для файла: {self.audio_file_path}")
             logger.info(f"Провайдер: {self.provider}")
             
+            # Проверить настройку manual_stop и обрезать тишину если нужно
+            from core.config import Config
+            config = Config.load_from_env()
+            
+            if config.manual_stop:
+                logger.info("Режим ручной остановки: обрезка тишины...")
+                from utils.audio_utils import trim_silence
+                self.audio_file_path = trim_silence(self.audio_file_path, threshold=config.silence_threshold)
+            
             # Создать клиент транскрипции
             logger.info(f"Создание TranscriptionClient для {self.provider}...")
             self.transcription_client = TranscriptionClient(
