@@ -382,6 +382,11 @@ class FloatingWindow(QWidget):
         self._fade_animation.setStartValue(0.0)
         self._fade_animation.setEndValue(1.0)
         self._fade_animation.setEasingCurve(QEasingCurve.Type.InOutQuad)
+        
+        # ВАЖНО: Удалить эффект после завершения анимации
+        # чтобы он не влиял на дочерние виджеты
+        self._fade_animation.finished.connect(self._remove_opacity_effect)
+        
         self._fade_animation.start()
     
     def _fade_out(self, duration: int = 300) -> None:
@@ -408,6 +413,19 @@ class FloatingWindow(QWidget):
         # Скрываем окно после завершения анимации
         self._fade_animation.finished.connect(self.hide)
         self._fade_animation.start()
+    
+    def _remove_opacity_effect(self) -> None:
+        """
+        Удаляет эффект прозрачности после завершения анимации.
+        
+        Это необходимо чтобы QGraphicsOpacityEffect не влиял на
+        дочерние виджеты (InfoPanelWidget) после завершения анимации.
+        """
+        if self._opacity_effect:
+            # Сначала убираем эффект с виджета
+            self.setGraphicsEffect(None)
+            # Затем очищаем ссылку
+            self._opacity_effect = None
     
     def paintEvent(self, event: QPaintEvent) -> None:
         """
