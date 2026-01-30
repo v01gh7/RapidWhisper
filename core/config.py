@@ -310,7 +310,7 @@ class Config:
         self.groq_api_key: str = ""
         self.custom_api_key: str = ""
         self.custom_base_url: str = ""
-        self.custom_model: str = "whisper-1"
+        self.custom_model: str = "whisper-1"  # Используется для всех провайдеров если указано
         
         # Параметры приложения
         self.app_user_model_id: str = "RapidWhisper.VoiceTranscription.App.1.0"  # Windows App User Model ID

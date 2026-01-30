@@ -70,13 +70,13 @@ class TranscriptionClient:
         # Настроить параметры в зависимости от провайдера
         if self.provider == "openai":
             self.base_url = "https://api.openai.com/v1/"
-            self.model = "whisper-1"
+            self.model = model if model else "whisper-1"  # Используем кастомную модель если указана
         elif self.provider == "groq":
             self.base_url = "https://api.groq.com/openai/v1/"
-            self.model = "whisper-large-v3"
+            self.model = model if model else "whisper-large-v3"  # Используем кастомную модель если указана
         elif self.provider == "glm":
             self.base_url = "https://open.bigmodel.cn/api/paas/v4/"
-            self.model = "glm-4-voice"
+            self.model = model if model else "glm-4-voice"  # Используем кастомную модель если указана
         elif self.provider == "custom":
             # Для кастомного провайдера требуются base_url и model
             if base_url is None:
@@ -153,6 +153,14 @@ class TranscriptionClient:
         except AuthenticationError as e:
             logger.error(f"Ошибка аутентификации: {e}")
             raise APIAuthenticationError(str(e))
+        
+        except NotFoundError as e:
+            logger.error(f"🔍 МОДЕЛЬ ТРАНСКРИПЦИИ НЕ НАЙДЕНА: {e}")
+            logger.error(f"Модель '{self.model}' не существует для провайдера {self.provider}")
+            logger.error("Проверьте название модели в настройках AI Provider")
+            logger.warning("⚠️ Пробрасываем исключение для уведомления пользователя")
+            # Пробросить исключение чтобы TranscriptionThread мог показать уведомление
+            raise
         
         except APITimeoutError as e:
             logger.error(f"Таймаут API: {e}")
@@ -460,7 +468,8 @@ class TranscriptionThread(QThread):
     # Сигналы
     transcription_complete = pyqtSignal(str)  # Транскрибированный текст
     transcription_error = pyqtSignal(Exception)  # Ошибка транскрипции
-    model_not_found = pyqtSignal(str, str)  # Модель не найдена (model, provider)
+    model_not_found = pyqtSignal(str, str)  # Модель не найдена в постобработке (model, provider)
+    transcription_model_not_found = pyqtSignal(str, str)  # Модель не найдена в транскрипции (model, provider)
     
     def __init__(self, audio_file_path: str, provider: str = "openai", api_key: Optional[str] = None, base_url: Optional[str] = None, model: Optional[str] = None):
         """
@@ -515,6 +524,7 @@ class TranscriptionThread(QThread):
             
             # Создать клиент транскрипции
             logger.info(f"Создание TranscriptionClient для {self.provider}...")
+            logger.info(f"Параметры: api_key={'***' if self.api_key else 'None'}, base_url={self.base_url}, model={self.model}")
             self.transcription_client = TranscriptionClient(
                 provider=self.provider, 
                 api_key=self.api_key,
@@ -525,9 +535,17 @@ class TranscriptionThread(QThread):
             
             # Выполнить транскрипцию
             logger.info("Начало транскрипции...")
-            text = self.transcription_client.transcribe_audio(self.audio_file_path)
-            transcribed_text = text
-            logger.info(f"Транскрипция завершена: {text[:50]}...")
+            try:
+                text = self.transcription_client.transcribe_audio(self.audio_file_path)
+                transcribed_text = text
+                logger.info(f"Транскрипция завершена: {text[:50]}...")
+            except NotFoundError as nf_error:
+                logger.error(f"❌ Модель транскрипции не найдена: {nf_error}")
+                logger.info("Отправка сигнала transcription_model_not_found для уведомления пользователя")
+                # Отправить специальный сигнал для уведомления
+                self.transcription_model_not_found.emit(self.transcription_client.model, self.provider)
+                # Пробросить ошибку дальше чтобы остановить обработку
+                raise
             
             # Постобработка текста если включена
             if config.enable_post_processing:

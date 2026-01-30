@@ -522,13 +522,18 @@ class RapidWhisperApp(QObject):
             self.tray_icon.set_status(t("status.processing"))
             self.logger.info("Статус трея обновлен: Обработка аудио...")
             
+            # Получить модель для транскрипции
+            transcription_model = self._get_transcription_model_for_provider()
+            self.logger.info(f"Модель для транскрипции: {transcription_model if transcription_model else 'дефолтная для провайдера'}")
+            self.logger.info(f"custom_model из конфига: '{self.config.custom_model}'")
+            
             # Создать и запустить поток транскрипции
             self.transcription_thread = TranscriptionThread(
                 self._audio_file_path,
                 provider=self.config.ai_provider,
                 api_key=self._get_api_key_for_provider(),
                 base_url=self.config.custom_base_url if self.config.ai_provider == "custom" else None,
-                model=self.config.custom_model if self.config.ai_provider == "custom" else None
+                model=transcription_model
             )
             
             self.logger.info("TranscriptionThread создан")
@@ -542,6 +547,9 @@ class RapidWhisperApp(QObject):
             )
             self.transcription_thread.model_not_found.connect(
                 self._on_model_not_found
+            )
+            self.transcription_thread.transcription_model_not_found.connect(
+                self._on_transcription_model_not_found
             )
             
             self.logger.info("Сигналы TranscriptionThread подключены")
@@ -579,7 +587,7 @@ class RapidWhisperApp(QObject):
     
     def _on_model_not_found(self, model: str, provider: str) -> None:
         """
-        Обработчик ошибки "модель не найдена".
+        Обработчик ошибки "модель не найдена" в постобработке.
         
         Показывает уведомление пользователю через tray icon.
         
@@ -587,7 +595,7 @@ class RapidWhisperApp(QObject):
             model: Название модели
             provider: Провайдер
         """
-        self.logger.warning(f"Модель не найдена: {model} для провайдера {provider}")
+        self.logger.warning(f"Модель постобработки не найдена: {model} для провайдера {provider}")
         
         # Показать уведомление в трее
         self.tray_icon.show_message(
@@ -596,7 +604,28 @@ class RapidWhisperApp(QObject):
             duration=8000  # 8 секунд - дольше чем обычные уведомления
         )
         
-        self.logger.info("Уведомление о модели не найдена показано пользователю")
+        self.logger.info("Уведомление о модели постобработки не найдена показано пользователю")
+    
+    def _on_transcription_model_not_found(self, model: str, provider: str) -> None:
+        """
+        Обработчик ошибки "модель транскрипции не найдена".
+        
+        Показывает уведомление пользователю через tray icon.
+        
+        Args:
+            model: Название модели
+            provider: Провайдер
+        """
+        self.logger.warning(f"Модель транскрипции не найдена: {model} для провайдера {provider}")
+        
+        # Показать уведомление в трее
+        self.tray_icon.show_message(
+            t("tray.notification.transcription_model_not_found"),
+            t("tray.notification.transcription_model_not_found_message", model=model, provider=provider),
+            duration=8000  # 8 секунд - дольше чем обычные уведомления
+        )
+        
+        self.logger.info("Уведомление о модели транскрипции не найдена показано пользователю")
     
     def _display_result(self, text: str) -> None:
         """
@@ -691,6 +720,21 @@ class RapidWhisperApp(QObject):
             return self.config.glm_api_key
         elif self.config.ai_provider == "custom":
             return self.config.custom_api_key
+        return None
+    
+    def _get_transcription_model_for_provider(self) -> Optional[str]:
+        """
+        Получает модель транскрипции для текущего провайдера.
+        
+        Если указана кастомная модель (custom_model), использует её для всех провайдеров.
+        Иначе возвращает None чтобы использовать дефолтную модель провайдера.
+        
+        Returns:
+            Название модели или None для дефолтной
+        """
+        # Если custom_model указана, используем её для всех провайдеров
+        if self.config.custom_model:
+            return self.config.custom_model
         return None
     
     def _show_settings(self) -> None:

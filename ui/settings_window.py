@@ -452,7 +452,7 @@ class SettingsWindow(QDialog):
         custom_url_label.setToolTip(t("settings.ai_provider.custom_url_tooltip"))
         keys_layout.addRow(custom_url_label, self.custom_url_edit)
         
-        # Custom Model
+        # Custom Model (используется для всех провайдеров если указано)
         self.custom_model_edit = QLineEdit()
         self.custom_model_edit.setPlaceholderText(t("settings.ai_provider.custom_model_placeholder"))
         custom_model_label = QLabel(t("settings.ai_provider.custom_model"))

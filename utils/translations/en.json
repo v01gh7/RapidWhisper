@@ -21,7 +21,10 @@
       "custom_url_tooltip": "URL endpoint for custom API (e.g., LM Studio, Ollama)",
       "custom_model": "Custom Model:",
       "custom_model_placeholder": "whisper-1",
-      "custom_model_tooltip": "Model name for custom API",
+      "custom_model_tooltip": "Custom model name for transcription (optional). If specified, this model will be used instead of the default for the selected provider (Groq, OpenAI, GLM, or Custom).",
+      "transcription_custom_model": "Custom Transcription Model:",
+      "transcription_custom_model_tooltip": "Enter custom model name if not using default (optional). If specified, this model will be used instead of the default for this provider.",
+      "transcription_custom_model_placeholder": "e.g., whisper-large-v3-turbo, whisper-1, glm-4-voice",
       "info": "💡 <b>Tip:</b> Groq provides free and fast API.<br>Recommended for getting started.<br><br><b>Get API keys:</b><br>• Groq: <a href='https://console.groq.com/keys'>console.groq.com/keys</a><br>• OpenAI: <a href='https://platform.openai.com/api-keys'>platform.openai.com/api-keys</a><br>• GLM: <a href='https://open.bigmodel.cn/usercenter/apikeys'>open.bigmodel.cn/usercenter/apikeys</a><br><br><b>Custom provider:</b><br>Supports any OpenAI-compatible API:<br>• LM Studio: <a href='https://lmstudio.ai'>lmstudio.ai</a><br>• Ollama: <a href='https://ollama.ai'>ollama.ai</a><br>• vLLM, LocalAI and others"
     },
     "app": {
@@ -206,6 +209,8 @@
       "settings_apply_error_message": "Failed to apply settings: {error}",
       "model_not_found": "🔍 Model Not Found",
       "model_not_found_message": "Model '{model}' not found for {provider}.\n\nCheck model name in post-processing settings.\nAvailable models can be found in the dropdown list.",
+      "transcription_model_not_found": "🔍 Transcription Model Not Found",
+      "transcription_model_not_found_message": "Transcription model '{model}' not found for {provider}.\n\nCheck model name in AI Provider settings.\nUsing default model for this provider.",
       "welcome": "👋 Welcome to RapidWhisper!",
       "welcome_message": "To get started, you need to set up an API key.\n\nClick on the tray icon to open Settings.",
       "welcome_dialog_title": "👋 Welcome to RapidWhisper!",
