@@ -65,6 +65,9 @@ class TrayIcon(QObject):
         # Создать меню
         self._create_menu()
         
+        # Подключить клик на иконку для открытия настроек
+        self.tray_icon.activated.connect(self._on_tray_icon_activated)
+        
         # Показать иконку
         self.tray_icon.show()
         
@@ -79,6 +82,17 @@ class TrayIcon(QObject):
             status: Текст статуса
         """
         self.tray_icon.setToolTip(f"RapidWhisper - {status}")
+    
+    def _on_tray_icon_activated(self, reason: QSystemTrayIcon.ActivationReason) -> None:
+        """
+        Обработчик клика на иконку трея.
+        
+        Args:
+            reason: Причина активации (клик, двойной клик и т.д.)
+        """
+        # Открыть настройки при одинарном клике левой кнопкой
+        if reason == QSystemTrayIcon.ActivationReason.Trigger:
+            self.show_settings.emit()
     
     def _create_menu(self) -> None:
         """Создает контекстное меню трея."""
