@@ -15,6 +15,7 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont, QIcon, QScreen
 from core.config import Config
 from utils.logger import get_logger
+from ui.hotkey_input import HotkeyInput
 import os
 
 logger = get_logger()
@@ -457,11 +458,23 @@ class SettingsWindow(QDialog):
         hotkey_layout = QFormLayout()
         hotkey_layout.setSpacing(12)
         
-        self.hotkey_edit = QLineEdit()
-        self.hotkey_edit.setPlaceholderText("ctrl+space")
+        # Поле ввода горячей клавиши с кнопкой сброса
+        hotkey_container = QHBoxLayout()
+        self.hotkey_edit = HotkeyInput()
+        self.hotkey_edit.setPlaceholderText("Нажмите сочетание клавиш...")
+        hotkey_container.addWidget(self.hotkey_edit)
+        
+        # Кнопка сброса
+        reset_hotkey_btn = QPushButton("🔄")
+        reset_hotkey_btn.setMaximumWidth(40)
+        reset_hotkey_btn.setToolTip("Сбросить на текущее сохраненное значение")
+        reset_hotkey_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        reset_hotkey_btn.clicked.connect(self._reset_hotkey)
+        hotkey_container.addWidget(reset_hotkey_btn)
+        
         hotkey_label = QLabel("Горячая клавиша:")
-        hotkey_label.setToolTip("Например: F1, ctrl+space, ctrl+shift+r")
-        hotkey_layout.addRow(hotkey_label, self.hotkey_edit)
+        hotkey_label.setToolTip("Нажмите сочетание клавиш для записи (например: Ctrl+Space, F1, Ctrl+Shift+R)")
+        hotkey_layout.addRow(hotkey_label, hotkey_container)
         
         hotkey_group.setLayout(hotkey_layout)
         layout.addWidget(hotkey_group)
@@ -746,6 +759,23 @@ class SettingsWindow(QDialog):
         # Если чекбокс выключен, показываем выпадающий список
         # Если включен, скрываем (используется пользовательская позиция)
         self.window_position_combo.setEnabled(not checked)
+    
+    def _reset_hotkey(self):
+        """
+        Сбрасывает горячую клавишу на текущее сохраненное значение.
+        
+        Загружает значение из конфигурации и устанавливает в поле.
+        """
+        # Загрузить текущее значение из конфигурации
+        current_hotkey = self.config.hotkey
+        
+        # Установить в поле
+        self.hotkey_edit.setText(current_hotkey)
+        
+        # Убрать фокус с поля
+        self.hotkey_edit.clearFocus()
+        
+        logger.info(f"Горячая клавиша сброшена на: {current_hotkey}")
     
     def _on_provider_changed(self, provider: str):
         """
