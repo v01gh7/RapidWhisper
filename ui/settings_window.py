@@ -122,7 +122,7 @@ class SettingsWindow(QDialog):
                 padding: 8px 16px;
                 background-color: #2d2d2d;
                 color: #ffffff;
-                font-size: 13px;
+                font-size: 14px;
                 font-weight: bold;
                 border-radius: 4px;
                 border: 1px solid #0078d4;
@@ -448,7 +448,7 @@ class SettingsWindow(QDialog):
         """Создает страницу настроек приложения."""
         widget = QWidget()
         layout = QVBoxLayout()
-        layout.setSpacing(20)
+        layout.setSpacing(20)  # Возвращен отступ в 20
         
         # Заголовок
         title = QLabel("Приложение")
