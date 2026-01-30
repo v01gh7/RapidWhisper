@@ -219,6 +219,11 @@ class Config:
         self.sample_rate: int = 16000
         self.chunk_size: int = 1024
         
+        # Параметры определения тишины
+        self.silence_threshold: float = 0.02
+        self.silence_duration: float = 1.5
+        self.silence_padding: int = 650  # Паддинг при обрезке тишины в миллисекундах
+        
         # Параметры логирования
         self.log_level: str = "INFO"
         self.log_file: str = "rapidwhisper.log"
@@ -326,6 +331,11 @@ class Config:
         
         try:
             config.chunk_size = int(os.getenv("CHUNK_SIZE", config.chunk_size))
+        except ValueError:
+            pass
+        
+        try:
+            config.silence_padding = int(os.getenv("SILENCE_PADDING", config.silence_padding))
         except ValueError:
             pass
         

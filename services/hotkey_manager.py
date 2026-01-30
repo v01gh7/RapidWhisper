@@ -47,6 +47,11 @@ class HotkeyManager:
         Requirements: 1.1, 1.2
         """
         try:
+            # Если это основная клавиша и уже есть зарегистрированная - отменяем старую
+            if callback is None and self._is_registered and self.hotkey:
+                keyboard.remove_hotkey(self.hotkey)
+                logger.info(f"Старая горячая клавиша {self.hotkey} отменена")
+            
             # Определяем callback для этой клавиши
             key_callback = callback if callback else self._on_hotkey_pressed
             

@@ -293,7 +293,11 @@ class TranscriptionThread(QThread):
             if config.manual_stop:
                 logger.info("Режим ручной остановки: обрезка тишины...")
                 from utils.audio_utils import trim_silence
-                self.audio_file_path = trim_silence(self.audio_file_path, threshold=config.silence_threshold)
+                self.audio_file_path = trim_silence(
+                    self.audio_file_path, 
+                    threshold=config.silence_threshold,
+                    padding_ms=config.silence_padding
+                )
             
             # Создать клиент транскрипции
             logger.info(f"Создание TranscriptionClient для {self.provider}...")

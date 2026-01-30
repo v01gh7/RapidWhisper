@@ -150,7 +150,7 @@ class TestSilenceDetectionHandling:
     """Тесты обработки обнаружения тишины"""
     
     def test_silence_in_recording_stops_recording(self):
-        """Тест что обнаружение тишины в RECORDING останавливает запись"""
+        """Тест что обнаружение тишины в RECORDING переходит в PROCESSING"""
         manager = StateManager()
         manager.transition_to(AppState.RECORDING)
         
@@ -164,9 +164,11 @@ class TestSilenceDetectionHandling:
         
         manager.on_silence_detected()
         
-        stop_recording_mock.assert_called_once()
-        start_transcription_mock.assert_called_once_with("/tmp/audio.wav")
+        # Silence detection only transitions to PROCESSING
+        # stop_recording callback is NOT called immediately - it waits for audio file to be saved
         assert manager.current_state == AppState.PROCESSING
+        stop_recording_mock.assert_not_called()
+        start_transcription_mock.assert_not_called()
     
     def test_silence_in_idle_does_nothing(self):
         """Тест что обнаружение тишины в IDLE ничего не делает"""
@@ -393,8 +395,10 @@ class TestStateManagerProperties:
         if num_silence_events > 0:
             assert manager.current_state == AppState.PROCESSING, \
                 "После обнаружения тишины должен быть переход в PROCESSING"
-            stop_recording_mock.assert_called_once()
-            start_transcription_mock.assert_called_once()
+            # Silence detection only transitions to PROCESSING
+            # stop_recording callback is NOT called immediately - it waits for audio file to be saved
+            stop_recording_mock.assert_not_called()
+            start_transcription_mock.assert_not_called()
     
     @given(st.lists(st.sampled_from(list(AppState)), min_size=1, max_size=10))
     @settings(max_examples=100)

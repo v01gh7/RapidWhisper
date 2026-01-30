@@ -483,60 +483,6 @@ class SettingsWindow(QDialog):
         hotkey_group.setLayout(hotkey_layout)
         layout.addWidget(hotkey_group)
         
-        # Группа: Определение тишины
-        silence_group = QGroupBox("Определение тишины")
-        silence_layout = QFormLayout()
-        silence_layout.setSpacing(12)
-        
-        # Чекбокс ручной остановки
-        self.manual_stop_check = QCheckBox()
-        self.manual_stop_check.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.manual_stop_check.toggled.connect(self._on_manual_stop_changed)
-        manual_stop_label = QLabel("Ручная остановка:")
-        manual_stop_label.setToolTip(
-            "Если включено:\n"
-            "• Запись НЕ останавливается автоматически по тишине\n"
-            "• Вы сами останавливаете запись повторным нажатием горячей клавиши\n"
-            "• Тишина в начале и конце автоматически обрезается перед отправкой"
-        )
-        silence_layout.addRow(manual_stop_label, self.manual_stop_check)
-        
-        # Описание режима
-        manual_stop_info = QLabel(
-            "💡 <b>Ручная остановка:</b> Запись продолжается даже при тишине. "
-            "Остановите запись сами, нажав горячую клавишу повторно. "
-            "Тишина в начале и конце будет автоматически обрезана."
-        )
-        manual_stop_info.setWordWrap(True)
-        manual_stop_info.setStyleSheet(
-            "color: #888888; "
-            "font-size: 11px; "
-            "padding: 8px; "
-            "background-color: #2d2d2d; "
-            "border-radius: 4px;"
-        )
-        silence_layout.addRow("", manual_stop_info)
-        
-        self.silence_threshold_spin = QDoubleSpinBox()
-        self.silence_threshold_spin.setRange(0.01, 0.1)
-        self.silence_threshold_spin.setSingleStep(0.01)
-        self.silence_threshold_spin.setDecimals(2)
-        threshold_label = QLabel("Порог тишины:")
-        threshold_label.setToolTip("RMS значение (0.01-0.1). Меньше = более чувствительно")
-        silence_layout.addRow(threshold_label, self.silence_threshold_spin)
-        
-        self.silence_duration_spin = QDoubleSpinBox()
-        self.silence_duration_spin.setRange(0.5, 5.0)
-        self.silence_duration_spin.setSingleStep(0.5)
-        self.silence_duration_spin.setDecimals(1)
-        self.silence_duration_spin.setSuffix(" сек")
-        duration_label = QLabel("Длительность тишины:")
-        duration_label.setToolTip("Секунды тишины перед остановкой записи (0.5-5.0)")
-        silence_layout.addRow(duration_label, self.silence_duration_spin)
-        
-        silence_group.setLayout(silence_layout)
-        layout.addWidget(silence_group)
-        
         # Группа: Интерфейс
         ui_group = QGroupBox("Интерфейс")
         ui_layout = QFormLayout()
@@ -614,6 +560,72 @@ class SettingsWindow(QDialog):
         
         audio_group.setLayout(audio_layout)
         layout.addWidget(audio_group)
+        
+        # Группа: Определение тишины
+        silence_group = QGroupBox("Определение тишины")
+        silence_layout = QFormLayout()
+        silence_layout.setSpacing(12)
+        
+        # Чекбокс ручной остановки
+        self.manual_stop_check = QCheckBox()
+        self.manual_stop_check.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.manual_stop_check.toggled.connect(self._on_manual_stop_changed)
+        manual_stop_label = QLabel("Ручная остановка:")
+        manual_stop_label.setToolTip(
+            "Если включено:\n"
+            "• Запись НЕ останавливается автоматически по тишине\n"
+            "• Вы сами останавливаете запись повторным нажатием горячей клавиши\n"
+            "• Вся тишина автоматически удаляется перед отправкой"
+        )
+        silence_layout.addRow(manual_stop_label, self.manual_stop_check)
+        
+        # Описание режима
+        manual_stop_info = QLabel(
+            "💡 <b>Ручная остановка:</b> Запись продолжается даже при тишине. "
+            "Остановите запись сами, нажав горячую клавишу повторно. "
+            "Вся тишина будет автоматически удалена."
+        )
+        manual_stop_info.setWordWrap(True)
+        manual_stop_info.setStyleSheet(
+            "color: #888888; "
+            "font-size: 11px; "
+            "padding: 8px; "
+            "background-color: #2d2d2d; "
+            "border-radius: 4px;"
+        )
+        silence_layout.addRow("", manual_stop_info)
+        
+        self.silence_threshold_spin = QDoubleSpinBox()
+        self.silence_threshold_spin.setRange(0.01, 0.1)
+        self.silence_threshold_spin.setSingleStep(0.01)
+        self.silence_threshold_spin.setDecimals(2)
+        threshold_label = QLabel("Порог тишины:")
+        threshold_label.setToolTip("RMS значение (0.01-0.1). Меньше = более чувствительно")
+        silence_layout.addRow(threshold_label, self.silence_threshold_spin)
+        
+        self.silence_duration_spin = QDoubleSpinBox()
+        self.silence_duration_spin.setRange(0.5, 5.0)
+        self.silence_duration_spin.setSingleStep(0.5)
+        self.silence_duration_spin.setDecimals(1)
+        self.silence_duration_spin.setSuffix(" сек")
+        duration_label = QLabel("Длительность тишины:")
+        duration_label.setToolTip("Секунды тишины перед остановкой записи (0.5-5.0)")
+        silence_layout.addRow(duration_label, self.silence_duration_spin)
+        
+        self.silence_padding_spin = QDoubleSpinBox()
+        self.silence_padding_spin.setRange(100, 1000)
+        self.silence_padding_spin.setSingleStep(50)
+        self.silence_padding_spin.setDecimals(0)
+        self.silence_padding_spin.setSuffix(" мс")
+        padding_label = QLabel("Паддинг обрезки:")
+        padding_label.setToolTip(
+            "Отступ в миллисекундах перед и после звука при удалении тишины.\n"
+            "Предотвращает обрезание на полуслове. (100-1000 мс)"
+        )
+        silence_layout.addRow(padding_label, self.silence_padding_spin)
+        
+        silence_group.setLayout(silence_layout)
+        layout.addWidget(silence_group)
         
         # Информация
         info_label = QLabel(
@@ -1014,6 +1026,7 @@ class SettingsWindow(QDialog):
         # Аудио
         self.sample_rate_combo.setCurrentText(str(self.config.sample_rate))
         self.chunk_size_combo.setCurrentText(str(self.config.chunk_size))
+        self.silence_padding_spin.setValue(self.config.silence_padding)
         
         # Записи
         self.keep_recordings_check.setChecked(self.config.keep_recordings)
@@ -1108,6 +1121,7 @@ class SettingsWindow(QDialog):
                 "AUTO_HIDE_DELAY": str(self.auto_hide_spin.value()),
                 "SAMPLE_RATE": self.sample_rate_combo.currentText(),
                 "CHUNK_SIZE": self.chunk_size_combo.currentText(),
+                "SILENCE_PADDING": str(int(self.silence_padding_spin.value())),
                 "REMEMBER_WINDOW_POSITION": "true" if self.remember_position_check.isChecked() else "false",
                 "WINDOW_POSITION_PRESET": position_presets[position_index],
                 "KEEP_RECORDINGS": "true" if self.keep_recordings_check.isChecked() else "false",
