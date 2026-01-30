@@ -199,7 +199,7 @@ class SettingsWindow(QDialog):
         provider_layout = QFormLayout()
         
         self.provider_combo = QComboBox()
-        self.provider_combo.addItems(["groq", "openai", "glm"])
+        self.provider_combo.addItems(["groq", "openai", "glm", "custom"])
         self.provider_combo.currentTextChanged.connect(self._on_provider_changed)
         provider_layout.addRow("Провайдер:", self.provider_combo)
         
@@ -273,6 +273,41 @@ class SettingsWindow(QDialog):
         glm_label.setToolTip("Получите на https://open.bigmodel.cn/usercenter/apikeys")
         keys_layout.addRow(glm_label, glm_layout)
         
+        # Custom API Key
+        custom_layout = QHBoxLayout()
+        self.custom_key_edit = QLineEdit()
+        self.custom_key_edit.setEchoMode(QLineEdit.EchoMode.Password)
+        self.custom_key_edit.setPlaceholderText("Введите Custom API ключ")
+        custom_layout.addWidget(self.custom_key_edit)
+        
+        custom_show_btn = QPushButton("👁")
+        custom_show_btn.setMaximumWidth(40)
+        custom_show_btn.setCheckable(True)
+        custom_show_btn.toggled.connect(
+            lambda checked: self.custom_key_edit.setEchoMode(
+                QLineEdit.EchoMode.Normal if checked else QLineEdit.EchoMode.Password
+            )
+        )
+        custom_layout.addWidget(custom_show_btn)
+        
+        custom_label = QLabel("Custom API Key:")
+        custom_label.setToolTip("API ключ для кастомного OpenAI-совместимого API")
+        keys_layout.addRow(custom_label, custom_layout)
+        
+        # Custom Base URL
+        self.custom_url_edit = QLineEdit()
+        self.custom_url_edit.setPlaceholderText("http://localhost:1234/v1/")
+        custom_url_label = QLabel("Custom Base URL:")
+        custom_url_label.setToolTip("URL endpoint для кастомного API (например, LM Studio, Ollama)")
+        keys_layout.addRow(custom_url_label, self.custom_url_edit)
+        
+        # Custom Model
+        self.custom_model_edit = QLineEdit()
+        self.custom_model_edit.setPlaceholderText("whisper-1")
+        custom_model_label = QLabel("Custom Model:")
+        custom_model_label.setToolTip("Название модели для кастомного API")
+        keys_layout.addRow(custom_model_label, self.custom_model_edit)
+        
         keys_group.setLayout(keys_layout)
         layout.addWidget(keys_group)
         
@@ -283,7 +318,12 @@ class SettingsWindow(QDialog):
             "<b>Получить API ключи:</b><br>"
             "• Groq: <a href='https://console.groq.com/keys'>console.groq.com/keys</a><br>"
             "• OpenAI: <a href='https://platform.openai.com/api-keys'>platform.openai.com/api-keys</a><br>"
-            "• GLM: <a href='https://open.bigmodel.cn/usercenter/apikeys'>open.bigmodel.cn/usercenter/apikeys</a>"
+            "• GLM: <a href='https://open.bigmodel.cn/usercenter/apikeys'>open.bigmodel.cn/usercenter/apikeys</a><br><br>"
+            "<b>Custom провайдер:</b><br>"
+            "Поддерживает любые OpenAI-совместимые API:<br>"
+            "• LM Studio: <a href='https://lmstudio.ai'>lmstudio.ai</a><br>"
+            "• Ollama: <a href='https://ollama.ai'>ollama.ai</a><br>"
+            "• vLLM, LocalAI и другие"
         )
         info_label.setWordWrap(True)
         info_label.setOpenExternalLinks(True)  # Открывать ссылки в браузере
@@ -407,6 +447,9 @@ class SettingsWindow(QDialog):
         self.groq_key_edit.setText(self.config.groq_api_key)
         self.openai_key_edit.setText(self.config.openai_api_key)
         self.glm_key_edit.setText(self.config.glm_api_key)
+        self.custom_key_edit.setText(self.config.custom_api_key)
+        self.custom_url_edit.setText(self.config.custom_base_url)
+        self.custom_model_edit.setText(self.config.custom_model)
         
         # Приложение
         self.hotkey_edit.setText(self.config.hotkey)
@@ -431,6 +474,9 @@ class SettingsWindow(QDialog):
         self.groq_key_edit.setStyleSheet("")
         self.openai_key_edit.setStyleSheet("")
         self.glm_key_edit.setStyleSheet("")
+        self.custom_key_edit.setStyleSheet("")
+        self.custom_url_edit.setStyleSheet("")
+        self.custom_model_edit.setStyleSheet("")
         
         # Подсветить активное поле
         if provider == "groq":
@@ -439,6 +485,10 @@ class SettingsWindow(QDialog):
             self.openai_key_edit.setStyleSheet("border: 2px solid #0078d4;")
         elif provider == "glm":
             self.glm_key_edit.setStyleSheet("border: 2px solid #0078d4;")
+        elif provider == "custom":
+            self.custom_key_edit.setStyleSheet("border: 2px solid #0078d4;")
+            self.custom_url_edit.setStyleSheet("border: 2px solid #0078d4;")
+            self.custom_model_edit.setStyleSheet("border: 2px solid #0078d4;")
     
     def _save_settings(self):
         """Сохраняет настройки в .env файл."""
@@ -451,6 +501,9 @@ class SettingsWindow(QDialog):
                 "GROQ_API_KEY": self.groq_key_edit.text(),
                 "OPENAI_API_KEY": self.openai_key_edit.text(),
                 "GLM_API_KEY": self.glm_key_edit.text(),
+                "CUSTOM_API_KEY": self.custom_key_edit.text(),
+                "CUSTOM_BASE_URL": self.custom_url_edit.text(),
+                "CUSTOM_MODEL": self.custom_model_edit.text(),
                 "HOTKEY": self.hotkey_edit.text(),
                 "SILENCE_THRESHOLD": str(self.silence_threshold_spin.value()),
                 "SILENCE_DURATION": str(self.silence_duration_spin.value()),

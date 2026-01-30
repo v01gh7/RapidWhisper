@@ -66,7 +66,7 @@ def create_default_env() -> None:
 # ============================================
 # AI provider for transcription
 # Default: groq (free and fast!)
-# Options: openai, groq, glm
+# Options: openai, groq, glm, custom
 AI_PROVIDER=groq
 
 # OpenAI API Key (for provider=openai)
@@ -80,6 +80,12 @@ GROQ_API_KEY=
 # GLM API Key (for provider=glm)
 # Get from: https://open.bigmodel.cn/usercenter/apikeys
 GLM_API_KEY=
+
+# Custom OpenAI-compatible API (for provider=custom)
+# Examples: LM Studio, Ollama, vLLM, LocalAI, etc.
+CUSTOM_API_KEY=your_api_key_here
+CUSTOM_BASE_URL=http://localhost:1234/v1/
+CUSTOM_MODEL=whisper-1
 
 # ============================================
 # Application Settings (OPTIONAL)
@@ -118,7 +124,10 @@ class Config:
         glm_api_key (str): API ключ для Zhipu GLM API (опциональный)
         openai_api_key (str): API ключ для OpenAI API (опциональный)
         groq_api_key (str): API ключ для Groq API (опциональный)
-        ai_provider (str): Провайдер AI для транскрипции (openai, groq, glm)
+        custom_api_key (str): API ключ для кастомного провайдера (опциональный)
+        custom_base_url (str): URL для кастомного провайдера (опциональный)
+        custom_model (str): Модель для кастомного провайдера (опциональный)
+        ai_provider (str): Провайдер AI для транскрипции (openai, groq, glm, custom)
         hotkey (str): Глобальная горячая клавиша для активации приложения
         silence_threshold (float): Порог RMS для определения тишины
         silence_duration (float): Длительность тишины в секундах для остановки записи
@@ -138,6 +147,9 @@ class Config:
         self.glm_api_key: str = ""
         self.openai_api_key: str = ""
         self.groq_api_key: str = ""
+        self.custom_api_key: str = ""
+        self.custom_base_url: str = ""
+        self.custom_model: str = "whisper-1"
         
         # Параметры приложения
         self.hotkey: str = "ctrl+space"
@@ -195,6 +207,9 @@ class Config:
         config.glm_api_key = os.getenv("GLM_API_KEY", "")
         config.openai_api_key = os.getenv("OPENAI_API_KEY", "")
         config.groq_api_key = os.getenv("GROQ_API_KEY", "")
+        config.custom_api_key = os.getenv("CUSTOM_API_KEY", "")
+        config.custom_base_url = os.getenv("CUSTOM_BASE_URL", "")
+        config.custom_model = os.getenv("CUSTOM_MODEL", config.custom_model)
         
         # Загрузить параметры приложения
         config.hotkey = os.getenv("HOTKEY", config.hotkey)
@@ -269,7 +284,7 @@ class Config:
         errors: List[str] = []
         
         # Проверка AI Provider
-        valid_providers = ["openai", "groq", "glm"]
+        valid_providers = ["openai", "groq", "glm", "custom"]
         if self.ai_provider not in valid_providers:
             errors.append(f"AI_PROVIDER должен быть одним из {valid_providers}, получено: {self.ai_provider}")
         
@@ -280,6 +295,11 @@ class Config:
             errors.append("GROQ_API_KEY не найден в .env файле. Получите ключ на https://console.groq.com/keys")
         elif self.ai_provider == "glm" and not self.glm_api_key:
             errors.append("GLM_API_KEY не найден в .env файле. Получите ключ на https://open.bigmodel.cn/")
+        elif self.ai_provider == "custom":
+            if not self.custom_api_key:
+                errors.append("CUSTOM_API_KEY не найден в .env файле для custom провайдера")
+            if not self.custom_base_url:
+                errors.append("CUSTOM_BASE_URL не найден в .env файле для custom провайдера")
         
         # Проверка корректности значений
         if self.silence_threshold < 0.01 or self.silence_threshold > 0.1:
@@ -322,6 +342,8 @@ class Config:
             return bool(self.groq_api_key)
         elif self.ai_provider == "glm":
             return bool(self.glm_api_key)
+        elif self.ai_provider == "custom":
+            return bool(self.custom_api_key and self.custom_base_url)
         return False
     
     def __repr__(self) -> str:

@@ -1,7 +1,7 @@
 """
 Клиент для взаимодействия с AI API для транскрипции аудио.
 
-Поддерживает несколько провайдеров: OpenAI, Groq, GLM.
+Поддерживает несколько провайдеров: OpenAI, Groq, GLM, и кастомные OpenAI-совместимые API.
 Использует OpenAI Python SDK с настройкой на разные API endpoints.
 """
 
@@ -22,28 +22,30 @@ class TranscriptionClient:
     """
     Универсальный клиент для транскрипции аудио.
     
-    Поддерживает несколько провайдеров: OpenAI, Groq, GLM.
+    Поддерживает несколько провайдеров: OpenAI, Groq, GLM, и кастомные OpenAI-совместимые API.
     Использует OpenAI SDK для всех провайдеров.
     
     Attributes:
         client: Экземпляр OpenAI клиента
-        provider: Название провайдера (openai, groq, glm)
+        provider: Название провайдера (openai, groq, glm, custom)
         base_url: URL endpoint для API
         model: Модель для транскрипции
         timeout: Таймаут запроса в секундах
     """
     
-    def __init__(self, provider: str = "openai", api_key: Optional[str] = None):
+    def __init__(self, provider: str = "openai", api_key: Optional[str] = None, base_url: Optional[str] = None, model: Optional[str] = None):
         """
         Инициализирует клиент транскрипции.
         
         Args:
-            provider: Провайдер AI (openai, groq, glm)
+            provider: Провайдер AI (openai, groq, glm, custom)
             api_key: API ключ. Если не указан, загружается из переменных окружения
+            base_url: Кастомный URL для API (для custom провайдера)
+            model: Кастомная модель (для custom провайдера)
         
         Raises:
             InvalidAPIKeyError: Если API ключ не найден или пустой
-            ValueError: Если провайдер неизвестен
+            ValueError: Если провайдер неизвестен или не хватает параметров
         """
         self.provider = provider.lower()
         
@@ -55,6 +57,8 @@ class TranscriptionClient:
                 api_key = os.getenv("GROQ_API_KEY")
             elif self.provider == "glm":
                 api_key = os.getenv("GLM_API_KEY")
+            elif self.provider == "custom":
+                api_key = os.getenv("CUSTOM_API_KEY")
             else:
                 raise ValueError(f"Неизвестный провайдер: {provider}")
         
@@ -71,6 +75,18 @@ class TranscriptionClient:
         elif self.provider == "glm":
             self.base_url = "https://open.bigmodel.cn/api/paas/v4/"
             self.model = "glm-4-voice"
+        elif self.provider == "custom":
+            # Для кастомного провайдера требуются base_url и model
+            if base_url is None:
+                base_url = os.getenv("CUSTOM_BASE_URL")
+            if model is None:
+                model = os.getenv("CUSTOM_MODEL", "whisper-1")
+            
+            if not base_url:
+                raise ValueError("Для custom провайдера требуется CUSTOM_BASE_URL")
+            
+            self.base_url = base_url
+            self.model = model
         else:
             raise ValueError(f"Неизвестный провайдер: {provider}")
         
@@ -232,19 +248,23 @@ class TranscriptionThread(QThread):
     transcription_complete = pyqtSignal(str)  # Транскрибированный текст
     transcription_error = pyqtSignal(Exception)  # Ошибка транскрипции
     
-    def __init__(self, audio_file_path: str, provider: str = "openai", api_key: Optional[str] = None):
+    def __init__(self, audio_file_path: str, provider: str = "openai", api_key: Optional[str] = None, base_url: Optional[str] = None, model: Optional[str] = None):
         """
         Инициализирует поток транскрипции.
         
         Args:
             audio_file_path: Путь к аудио файлу для транскрипции
-            provider: Провайдер AI (openai, groq, glm)
+            provider: Провайдер AI (openai, groq, glm, custom)
             api_key: API ключ (опционально)
+            base_url: Кастомный URL для API (для custom провайдера)
+            model: Кастомная модель (для custom провайдера)
         """
         super().__init__()
         self.audio_file_path = audio_file_path
         self.provider = provider
         self.api_key = api_key
+        self.base_url = base_url
+        self.model = model
         self.transcription_client: Optional[TranscriptionClient] = None
     
     def run(self) -> None:
@@ -266,7 +286,12 @@ class TranscriptionThread(QThread):
             
             # Создать клиент транскрипции
             logger.info(f"Создание TranscriptionClient для {self.provider}...")
-            self.transcription_client = TranscriptionClient(provider=self.provider, api_key=self.api_key)
+            self.transcription_client = TranscriptionClient(
+                provider=self.provider, 
+                api_key=self.api_key,
+                base_url=self.base_url,
+                model=self.model
+            )
             logger.info(f"TranscriptionClient создан успешно (модель: {self.transcription_client.model})")
             
             # Выполнить транскрипцию

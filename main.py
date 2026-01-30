@@ -479,7 +479,9 @@ class RapidWhisperApp(QObject):
             self.transcription_thread = TranscriptionThread(
                 self._audio_file_path,
                 provider=self.config.ai_provider,
-                api_key=self._get_api_key_for_provider()
+                api_key=self._get_api_key_for_provider(),
+                base_url=self.config.custom_base_url if self.config.ai_provider == "custom" else None,
+                model=self.config.custom_model if self.config.ai_provider == "custom" else None
             )
             
             self.logger.info("TranscriptionThread создан")
@@ -616,6 +618,8 @@ class RapidWhisperApp(QObject):
             return self.config.groq_api_key
         elif self.config.ai_provider == "glm":
             return self.config.glm_api_key
+        elif self.config.ai_provider == "custom":
+            return self.config.custom_api_key
         return None
     
     def _show_settings(self) -> None:
