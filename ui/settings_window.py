@@ -1208,21 +1208,21 @@ class SettingsWindow(QDialog):
         """)
         
         # Добавить действия
-        open_audio_action = menu.addAction("▶️ Открыть аудио")
+        open_audio_action = menu.addAction(t("settings.recordings.play_audio_context"))
         open_audio_action.triggered.connect(self._open_recording)
         
-        open_text_action = menu.addAction("📝 Открыть текст")
+        open_text_action = menu.addAction(t("settings.recordings.open_text_context"))
         open_text_action.setEnabled(has_transcription)
         open_text_action.triggered.connect(self._open_transcription)
         
         menu.addSeparator()
         
-        open_folder_action = menu.addAction("📁 Открыть папку")
+        open_folder_action = menu.addAction(t("settings.recordings.open_folder_context"))
         open_folder_action.triggered.connect(self._open_recordings_folder)
         
         menu.addSeparator()
         
-        delete_action = menu.addAction("🗑️ Удалить")
+        delete_action = menu.addAction(t("settings.recordings.delete_context"))
         delete_action.triggered.connect(self._delete_recording)
         
         # Показать меню в позиции курсора
@@ -1373,7 +1373,7 @@ class SettingsWindow(QDialog):
         # Открыть диалог выбора папки
         new_folder = QFileDialog.getExistingDirectory(
             self,
-            "Выберите папку для сохранения записей",
+            t("settings.recordings.change_folder_dialog"),
             current_dir,
             QFileDialog.Option.ShowDirsOnly
         )
