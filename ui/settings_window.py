@@ -523,6 +523,9 @@ class SettingsWindow(QDialog):
         ui_group.setLayout(ui_layout)
         layout.addWidget(ui_group)
         
+        # Прижать контент вверх
+        layout.addStretch()
+        
         widget.setLayout(layout)
         return widget
     
@@ -635,6 +638,9 @@ class SettingsWindow(QDialog):
         info_label.setWordWrap(True)
         info_label.setStyleSheet("color: #ff8800; font-size: 11px; padding: 8px;")
         layout.addWidget(info_label)
+        
+        # Прижать контент вверх
+        layout.addStretch()
         
         widget.setLayout(layout)
         return widget
@@ -759,6 +765,9 @@ class SettingsWindow(QDialog):
         
         # Загрузить список записей
         self._refresh_recordings_list()
+        
+        # Прижать контент вверх
+        layout.addStretch()
         
         widget.setLayout(layout)
         return widget
