@@ -174,7 +174,7 @@
     - **Validates: Requirements 5.5**
 
 - [ ] 6. Интегрировать InfoPanelWidget в FloatingWindow
-  - [~] 6.1 Модифицировать FloatingWindow для добавления InfoPanelWidget
+  - [x] 6.1 Модифицировать FloatingWindow для добавления InfoPanelWidget
     - Импортировать InfoPanelWidget и WindowMonitor в ui/floating_window.py
     - Создать экземпляр WindowMonitor через фабричный метод
     - Создать экземпляр InfoPanelWidget с передачей config_manager
@@ -182,14 +182,14 @@
     - Сохранить ссылки на window_monitor и info_panel как атрибуты
     - _Requirements: 7.1_
   
-  - [~] 6.2 Реализовать жизненный цикл мониторинга
+  - [x] 6.2 Реализовать жизненный цикл мониторинга
     - Реализовать запуск window_monitor.start_monitoring() в методе show() или showEvent()
     - Передать info_panel.update_app_info как callback в start_monitoring()
     - Реализовать остановку window_monitor.stop_monitoring() в методе hide() или closeEvent()
     - Добавить обработку ошибок с логированием
     - _Requirements: 7.3, 7.4_
   
-  - [~] 6.3 Подключить обновление горячих клавиш
+  - [-] 6.3 Подключить обновление горячих клавиш
     - Подключить сигнал изменения конфигурации к info_panel.update_hotkey_display()
     - Если Config_Manager не имеет сигнала, создать его (config_changed)
     - Реализовать emit сигнала при изменении hotkey в Config_Manager

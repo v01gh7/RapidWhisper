@@ -9,6 +9,8 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QGraphicsOpacityEffect
 from PyQt6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve, QRect
 from PyQt6.QtGui import QPainter, QColor, QPainterPath, QPaintEvent
 from ui.waveform_widget import WaveformWidget
+from ui.info_panel_widget import InfoPanelWidget
+from services.window_monitor import WindowMonitor
 from typing import Optional
 
 
@@ -54,6 +56,10 @@ class FloatingWindow(QWidget):
         self._auto_hide_timer = QTimer(self)
         self._auto_hide_timer.timeout.connect(self.hide_with_animation)
         self._auto_hide_timer.setSingleShot(True)
+        
+        # Window monitor и info panel (инициализируются позже через set_config)
+        self.window_monitor: Optional[WindowMonitor] = None
+        self.info_panel: Optional[InfoPanelWidget] = None
     
     def setup_window_properties(self) -> None:
         """
@@ -123,7 +129,39 @@ class FloatingWindow(QWidget):
         # Убираем отдельные стили для label - они уже в setStyleSheet окна
         layout.addWidget(self.status_label)
         
+        # Сохраняем layout для последующего добавления info_panel
+        self._main_layout = layout
+        
         self.setLayout(layout)
+    
+    def set_config(self, config) -> None:
+        """
+        Устанавливает конфигурацию и инициализирует window monitor и info panel.
+        
+        Args:
+            config: Объект конфигурации приложения
+        
+        Requirements: 7.1
+        """
+        try:
+            # Создать window monitor
+            self.window_monitor = WindowMonitor.create()
+            
+            # Создать info panel
+            self.info_panel = InfoPanelWidget(config, self)
+            
+            # Добавить info panel в конец layout
+            self._main_layout.addWidget(self.info_panel)
+            
+            # Обновить высоту окна с учетом info panel
+            self.window_height = 120 + 40  # Исходная высота + высота info panel
+            self.setFixedSize(self.window_width, self.window_height)
+            
+        except Exception as e:
+            # Логировать ошибку, но не прерывать работу
+            from utils.logger import get_logger
+            logger = get_logger()
+            logger.error(f"Failed to initialize window monitor and info panel: {e}", exc_info=True)
     
     def show_at_center(self, use_saved_position: bool = True) -> None:
         """
@@ -219,6 +257,9 @@ class FloatingWindow(QWidget):
         self.show()  # Показать снова после изменения флагов
         
         self._fade_in()  # Запустить анимацию появления
+        
+        # Запустить мониторинг активного окна
+        self._start_window_monitoring()
     
     def hide_with_animation(self) -> None:
         """
@@ -228,6 +269,7 @@ class FloatingWindow(QWidget):
         
         Requirements: 2.8
         """
+        self._stop_window_monitoring()
         self._fade_out()
     
     def _fade_in(self, duration: int = 300) -> None:
@@ -485,6 +527,51 @@ class FloatingWindow(QWidget):
         if not self._is_dragging:
             self.setCursor(Qt.CursorShape.ArrowCursor)
         super().leaveEvent(event)
+    
+    def closeEvent(self, event) -> None:
+        """
+        Обрабатывает закрытие окна.
+        
+        Останавливает мониторинг активного окна при закрытии.
+        
+        Args:
+            event: Событие закрытия
+        
+        Requirements: 7.4
+        """
+        self._stop_window_monitoring()
+        super().closeEvent(event)
+    
+    def _start_window_monitoring(self) -> None:
+        """
+        Запускает мониторинг активного окна.
+        
+        Подключает callback для обновления info panel при изменении
+        активного окна.
+        
+        Requirements: 7.3
+        """
+        try:
+            if self.window_monitor and self.info_panel:
+                self.window_monitor.start_monitoring(self.info_panel.update_app_info)
+        except Exception as e:
+            from utils.logger import get_logger
+            logger = get_logger()
+            logger.error(f"Failed to start window monitoring: {e}", exc_info=True)
+    
+    def _stop_window_monitoring(self) -> None:
+        """
+        Останавливает мониторинг активного окна.
+        
+        Requirements: 7.4
+        """
+        try:
+            if self.window_monitor:
+                self.window_monitor.stop_monitoring()
+        except Exception as e:
+            from utils.logger import get_logger
+            logger = get_logger()
+            logger.error(f"Failed to stop window monitoring: {e}", exc_info=True)
     
     def save_position(self) -> None:
         """
