@@ -45,8 +45,8 @@ class SettingsWindow(QDialog):
         super().__init__(parent)
         self.config = config
         self.setWindowTitle("Настройки RapidWhisper")
-        self.setMinimumWidth(800)
-        self.setMinimumHeight(600)
+        self.setMinimumWidth(950)  # Увеличена ширина для новых кнопок
+        self.setMinimumHeight(650)  # Увеличена высота
         
         # Установить максимальную высоту (высота экрана - 160 пикселей)
         screen = QApplication.primaryScreen()
@@ -686,7 +686,8 @@ class SettingsWindow(QDialog):
         from PyQt6.QtWidgets import QListWidget, QListWidgetItem, QHBoxLayout, QPushButton
         
         self.recordings_list = QListWidget()
-        self.recordings_list.setMinimumHeight(200)
+        self.recordings_list.setMinimumHeight(250)  # Фиксированная минимальная высота
+        self.recordings_list.setMaximumHeight(350)  # Фиксированная максимальная высота
         self.recordings_list.setStyleSheet("""
             QListWidget {
                 background-color: #2d2d2d;
@@ -710,25 +711,28 @@ class SettingsWindow(QDialog):
         
         # Кнопки управления
         buttons_layout = QHBoxLayout()
+        buttons_layout.setSpacing(8)  # Отступ между кнопками
         
-        refresh_btn = QPushButton("🔄 Обновить")
+        refresh_btn = QPushButton("🔄")
         refresh_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        refresh_btn.setToolTip("Обновить список записей")
         refresh_btn.clicked.connect(self._refresh_recordings_list)
+        refresh_btn.setMaximumWidth(50)
         buttons_layout.addWidget(refresh_btn)
         
-        play_btn = QPushButton("▶️ Открыть аудио")
+        play_btn = QPushButton("▶️ Аудио")
         play_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         play_btn.setToolTip("Открыть выбранную аудиозапись в проигрывателе по умолчанию")
         play_btn.clicked.connect(self._open_recording)
         buttons_layout.addWidget(play_btn)
         
-        text_btn = QPushButton("📝 Открыть текст")
+        text_btn = QPushButton("📝 Текст")
         text_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         text_btn.setToolTip("Открыть транскрипцию в текстовом редакторе")
         text_btn.clicked.connect(self._open_transcription)
         buttons_layout.addWidget(text_btn)
         
-        folder_btn = QPushButton("📁 Показать в папке")
+        folder_btn = QPushButton("📁 Папка")
         folder_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         folder_btn.setToolTip("Открыть папку с записями в проводнике")
         folder_btn.clicked.connect(self._open_recordings_folder)
