@@ -2,16 +2,16 @@
 Окно настроек приложения RapidWhisper.
 
 Предоставляет графический интерфейс для редактирования всех параметров
-конфигурации из .env файла.
+конфигурации из .env файла в стиле macOS с боковой панелью.
 """
 
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout,
     QLabel, QLineEdit, QComboBox, QDoubleSpinBox,
-    QPushButton, QGroupBox, QMessageBox, QTabWidget, QWidget
+    QPushButton, QGroupBox, QMessageBox, QWidget, QListWidget, QStackedWidget, QListWidgetItem
 )
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QFont, QIcon
 from core.config import Config
 from utils.logger import get_logger
 import os
@@ -42,7 +42,7 @@ class SettingsWindow(QDialog):
         super().__init__(parent)
         self.config = config
         self.setWindowTitle("Настройки RapidWhisper")
-        self.setMinimumWidth(500)
+        self.setMinimumWidth(800)
         self.setMinimumHeight(600)
         
         # Применить стиль
@@ -55,7 +55,7 @@ class SettingsWindow(QDialog):
         self._load_values()
     
     def _apply_style(self):
-        """Применяет стиль к окну настроек."""
+        """Применяет стиль к окну настроек в стиле macOS."""
         self.setStyleSheet("""
             QDialog {
                 background-color: #1e1e1e;
@@ -69,8 +69,8 @@ class SettingsWindow(QDialog):
                 background-color: #2d2d2d;
                 color: #ffffff;
                 border: 1px solid #3d3d3d;
-                border-radius: 4px;
-                padding: 6px;
+                border-radius: 6px;
+                padding: 8px;
                 font-size: 12px;
             }
             QLineEdit:focus, QDoubleSpinBox:focus, QComboBox:focus {
@@ -80,7 +80,7 @@ class SettingsWindow(QDialog):
                 background-color: #0078d4;
                 color: #ffffff;
                 border: none;
-                border-radius: 4px;
+                border-radius: 6px;
                 padding: 8px 16px;
                 font-size: 12px;
                 font-weight: bold;
@@ -100,37 +100,41 @@ class SettingsWindow(QDialog):
             QGroupBox {
                 color: #ffffff;
                 border: 1px solid #3d3d3d;
-                border-radius: 6px;
-                margin-top: 12px;
+                border-radius: 8px;
+                margin-top: 16px;
                 font-weight: bold;
-                padding-top: 12px;
+                padding-top: 16px;
+                background-color: #252525;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
                 subcontrol-position: top left;
-                padding: 4px 8px;
-                background-color: #2d2d2d;
-                border-radius: 4px;
+                padding: 6px 12px;
+                background-color: transparent;
+                color: #888888;
+                font-size: 11px;
+                font-weight: normal;
+                text-transform: uppercase;
             }
-            QTabWidget::pane {
-                border: 1px solid #3d3d3d;
-                border-radius: 4px;
-                background-color: #1e1e1e;
+            QListWidget {
+                background-color: #1a1a1a;
+                border: none;
+                border-right: 1px solid #2d2d2d;
+                outline: none;
+                padding: 8px 0px;
             }
-            QTabBar::tab {
-                background-color: #2d2d2d;
+            QListWidget::item {
                 color: #ffffff;
-                padding: 8px 16px;
-                border: 1px solid #3d3d3d;
-                border-bottom: none;
-                border-top-left-radius: 4px;
-                border-top-right-radius: 4px;
+                padding: 10px 16px;
+                border-radius: 6px;
+                margin: 2px 8px;
             }
-            QTabBar::tab:selected {
+            QListWidget::item:selected {
                 background-color: #0078d4;
+                color: #ffffff;
             }
-            QTabBar::tab:hover {
-                background-color: #3d3d3d;
+            QListWidget::item:hover:!selected {
+                background-color: #2d2d2d;
             }
             QLabel a {
                 color: #0078d4;
@@ -143,36 +147,55 @@ class SettingsWindow(QDialog):
         """)
     
     def _create_ui(self):
-        """Создает интерфейс окна настроек."""
-        layout = QVBoxLayout()
-        layout.setSpacing(16)
+        """Создает интерфейс окна настроек в стиле macOS с боковой панелью."""
+        main_layout = QHBoxLayout()
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
         
-        # Заголовок
-        title = QLabel("⚙️ Настройки")
-        title_font = QFont()
-        title_font.setPointSize(16)
-        title_font.setBold(True)
-        title.setFont(title_font)
-        layout.addWidget(title)
+        # Левая панель навигации
+        self.sidebar = QListWidget()
+        self.sidebar.setFixedWidth(200)
+        self.sidebar.setSpacing(0)
         
-        # Вкладки
-        tabs = QTabWidget()
+        # Добавить пункты меню
+        items = [
+            ("🤖 AI Provider", "ai"),
+            ("⚡ Приложение", "app"),
+            ("🎤 Аудио", "audio"),
+            ("ℹ️ О программе", "about")
+        ]
         
-        # Вкладка AI Provider
-        ai_tab = self._create_ai_tab()
-        tabs.addTab(ai_tab, "🤖 AI Provider")
+        for text, data in items:
+            item = QListWidgetItem(text)
+            item.setData(Qt.ItemDataRole.UserRole, data)
+            self.sidebar.addItem(item)
         
-        # Вкладка Приложение
-        app_tab = self._create_app_tab()
-        tabs.addTab(app_tab, "⚡ Приложение")
+        # Выбрать первый пункт
+        self.sidebar.setCurrentRow(0)
         
-        # Вкладка Аудио
-        audio_tab = self._create_audio_tab()
-        tabs.addTab(audio_tab, "🎤 Аудио")
+        # Подключить сигнал переключения
+        self.sidebar.currentRowChanged.connect(self._on_sidebar_changed)
         
-        layout.addWidget(tabs)
+        main_layout.addWidget(self.sidebar)
         
-        # Кнопки
+        # Правая панель с содержимым
+        right_panel = QWidget()
+        right_panel_layout = QVBoxLayout()
+        right_panel_layout.setContentsMargins(32, 32, 32, 32)
+        right_panel_layout.setSpacing(24)
+        
+        # Стек виджетов для разных страниц
+        self.content_stack = QStackedWidget()
+        
+        # Создать страницы
+        self.content_stack.addWidget(self._create_ai_page())
+        self.content_stack.addWidget(self._create_app_page())
+        self.content_stack.addWidget(self._create_audio_page())
+        self.content_stack.addWidget(self._create_about_page())
+        
+        right_panel_layout.addWidget(self.content_stack)
+        
+        # Кнопки внизу
         buttons_layout = QHBoxLayout()
         buttons_layout.addStretch()
         
@@ -185,18 +208,35 @@ class SettingsWindow(QDialog):
         save_btn.clicked.connect(self._save_settings)
         buttons_layout.addWidget(save_btn)
         
-        layout.addLayout(buttons_layout)
+        right_panel_layout.addLayout(buttons_layout)
         
-        self.setLayout(layout)
+        right_panel.setLayout(right_panel_layout)
+        main_layout.addWidget(right_panel, 1)
+        
+        self.setLayout(main_layout)
     
-    def _create_ai_tab(self) -> QWidget:
-        """Создает вкладку настроек AI Provider."""
+    def _on_sidebar_changed(self, index: int):
+        """Обработчик переключения пунктов в боковой панели."""
+        self.content_stack.setCurrentIndex(index)
+    
+    def _create_ai_page(self) -> QWidget:
+        """Создает страницу настроек AI Provider."""
         widget = QWidget()
         layout = QVBoxLayout()
+        layout.setSpacing(20)
         
-        # Группа: AI Provider
-        provider_group = QGroupBox("Провайдер AI")
+        # Заголовок
+        title = QLabel("AI Provider")
+        title_font = QFont()
+        title_font.setPointSize(20)
+        title_font.setBold(True)
+        title.setFont(title_font)
+        layout.addWidget(title)
+        
+        # Группа: Выбор провайдера
+        provider_group = QGroupBox("Провайдер")
         provider_layout = QFormLayout()
+        provider_layout.setSpacing(12)
         
         self.provider_combo = QComboBox()
         self.provider_combo.addItems(["groq", "openai", "glm", "custom"])
@@ -341,14 +381,24 @@ class SettingsWindow(QDialog):
         widget.setLayout(layout)
         return widget
     
-    def _create_app_tab(self) -> QWidget:
-        """Создает вкладку настроек приложения."""
+    def _create_app_page(self) -> QWidget:
+        """Создает страницу настроек приложения."""
         widget = QWidget()
         layout = QVBoxLayout()
+        layout.setSpacing(20)
+        
+        # Заголовок
+        title = QLabel("Приложение")
+        title_font = QFont()
+        title_font.setPointSize(20)
+        title_font.setBold(True)
+        title.setFont(title_font)
+        layout.addWidget(title)
         
         # Группа: Горячие клавиши
         hotkey_group = QGroupBox("Горячие клавиши")
         hotkey_layout = QFormLayout()
+        hotkey_layout.setSpacing(12)
         
         self.hotkey_edit = QLineEdit()
         self.hotkey_edit.setPlaceholderText("ctrl+space")
@@ -362,6 +412,7 @@ class SettingsWindow(QDialog):
         # Группа: Определение тишины
         silence_group = QGroupBox("Определение тишины")
         silence_layout = QFormLayout()
+        silence_layout.setSpacing(12)
         
         self.silence_threshold_spin = QDoubleSpinBox()
         self.silence_threshold_spin.setRange(0.01, 0.1)
@@ -386,6 +437,7 @@ class SettingsWindow(QDialog):
         # Группа: Интерфейс
         ui_group = QGroupBox("Интерфейс")
         ui_layout = QFormLayout()
+        ui_layout.setSpacing(12)
         
         self.auto_hide_spin = QDoubleSpinBox()
         self.auto_hide_spin.setRange(1.0, 10.0)
@@ -403,14 +455,24 @@ class SettingsWindow(QDialog):
         widget.setLayout(layout)
         return widget
     
-    def _create_audio_tab(self) -> QWidget:
-        """Создает вкладку настроек аудио."""
+    def _create_audio_page(self) -> QWidget:
+        """Создает страницу настроек аудио."""
         widget = QWidget()
         layout = QVBoxLayout()
+        layout.setSpacing(20)
+        
+        # Заголовок
+        title = QLabel("Аудио")
+        title_font = QFont()
+        title_font.setPointSize(20)
+        title_font.setBold(True)
+        title.setFont(title_font)
+        layout.addWidget(title)
         
         # Группа: Параметры записи
         audio_group = QGroupBox("Параметры записи")
         audio_layout = QFormLayout()
+        audio_layout.setSpacing(12)
         
         self.sample_rate_combo = QComboBox()
         self.sample_rate_combo.addItems(["16000", "44100", "48000"])
@@ -435,6 +497,124 @@ class SettingsWindow(QDialog):
         info_label.setWordWrap(True)
         info_label.setStyleSheet("color: #ff8800; font-size: 11px; padding: 8px;")
         layout.addWidget(info_label)
+        
+        layout.addStretch()
+        widget.setLayout(layout)
+        return widget
+    
+    def _create_about_page(self) -> QWidget:
+        """Создает страницу О программе."""
+        widget = QWidget()
+        layout = QVBoxLayout()
+        layout.setSpacing(20)
+        
+        # Заголовок
+        title = QLabel("О программе")
+        title_font = QFont()
+        title_font.setPointSize(20)
+        title_font.setBold(True)
+        title.setFont(title_font)
+        layout.addWidget(title)
+        
+        # Информация о программе
+        info_group = QGroupBox("RapidWhisper")
+        info_layout = QVBoxLayout()
+        info_layout.setSpacing(16)
+        
+        # Версия
+        version_label = QLabel("<b>Версия:</b> 1.3.0")
+        version_label.setStyleSheet("font-size: 13px;")
+        info_layout.addWidget(version_label)
+        
+        # Описание
+        desc_label = QLabel(
+            "Быстрая транскрипция речи с микрофона<br>"
+            "используя AI API (Groq, OpenAI, GLM, Custom)"
+        )
+        desc_label.setWordWrap(True)
+        desc_label.setStyleSheet("color: #888888; font-size: 12px;")
+        info_layout.addWidget(desc_label)
+        
+        # Ссылки (из конфигурации)
+        github_url = self.config.github_url
+        docs_url = self.config.docs_url
+        
+        links_label = QLabel(
+            f"<b>Ссылки:</b><br>"
+            f"• GitHub: <a href='{github_url}'>{github_url}</a><br>"
+            f"• Документация: <a href='{docs_url}'>docs/</a><br>"
+            f"• Поддержка: <a href='{github_url}/issues'>Создать issue</a>"
+        )
+        links_label.setWordWrap(True)
+        links_label.setOpenExternalLinks(True)
+        links_label.setStyleSheet("font-size: 12px;")
+        info_layout.addWidget(links_label)
+        
+        info_group.setLayout(info_layout)
+        layout.addWidget(info_group)
+        
+        # Используемые библиотеки
+        libs_group = QGroupBox("Используемые библиотеки")
+        libs_layout = QVBoxLayout()
+        libs_layout.setSpacing(12)
+        
+        libs_label = QLabel(
+            "<b>Основные:</b><br>"
+            "• <a href='https://www.riverbankcomputing.com/software/pyqt/'>PyQt6</a> - GUI фреймворк<br>"
+            "• <a href='https://github.com/openai/openai-python'>OpenAI Python SDK</a> - API клиент<br>"
+            "• <a href='https://people.csail.mit.edu/hubert/pyaudio/'>PyAudio</a> - Запись аудио<br>"
+            "• <a href='https://numpy.org/'>NumPy</a> - Обработка аудио<br>"
+            "• <a href='https://github.com/boppreh/keyboard'>Keyboard</a> - Горячие клавиши<br>"
+            "• <a href='https://github.com/asweigart/pyperclip'>Pyperclip</a> - Буфер обмена<br>"
+            "• <a href='https://github.com/giampaolo/psutil'>Psutil</a> - Управление процессами<br>"
+            "• <a href='https://github.com/theskumar/python-dotenv'>Python-dotenv</a> - Конфигурация<br><br>"
+            "<b>Тестирование:</b><br>"
+            "• <a href='https://pytest.org/'>Pytest</a> - Фреймворк тестирования<br>"
+            "• <a href='https://hypothesis.readthedocs.io/'>Hypothesis</a> - Property-based testing"
+        )
+        libs_label.setWordWrap(True)
+        libs_label.setOpenExternalLinks(True)
+        libs_label.setStyleSheet("color: #888888; font-size: 11px;")
+        libs_layout.addWidget(libs_label)
+        
+        libs_group.setLayout(libs_layout)
+        layout.addWidget(libs_group)
+        
+        # Поддерживаемые провайдеры
+        providers_group = QGroupBox("Поддерживаемые AI провайдеры")
+        providers_layout = QVBoxLayout()
+        providers_layout.setSpacing(12)
+        
+        providers_label = QLabel(
+            "<b>Облачные:</b><br>"
+            "• <a href='https://console.groq.com'>Groq</a> - Бесплатный и быстрый (рекомендуется)<br>"
+            "• <a href='https://openai.com'>OpenAI</a> - Официальный Whisper API<br>"
+            "• <a href='https://open.bigmodel.cn'>GLM (Zhipu AI)</a> - Поддержка китайского<br><br>"
+            "<b>Локальные (Custom):</b><br>"
+            "• <a href='https://lmstudio.ai'>LM Studio</a> - Простой запуск локальных моделей<br>"
+            "• <a href='https://ollama.ai'>Ollama</a> - CLI для локальных моделей<br>"
+            "• <a href='https://github.com/vllm-project/vllm'>vLLM</a> - Высокопроизводительный inference<br>"
+            "• <a href='https://localai.io'>LocalAI</a> - Локальная альтернатива OpenAI<br>"
+            "• Любые OpenAI-совместимые API"
+        )
+        providers_label.setWordWrap(True)
+        providers_label.setOpenExternalLinks(True)
+        providers_label.setStyleSheet("color: #888888; font-size: 11px;")
+        providers_layout.addWidget(providers_label)
+        
+        providers_group.setLayout(providers_layout)
+        layout.addWidget(providers_group)
+        
+        # Лицензия
+        license_group = QGroupBox("Лицензия")
+        license_layout = QVBoxLayout()
+        
+        license_label = QLabel("© 2026 RapidWhisper. Все права защищены.")
+        license_label.setStyleSheet("color: #888888; font-size: 11px;")
+        license_layout.addWidget(license_label)
+        
+        license_group.setLayout(license_layout)
+        layout.addWidget(license_group)
         
         layout.addStretch()
         widget.setLayout(layout)

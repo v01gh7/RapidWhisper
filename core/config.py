@@ -108,6 +108,15 @@ SILENCE_DURATION=1.5
 # Default: 2.5
 # Range: 1.0 - 10.0
 AUTO_HIDE_DELAY=2.5
+
+# ============================================
+# About Section Links (OPTIONAL)
+# ============================================
+# GitHub repository URL
+GITHUB_URL=https://github.com/yourusername/rapidwhisper
+
+# Documentation URL
+DOCS_URL=https://github.com/yourusername/rapidwhisper/tree/main/docs
 """
         env_path.write_text(default_content, encoding='utf-8')
 
@@ -168,6 +177,10 @@ class Config:
         # Параметры логирования
         self.log_level: str = "INFO"
         self.log_file: str = "rapidwhisper.log"
+        
+        # Ссылки для раздела "О программе"
+        self.github_url: str = "https://github.com/yourusername/rapidwhisper"
+        self.docs_url: str = "https://github.com/yourusername/rapidwhisper/tree/main/docs"
     
     @staticmethod
     def load_from_env(env_path: Optional[str] = None) -> 'Config':
@@ -262,6 +275,10 @@ class Config:
         # Загрузить параметры логирования
         config.log_level = os.getenv("LOG_LEVEL", config.log_level).upper()
         config.log_file = os.getenv("LOG_FILE", config.log_file)
+        
+        # Загрузить ссылки
+        config.github_url = os.getenv("GITHUB_URL", config.github_url)
+        config.docs_url = os.getenv("DOCS_URL", config.docs_url)
         
         return config
     
