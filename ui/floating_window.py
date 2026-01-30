@@ -64,11 +64,15 @@ class FloatingWindow(QWidget):
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint |
             Qt.WindowType.WindowStaysOnTopHint |
-            Qt.WindowType.Tool
+            Qt.WindowType.Tool |
+            Qt.WindowType.WindowDoesNotAcceptFocus  # Не забирает фокус у других окон
         )
         
         # Полупрозрачный фон
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        
+        # Показывать окно даже когда приложение не в фокусе
+        self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         
         # Размер окна
         self.setFixedSize(self.window_width, self.window_height)
@@ -144,7 +148,17 @@ class FloatingWindow(QWidget):
         # Показываем окно с анимацией
         self.show()
         self.raise_()  # Поднять окно наверх
-        self.activateWindow()  # Активировать окно
+        self.setWindowState(Qt.WindowState.WindowActive)  # Установить как активное
+        
+        # Принудительно установить флаг "всегда поверх" (на случай если сбросился)
+        self.setWindowFlags(
+            Qt.WindowType.FramelessWindowHint |
+            Qt.WindowType.WindowStaysOnTopHint |
+            Qt.WindowType.Tool |
+            Qt.WindowType.WindowDoesNotAcceptFocus
+        )
+        self.show()  # Показать снова после изменения флагов
+        
         self._fade_in()  # Запустить анимацию появления
     
     def hide_with_animation(self) -> None:
