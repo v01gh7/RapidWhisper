@@ -284,6 +284,20 @@ class Config:
         
         # Ручная остановка записи
         self.manual_stop: bool = False  # По умолчанию автоматическая остановка по тишине
+        
+        # Постобработка транскрипции
+        self.enable_post_processing: bool = False  # Включить дополнительную обработку текста
+        self.post_processing_provider: str = "groq"  # Провайдер для постобработки (groq, openai, glm, llm)
+        self.post_processing_model: str = "llama-3.3-70b-versatile"  # Модель для постобработки (по умолчанию Groq)
+        self.post_processing_prompt: str = (
+            "Ты - редактор текста. Твоя задача: исправить грамматические ошибки, "
+            "добавить знаки препинания и улучшить читаемость текста. "
+            "Сохрани оригинальный смысл и стиль. Не добавляй ничего лишнего. "
+            "Верни только исправленный текст без комментариев."
+        )
+        self.glm_use_coding_plan: bool = False  # Использовать Coding Plan endpoint для GLM
+        self.llm_base_url: str = "http://localhost:1234/v1/"  # Base URL для локальных LLM моделей
+        self.llm_api_key: str = "local"  # API ключ для локальных LLM (может быть любым)
     
     @staticmethod
     def load_from_env(env_path: Optional[str] = None) -> 'Config':
@@ -417,6 +431,22 @@ class Config:
         # Загрузить настройки ручной остановки
         manual_stop = os.getenv("MANUAL_STOP", "false").lower()
         config.manual_stop = manual_stop in ("true", "1", "yes")
+        
+        # Загрузить настройки постобработки
+        enable_pp = os.getenv("ENABLE_POST_PROCESSING", "false").lower()
+        config.enable_post_processing = enable_pp in ("true", "1", "yes")
+        
+        config.post_processing_provider = os.getenv("POST_PROCESSING_PROVIDER", config.post_processing_provider).lower()
+        config.post_processing_model = os.getenv("POST_PROCESSING_MODEL", config.post_processing_model)
+        config.post_processing_prompt = os.getenv("POST_PROCESSING_PROMPT", config.post_processing_prompt)
+        
+        # GLM Coding Plan
+        glm_coding_plan = os.getenv("GLM_USE_CODING_PLAN", "false").lower()
+        config.glm_use_coding_plan = glm_coding_plan in ("true", "1", "yes")
+        
+        # LLM (локальные модели)
+        config.llm_base_url = os.getenv("LLM_BASE_URL", config.llm_base_url)
+        config.llm_api_key = os.getenv("LLM_API_KEY", config.llm_api_key)
         
         return config
     

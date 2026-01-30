@@ -9,7 +9,7 @@ import os
 import shutil
 from typing import BinaryIO, Optional
 from pathlib import Path
-from openai import OpenAI, AuthenticationError, APIConnectionError, APITimeoutError
+from openai import OpenAI, AuthenticationError, APIConnectionError, APITimeoutError, Timeout
 
 from utils.exceptions import (
     APIError,
@@ -222,6 +222,205 @@ class TranscriptionClient:
             return "Превышен лимит запросов к API"
         else:
             return f"Ошибка API: {error}"
+    
+    def post_process_text(self, text: str, provider: str, model: str, system_prompt: str, api_key: Optional[str] = None, base_url: Optional[str] = None, use_coding_plan: bool = False) -> str:
+        """
+        Постобработка транскрибированного текста через LLM.
+        
+        Отправляет текст на дополнительную обработку для исправления ошибок,
+        добавления пунктуации и улучшения читаемости.
+        
+        Args:
+            text: Исходный транскрибированный текст
+            provider: Провайдер для постобработки (groq, openai, glm, llm)
+            model: Модель для постобработки
+            system_prompt: Системный промпт для модели
+            api_key: API ключ (если None, загружается из env)
+            base_url: Base URL для LLM провайдера (локальные модели)
+            use_coding_plan: Использовать Coding Plan endpoint для GLM
+        
+        Returns:
+            Обработанный текст
+        
+        Raises:
+            APIError: При ошибке обработки
+        """
+        from utils.logger import get_logger
+        logger = get_logger()
+        
+        try:
+            logger.info("=" * 80)
+            logger.info("НАЧАЛО ПОСТОБРАБОТКИ ТЕКСТА")
+            logger.info(f"Провайдер: {provider}")
+            logger.info(f"Модель: {model}")
+            logger.info(f"Длина исходного текста: {len(text)} символов")
+            logger.info(f"Исходный текст: {text[:200]}...")
+            logger.info(f"Системный промпт: {system_prompt[:100]}...")
+            
+            # Загрузить API ключ если не передан
+            if api_key is None:
+                if provider == "groq":
+                    api_key = os.getenv("GROQ_API_KEY")
+                    logger.info("Загружен GROQ_API_KEY из env")
+                elif provider == "openai":
+                    api_key = os.getenv("OPENAI_API_KEY")
+                    logger.info("Загружен OPENAI_API_KEY из env")
+                elif provider == "glm":
+                    api_key = os.getenv("GLM_API_KEY")
+                    logger.info("Загружен GLM_API_KEY из env")
+                elif provider == "llm":
+                    # LLM - локальные модели, ключ может быть любым или пустым
+                    api_key = os.getenv("LLM_API_KEY", "local")
+                    logger.info("Загружен LLM_API_KEY из env (или используется 'local')")
+            
+            if not api_key and provider != "llm":
+                logger.error(f"API ключ для {provider} не найден!")
+                raise InvalidAPIKeyError(f"API ключ для {provider} не найден")
+            
+            logger.info(f"API ключ найден: {api_key[:10]}...")
+            
+            # Настроить base_url в зависимости от провайдера
+            if provider == "groq":
+                base_url = "https://api.groq.com/openai/v1/"
+            elif provider == "openai":
+                base_url = "https://api.openai.com/v1/"
+            elif provider == "glm":
+                # GLM: выбор endpoint в зависимости от use_coding_plan
+                if use_coding_plan:
+                    # Попробуем Coding Plan endpoint
+                    base_url = "https://api.z.ai/api/coding/paas/v4/"
+                    logger.info("Используется GLM Coding Plan endpoint")
+                    logger.warning("⚠️ Если запрос зависает, попробуйте отключить Coding Plan")
+                else:
+                    base_url = "https://open.bigmodel.cn/api/paas/v4/"
+                    logger.info("Используется обычный GLM endpoint")
+            elif provider == "llm":
+                # LLM - локальные модели, base_url должен быть передан
+                if not base_url:
+                    base_url = os.getenv("LLM_BASE_URL", "http://localhost:1234/v1/")
+                logger.info(f"Используется локальный LLM endpoint: {base_url}")
+            else:
+                logger.error(f"Неизвестный провайдер: {provider}")
+                raise ValueError(f"Неизвестный провайдер для постобработки: {provider}")
+            
+            logger.info(f"Base URL: {base_url}")
+            
+            # Создать клиент для постобработки с жестким таймаутом
+            logger.info("Создание OpenAI клиента...")
+            from openai import Timeout
+            client = OpenAI(
+                api_key=api_key,
+                base_url=base_url,
+                timeout=Timeout(60.0, connect=10.0)  # 60 секунд на запрос, 10 на подключение
+            )
+            logger.info("Клиент создан успешно с таймаутом 60 секунд")
+            
+            # Отправить запрос на обработку
+            logger.info("Отправка запроса на постобработку...")
+            logger.info(f"Параметры: temperature=0.3, max_tokens=2000")
+            logger.info(f"Отправка к {base_url} с моделью {model}...")
+            logger.info("⏱️ Таймаут: 60 секунд (после этого вернется оригинальный текст)")
+            
+            import time
+            start_time = time.time()
+            
+            response = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": text}
+                ],
+                temperature=0.3,  # Низкая температура для более точной обработки
+                max_tokens=2000,
+                timeout=60.0  # Дополнительный таймаут на уровне запроса
+            )
+            
+            elapsed_time = time.time() - start_time
+            logger.info(f"Запрос выполнен за {elapsed_time:.2f} секунд")
+            elapsed_time = time.time() - start_time
+            logger.info(f"Запрос выполнен за {elapsed_time:.2f} секунд")
+            logger.info("Ответ получен от API")
+            
+            # Извлечь обработанный текст
+            if response.choices and len(response.choices) > 0:
+                processed_text = response.choices[0].message.content
+                
+                # Проверить что текст не None и не пустой
+                if processed_text:
+                    processed_text = processed_text.strip()
+                    
+                    if processed_text:  # Проверка что после strip() текст не пустой
+                        logger.info(f"Обработанный текст получен, длина: {len(processed_text)} символов")
+                        logger.info(f"Обработанный текст: {processed_text[:200]}...")
+                        logger.info("✅ ПОСТОБРАБОТКА ЗАВЕРШЕНА УСПЕШНО")
+                        logger.info("=" * 80)
+                        return processed_text
+                    else:
+                        logger.warning("⚠️ Ответ постобработки пустой (после strip)!")
+                        logger.warning("⚠️ Возвращаем оригинальный текст")
+                        logger.info("=" * 80)
+                        return text
+                else:
+                    logger.warning("⚠️ Ответ постобработки пустой (None или пустая строка)!")
+                    logger.warning("⚠️ Возвращаем оригинальный текст")
+                    logger.info("=" * 80)
+                    return text
+            else:
+                logger.warning("⚠️ Ответ постобработки не содержит choices!")
+                logger.warning("⚠️ Возвращаем оригинальный текст")
+                logger.info("=" * 80)
+                return text
+        
+        except APITimeoutError as e:
+            logger.error("=" * 80)
+            logger.error(f"⏱️ ТАЙМАУТ ПОСТОБРАБОТКИ: {e}")
+            logger.error("Запрос превысил 60 секунд")
+            logger.warning("⚠️ Возвращаем оригинальный текст без обработки")
+            logger.error("=" * 80)
+            return text
+        
+        except Timeout as e:
+            logger.error("=" * 80)
+            logger.error(f"⏱️ ТАЙМАУТ ПОСТОБРАБОТКИ (Timeout): {e}")
+            logger.error("Запрос превысил 60 секунд")
+            logger.warning("⚠️ Возвращаем оригинальный текст без обработки")
+            logger.error("=" * 80)
+            return text
+        
+        except AuthenticationError as e:
+            logger.error("=" * 80)
+            logger.error(f"🔐 ОШИБКА АУТЕНТИФИКАЦИИ: {e}")
+            logger.error("Проверьте API ключ в настройках")
+            logger.warning("⚠️ Возвращаем оригинальный текст без обработки")
+            logger.error("=" * 80)
+            return text
+        
+        except APIConnectionError as e:
+            logger.error("=" * 80)
+            logger.error(f"🌐 ОШИБКА ПОДКЛЮЧЕНИЯ: {e}")
+            logger.error(f"Не удалось подключиться к {base_url}")
+            logger.error("Проверьте интернет-соединение и доступность API")
+            logger.warning("⚠️ Возвращаем оригинальный текст без обработки")
+            logger.error("=" * 80)
+            return text
+        
+        except KeyboardInterrupt:
+            logger.error("=" * 80)
+            logger.error("⚠️ ПРЕРВАНО ПОЛЬЗОВАТЕЛЕМ")
+            logger.warning("⚠️ Возвращаем оригинальный текст без обработки")
+            logger.error("=" * 80)
+            return text
+        
+        except Exception as e:
+            logger.error("=" * 80)
+            logger.error(f"❌ ОШИБКА ПОСТОБРАБОТКИ: {e}")
+            logger.error(f"Тип ошибки: {type(e).__name__}")
+            import traceback
+            logger.error(traceback.format_exc())
+            logger.warning("⚠️ Возвращаем оригинальный текст без обработки")
+            logger.error("=" * 80)
+            # В случае ЛЮБОЙ ошибки возвращаем оригинальный текст
+            return text
 
 
 
@@ -317,9 +516,37 @@ class TranscriptionThread(QThread):
             transcribed_text = text
             logger.info(f"Транскрипция завершена: {text[:50]}...")
             
+            # Постобработка текста если включена
+            if config.enable_post_processing:
+                logger.info("=" * 80)
+                logger.info("ПОСТОБРАБОТКА ВКЛЮЧЕНА В НАСТРОЙКАХ")
+                logger.info(f"Провайдер постобработки: {config.post_processing_provider}")
+                logger.info(f"Модель постобработки: {config.post_processing_model}")
+                logger.info(f"Промпт: {config.post_processing_prompt[:100]}...")
+                logger.info("Начинаем постобработку текста...")
+                try:
+                    processed_text = self.transcription_client.post_process_text(
+                        text=text,
+                        provider=config.post_processing_provider,
+                        model=config.post_processing_model,
+                        system_prompt=config.post_processing_prompt,
+                        base_url=config.llm_base_url if config.post_processing_provider == "llm" else None,
+                        use_coding_plan=config.glm_use_coding_plan if config.post_processing_provider == "glm" else False
+                    )
+                    transcribed_text = processed_text
+                    logger.info(f"✅ Постобработка завершена успешно")
+                    logger.info(f"Результат: {processed_text[:100]}...")
+                except Exception as pp_error:
+                    logger.error(f"❌ Ошибка постобработки: {pp_error}")
+                    logger.info("Используем оригинальный текст без постобработки")
+                    # Продолжаем с оригинальным текстом
+                logger.info("=" * 80)
+            else:
+                logger.info("Постобработка отключена в настройках")
+            
             # Отправить сигнал с результатом
             logger.info("Отправка сигнала transcription_complete")
-            self.transcription_complete.emit(text)
+            self.transcription_complete.emit(transcribed_text)
             
         except Exception as e:
             # Отправить сигнал об ошибке

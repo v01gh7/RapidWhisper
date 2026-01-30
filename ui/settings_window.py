@@ -234,6 +234,7 @@ class SettingsWindow(QDialog):
             ("🤖 AI Provider", "ai"),
             ("⚡ Приложение", "app"),
             ("🎤 Аудио", "audio"),
+            ("✨ Обработка", "processing"),
             ("🎙️ Записи", "recordings"),
             ("ℹ️ О программе", "about")
         ]
@@ -264,6 +265,7 @@ class SettingsWindow(QDialog):
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_ai_page()))
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_app_page()))
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_audio_page()))
+        self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_processing_page()))
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_recordings_page()))
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_about_page()))
         
@@ -668,6 +670,146 @@ class SettingsWindow(QDialog):
         info_label.setWordWrap(True)
         info_label.setStyleSheet("color: #ff8800; font-size: 11px; padding: 8px;")
         layout.addWidget(info_label)
+        
+        # Прижать контент вверх
+        layout.addStretch()
+        
+        widget.setLayout(layout)
+        return widget
+    
+    def _create_processing_page(self) -> QWidget:
+        """Создает страницу настроек обработки транскрипции."""
+        widget = QWidget()
+        layout = QVBoxLayout()
+        layout.setSpacing(20)
+        
+        # Заголовок
+        title = QLabel("Обработка")
+        title.setObjectName("pageTitle")
+        layout.addWidget(title)
+        
+        # Группа: Постобработка транскрипции
+        post_processing_group = QGroupBox("Постобработка транскрипции")
+        post_processing_layout = QVBoxLayout()
+        post_processing_layout.setSpacing(12)
+        
+        # Чекбокс включения постобработки
+        self.enable_post_processing_check = QCheckBox("Включить дополнительную обработку текста")
+        self.enable_post_processing_check.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.enable_post_processing_check.setToolTip(
+            "После транскрипции текст будет отправлен на дополнительную обработку\n"
+            "для исправления ошибок, добавления пунктуации и улучшения читаемости"
+        )
+        self.enable_post_processing_check.toggled.connect(self._on_post_processing_toggled)
+        post_processing_layout.addWidget(self.enable_post_processing_check)
+        
+        # Описание
+        info_label = QLabel(
+            "💡 <b>Что делает постобработка:</b><br>"
+            "• Исправляет грамматические ошибки<br>"
+            "• Добавляет знаки препинания<br>"
+            "• Улучшает структуру текста<br>"
+            "• Сохраняет смысл и содержание<br><br>"
+            "✅ <b>Groq</b> - бесплатный и быстрый (рекомендуется)<br>"
+            "⚠️ <b>OpenAI</b> - платный, высокое качество<br>"
+            "⚠️ <b>GLM</b> - обычный API (требует баланс) или Coding Plan<br>"
+            "🖥️ <b>LLM</b> - локальные модели (LM Studio, Ollama, etc.)"
+        )
+        info_label.setWordWrap(True)
+        info_label.setStyleSheet(
+            "color: #888888; "
+            "font-size: 11px; "
+            "padding: 8px; "
+            "background-color: #2d2d2d; "
+            "border-radius: 4px;"
+        )
+        post_processing_layout.addWidget(info_label)
+        
+        # Форма настроек
+        settings_form = QFormLayout()
+        settings_form.setSpacing(12)
+        
+        # Выбор провайдера
+        self.post_processing_provider_combo = QComboBox()
+        self.post_processing_provider_combo.addItems(["groq", "openai", "glm", "llm"])
+        self.post_processing_provider_combo.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.post_processing_provider_combo.currentTextChanged.connect(self._on_post_processing_provider_changed)
+        provider_label = QLabel("Провайдер:")
+        provider_label.setToolTip(
+            "AI провайдер для обработки текста\n\n"
+            "💡 Groq - бесплатный и быстрый (рекомендуется)\n"
+            "⚠️ OpenAI - платный, высокое качество\n"
+            "⚠️ GLM - обычный API или Coding Plan (чекбокс ниже)\n"
+            "🖥️ LLM - локальные модели (LM Studio, Ollama)"
+        )
+        settings_form.addRow(provider_label, self.post_processing_provider_combo)
+        
+        # Выбор модели
+        self.post_processing_model_combo = QComboBox()
+        self.post_processing_model_combo.setCursor(Qt.CursorShape.PointingHandCursor)
+        model_label = QLabel("Модель:")
+        model_label.setToolTip("Модель для обработки текста")
+        settings_form.addRow(model_label, self.post_processing_model_combo)
+        
+        # GLM Coding Plan чекбокс (показывается только для GLM)
+        self.glm_coding_plan_check = QCheckBox("Использовать Coding Plan подписку")
+        self.glm_coding_plan_check.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.glm_coding_plan_check.setToolTip(
+            "Если у вас есть подписка GLM Coding Plan,\n"
+            "включите эту опцию для использования специального endpoint'а\n"
+            "с доступом к моделям glm-4.5, glm-4.6, glm-4.7"
+        )
+        self.glm_coding_plan_check.toggled.connect(lambda: self._on_post_processing_provider_changed(self.post_processing_provider_combo.currentText()))
+        self.glm_coding_plan_check.setVisible(False)  # Скрыто по умолчанию
+        settings_form.addRow("", self.glm_coding_plan_check)
+        
+        # LLM Base URL (показывается только для LLM)
+        self.llm_base_url_label = QLabel("LLM Base URL:")
+        self.llm_base_url_label.setToolTip("URL локального LLM сервера (например, LM Studio, Ollama)")
+        self.llm_base_url_edit = QLineEdit()
+        self.llm_base_url_edit.setPlaceholderText("http://localhost:1234/v1/")
+        self.llm_base_url_edit.setVisible(False)  # Скрыто по умолчанию
+        self.llm_base_url_label.setVisible(False)
+        settings_form.addRow(self.llm_base_url_label, self.llm_base_url_edit)
+        
+        # LLM API Key (показывается только для LLM)
+        self.llm_api_key_label = QLabel("LLM API Key:")
+        self.llm_api_key_label.setToolTip("API ключ для локального LLM (обычно не требуется, можно оставить 'local')")
+        self.llm_api_key_edit = QLineEdit()
+        self.llm_api_key_edit.setPlaceholderText("local")
+        self.llm_api_key_edit.setVisible(False)  # Скрыто по умолчанию
+        self.llm_api_key_label.setVisible(False)
+        settings_form.addRow(self.llm_api_key_label, self.llm_api_key_edit)
+        
+        post_processing_layout.addLayout(settings_form)
+        
+        # Системный промпт (редактируемый)
+        prompt_label = QLabel("Системный промпт:")
+        prompt_label.setToolTip("Инструкция для модели по обработке текста")
+        post_processing_layout.addWidget(prompt_label)
+        
+        from PyQt6.QtWidgets import QTextEdit
+        self.post_processing_prompt_edit = QTextEdit()
+        self.post_processing_prompt_edit.setPlaceholderText("Введите системный промпт для обработки текста...")
+        self.post_processing_prompt_edit.setMinimumHeight(100)
+        self.post_processing_prompt_edit.setMaximumHeight(150)
+        self.post_processing_prompt_edit.setStyleSheet("""
+            QTextEdit {
+                background-color: #2d2d2d;
+                color: #ffffff;
+                border: 1px solid #3d3d3d;
+                border-radius: 6px;
+                padding: 8px;
+                font-size: 12px;
+            }
+            QTextEdit:focus {
+                border: 1px solid #0078d4;
+            }
+        """)
+        post_processing_layout.addWidget(self.post_processing_prompt_edit)
+        
+        post_processing_group.setLayout(post_processing_layout)
+        layout.addWidget(post_processing_group)
         
         # Прижать контент вверх
         layout.addStretch()
@@ -1349,6 +1491,29 @@ class SettingsWindow(QDialog):
         # Записи
         self.keep_recordings_check.setChecked(self.config.keep_recordings)
         
+        # Постобработка
+        self.enable_post_processing_check.setChecked(self.config.enable_post_processing)
+        self.post_processing_provider_combo.setCurrentText(self.config.post_processing_provider)
+        
+        # GLM Coding Plan
+        self.glm_coding_plan_check.setChecked(self.config.glm_use_coding_plan)
+        
+        # LLM настройки
+        self.llm_base_url_edit.setText(self.config.llm_base_url)
+        self.llm_api_key_edit.setText(self.config.llm_api_key)
+        
+        # Загрузить модели для выбранного провайдера
+        self._on_post_processing_provider_changed(self.config.post_processing_provider)
+        
+        # Установить модель
+        self.post_processing_model_combo.setCurrentText(self.config.post_processing_model)
+        
+        # Установить промпт
+        self.post_processing_prompt_edit.setPlainText(self.config.post_processing_prompt)
+        
+        # Обновить состояние полей
+        self._on_post_processing_toggled(self.config.enable_post_processing)
+        
         # Обновить подсветку активного провайдера
         self._on_provider_changed(self.config.ai_provider)
     
@@ -1415,6 +1580,72 @@ class SettingsWindow(QDialog):
             self.custom_url_edit.setStyleSheet("border: 2px solid #0078d4;")
             self.custom_model_edit.setStyleSheet("border: 2px solid #0078d4;")
     
+    def _on_post_processing_toggled(self, checked: bool):
+        """Обработчик включения/выключения постобработки."""
+        self.post_processing_provider_combo.setEnabled(checked)
+        self.post_processing_model_combo.setEnabled(checked)
+        self.post_processing_prompt_edit.setEnabled(checked)
+    
+    def _on_post_processing_provider_changed(self, provider: str):
+        """Обработчик изменения провайдера постобработки."""
+        # Обновить список моделей в зависимости от провайдера
+        self.post_processing_model_combo.clear()
+        
+        if provider == "groq":
+            models = [
+                "llama-3.3-70b-versatile",
+                "llama-3.1-70b-versatile",
+                "mixtral-8x7b-32768"
+            ]
+        elif provider == "openai":
+            models = [
+                "gpt-4o",
+                "gpt-4o-mini",
+                "gpt-4-turbo"
+            ]
+        elif provider == "glm":
+            # GLM модели (зависит от чекбокса Coding Plan)
+            if hasattr(self, 'glm_coding_plan_check') and self.glm_coding_plan_check.isChecked():
+                # Coding Plan модели
+                models = [
+                    "glm-4.7",
+                    "glm-4.6",
+                    "glm-4.5",
+                    "glm-4.5-air"
+                ]
+            else:
+                # Обычные GLM модели
+                models = [
+                    "glm-4-plus",
+                    "glm-4-0520",
+                    "glm-4-air",
+                    "glm-4-airx",
+                    "glm-4-flash"
+                ]
+        elif provider == "llm":
+            # LLM - локальные модели (пользователь вводит название сам)
+            models = [
+                "llama-3.3-70b-versatile",
+                "mistral-7b-instruct",
+                "mixtral-8x7b-instruct",
+                "qwen-2.5-72b-instruct",
+                "custom"  # Пользователь может ввести свою модель
+            ]
+        else:
+            models = ["llama-3.3-70b-versatile"]
+        
+        self.post_processing_model_combo.addItems(models)
+        
+        # Показать/скрыть дополнительные поля
+        if hasattr(self, 'glm_coding_plan_check'):
+            self.glm_coding_plan_check.setVisible(provider == "glm")
+        if hasattr(self, 'llm_base_url_edit'):
+            self.llm_base_url_edit.setVisible(provider == "llm")
+            self.llm_base_url_label.setVisible(provider == "llm")
+        if hasattr(self, 'llm_api_key_edit'):
+            self.llm_api_key_edit.setVisible(provider == "llm")
+            self.llm_api_key_label.setVisible(provider == "llm")
+    
     def _save_settings(self):
         """Сохраняет настройки в .env файл."""
         try:
@@ -1443,6 +1674,13 @@ class SettingsWindow(QDialog):
                 "REMEMBER_WINDOW_POSITION": "true" if self.remember_position_check.isChecked() else "false",
                 "WINDOW_POSITION_PRESET": position_presets[position_index],
                 "KEEP_RECORDINGS": "true" if self.keep_recordings_check.isChecked() else "false",
+                "ENABLE_POST_PROCESSING": "true" if self.enable_post_processing_check.isChecked() else "false",
+                "POST_PROCESSING_PROVIDER": self.post_processing_provider_combo.currentText(),
+                "POST_PROCESSING_MODEL": self.post_processing_model_combo.currentText(),
+                "POST_PROCESSING_PROMPT": self.post_processing_prompt_edit.toPlainText(),
+                "GLM_USE_CODING_PLAN": "true" if self.glm_coding_plan_check.isChecked() else "false",
+                "LLM_BASE_URL": self.llm_base_url_edit.text(),
+                "LLM_API_KEY": self.llm_api_key_edit.text(),
             }
             
             # Использовать правильный путь к .env (AppData для production)
