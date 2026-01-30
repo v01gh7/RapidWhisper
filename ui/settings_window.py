@@ -755,11 +755,11 @@ class SettingsWindow(QDialog):
         play_btn.clicked.connect(self._open_recording)
         buttons_layout.addWidget(play_btn)
         
-        text_btn = QPushButton("📝 Текст")
-        text_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        text_btn.setToolTip("Открыть транскрипцию в текстовом редакторе")
-        text_btn.clicked.connect(self._open_transcription)
-        buttons_layout.addWidget(text_btn)
+        self.text_btn = QPushButton("📝 Текст")
+        self.text_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.text_btn.setToolTip("Открыть транскрипцию в текстовом редакторе")
+        self.text_btn.clicked.connect(self._open_transcription)
+        buttons_layout.addWidget(self.text_btn)
         
         folder_btn = QPushButton("📁 Папка")
         folder_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -785,6 +785,9 @@ class SettingsWindow(QDialog):
         
         recordings_group.setLayout(recordings_layout)
         layout.addWidget(recordings_group)
+        
+        # Подключить сигнал изменения выбора
+        self.recordings_list.currentItemChanged.connect(self._on_recording_selection_changed)
         
         # Загрузить список записей
         self._refresh_recordings_list()
@@ -836,6 +839,39 @@ class SettingsWindow(QDialog):
                 item.setData(Qt.ItemDataRole.UserRole + 1, str(transcription_path) if has_transcription else None)  # Путь к транскрипции
                 
                 self.recordings_list.addItem(item)
+        
+        # Обновить состояние кнопки текста
+        self._on_recording_selection_changed()
+    
+    def _on_recording_selection_changed(self):
+        """Обновляет состояние кнопки текста в зависимости от наличия транскрипции."""
+        current_item = self.recordings_list.currentItem()
+        
+        if not current_item:
+            self.text_btn.setEnabled(False)
+            return
+        
+        # Проверить наличие транскрипции
+        transcription_path = current_item.data(Qt.ItemDataRole.UserRole + 1)
+        has_transcription = transcription_path is not None
+        
+        # Включить/отключить кнопку
+        self.text_btn.setEnabled(has_transcription)
+        
+        # Обновить стиль кнопки
+        if has_transcription:
+            self.text_btn.setStyleSheet("")
+        else:
+            self.text_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #3d3d3d;
+                    color: #808080;
+                }
+                QPushButton:hover {
+                    background-color: #3d3d3d;
+                    color: #808080;
+                }
+            """)
     
     def _open_recording(self):
         """Открывает выбранную аудиозапись в проигрывателе по умолчанию."""
@@ -875,12 +911,6 @@ class SettingsWindow(QDialog):
         
         transcription_path = current_item.data(Qt.ItemDataRole.UserRole + 1)
         if not transcription_path:
-            QMessageBox.information(
-                self,
-                "ℹ️ Информация",
-                "У этой записи нет транскрипции",
-                QMessageBox.StandardButton.Ok
-            )
             return
         
         # Открыть файл в текстовом редакторе по умолчанию
