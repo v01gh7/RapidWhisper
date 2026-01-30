@@ -33,11 +33,34 @@ class TrayIcon(QObject):
         # Создать системный трей
         self.tray_icon = QSystemTrayIcon(parent)
         
-        # Создать иконку (используем стандартную иконку Qt)
-        # TODO: Заменить на кастомную иконку
-        from PyQt6.QtWidgets import QStyle, QApplication
-        icon = QApplication.style().standardIcon(QStyle.StandardPixmap.SP_MediaPlay)
-        self.tray_icon.setIcon(icon)
+        # Загрузить кастомную иконку
+        import sys
+        import os
+        
+        # Определить путь к иконке (работает и в dev, и в .exe)
+        if getattr(sys, 'frozen', False):
+            # Запущено из .exe
+            base_path = sys._MEIPASS
+        else:
+            # Запущено из исходников
+            base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        
+        icon_path = os.path.join(base_path, 'public', 'RapidWhisper.ico')
+        
+        try:
+            icon = QIcon(icon_path)
+            if not icon.isNull():
+                self.tray_icon.setIcon(icon)
+            else:
+                # Fallback на стандартную иконку
+                from PyQt6.QtWidgets import QStyle, QApplication
+                icon = QApplication.style().standardIcon(QStyle.StandardPixmap.SP_MediaPlay)
+                self.tray_icon.setIcon(icon)
+        except Exception:
+            # Fallback на стандартную иконку
+            from PyQt6.QtWidgets import QStyle, QApplication
+            icon = QApplication.style().standardIcon(QStyle.StandardPixmap.SP_MediaPlay)
+            self.tray_icon.setIcon(icon)
         
         # Создать меню
         self._create_menu()
@@ -88,11 +111,28 @@ class TrayIcon(QObject):
     def _show_about(self) -> None:
         """Показывает информацию о программе."""
         from PyQt6.QtWidgets import QMessageBox, QApplication
+        import sys
         
         # Создаем окно БЕЗ parent, чтобы оно центрировалось на экране
         msg = QMessageBox()
         msg.setWindowTitle("О программе RapidWhisper")
         msg.setIcon(QMessageBox.Icon.Information)
+        
+        # Установить иконку окна
+        if getattr(sys, 'frozen', False):
+            base_path = sys._MEIPASS
+        else:
+            import os
+            base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        
+        icon_path = os.path.join(base_path, 'public', 'RapidWhisper.ico')
+        try:
+            icon = QIcon(icon_path)
+            if not icon.isNull():
+                msg.setWindowIcon(icon)
+        except Exception:
+            pass
+        
         msg.setText(
             "RapidWhisper v1.0\n\n"
             "Быстрая транскрипция речи с микрофона\n"

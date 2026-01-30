@@ -48,6 +48,9 @@ class SettingsWindow(QDialog):
         self.setMinimumWidth(950)  # Увеличена ширина для новых кнопок
         self.setMinimumHeight(650)  # Увеличена высота
         
+        # Установить иконку окна
+        self._set_window_icon()
+        
         # Установить максимальную высоту (высота экрана - 160 пикселей)
         screen = QApplication.primaryScreen()
         if screen:
@@ -63,6 +66,25 @@ class SettingsWindow(QDialog):
         
         # Загрузить текущие значения
         self._load_values()
+    
+    def _set_window_icon(self):
+        """Устанавливает иконку окна."""
+        import sys
+        
+        # Определить путь к иконке
+        if getattr(sys, 'frozen', False):
+            base_path = sys._MEIPASS
+        else:
+            base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        
+        icon_path = os.path.join(base_path, 'public', 'RapidWhisper.ico')
+        
+        try:
+            icon = QIcon(icon_path)
+            if not icon.isNull():
+                self.setWindowIcon(icon)
+        except Exception:
+            pass  # Игнорируем ошибки загрузки иконки
     
     def _apply_style(self):
         """Применяет стиль к окну настроек в стиле macOS."""

@@ -17,24 +17,76 @@ def create_icon(size, output_path):
         img = Image.new('RGBA', (size, size), (79, 70, 229, 255))  # Indigo background
         draw = ImageDraw.Draw(img)
 
-        # Draw a simple "RW" letter for RapidWhisper
-        margin = size // 8
-        font_size = size - 2 * margin
-
-        try:
-            # Try to use a system font
-            font = ImageFont.truetype("arial.ttf", font_size)
-        except:
-            # Fall back to default font
+        # Draw "RW" letters for RapidWhisper
+        text = "RW"
+        
+        # Попробовать загрузить жирный шрифт для лучшей читаемости
+        # Используем 85% от размера иконки для максимально крупных букв
+        font = None
+        initial_font_size = int(size * 0.85)
+        
+        # Приоритет: жирный шрифт для лучшей видимости
+        font_paths = [
+            "C:/Windows/Fonts/arialbd.ttf",  # Arial Bold
+            "C:/Windows/Fonts/ariblk.ttf",   # Arial Black (еще жирнее)
+            "C:/Windows/Fonts/impact.ttf",   # Impact (очень жирный)
+            "C:/Windows/Fonts/arial.ttf",    # Arial обычный
+        ]
+        
+        for font_path in font_paths:
+            try:
+                font = ImageFont.truetype(font_path, initial_font_size)
+                break
+            except:
+                continue
+        
+        # Если не удалось загрузить TrueType шрифт, используем default
+        if font is None:
+            print(f"  Warning: Using default font for {size}x{size}")
             font = ImageFont.load_default()
-
-        # Draw "R" in white
-        text_bbox = draw.textbbox((0, 0), "RW", font=font)
-        text_width = text_bbox[2] - text_bbox[0]
-        text_height = text_bbox[3] - text_bbox[1]
-        text_x = (size - text_width) // 2
-        text_y = (size - text_height) // 2 - text_bbox[1]
-        draw.text((text_x, text_y), "R", fill=(255, 255, 255, 255), font=font)
+        
+        # Получить размеры текста
+        bbox = draw.textbbox((0, 0), text, font=font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+        
+        # Если текст слишком большой, уменьшить шрифт
+        max_width = int(size * 0.9)
+        max_height = int(size * 0.9)
+        
+        if text_width > max_width or text_height > max_height:
+            # Пересчитать размер шрифта
+            scale = min(max_width / text_width, max_height / text_height)
+            new_font_size = int(initial_font_size * scale)
+            
+            for font_path in font_paths:
+                try:
+                    font = ImageFont.truetype(font_path, new_font_size)
+                    break
+                except:
+                    continue
+            
+            # Пересчитать размеры
+            bbox = draw.textbbox((0, 0), text, font=font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+        
+        # Центрировать текст
+        text_x = (size - text_width) // 2 - bbox[0]
+        text_y = (size - text_height) // 2 - bbox[1]
+        
+        # Добавить легкую тень для контраста (только для больших иконок)
+        if size >= 32:
+            shadow_offset = max(1, size // 32)
+            draw.text(
+                (text_x + shadow_offset, text_y + shadow_offset), 
+                text, 
+                fill=(0, 0, 0, 100),  # Полупрозрачная черная тень
+                font=font
+            )
+        
+        # Нарисовать белый текст
+        draw.text((text_x, text_y), text, fill=(255, 255, 255, 255), font=font)
 
         img.save(output_path, 'PNG')
         print(f"✓ Created {output_path} ({size}x{size})")
@@ -88,10 +140,17 @@ def create_chunk(chunk_type, data):
 
 def main():
     """Generate all icon sizes."""
+    import os
+    
     print("Generating RapidWhisper browser extension icons...")
 
-    sizes = [16, 48, 128]
+    # Добавлены большие размеры для лучшего качества
+    sizes = [16, 32, 48, 64, 128, 256]
     base_path = "public/icons"
+    
+    # Создать папку если её нет
+    os.makedirs(base_path, exist_ok=True)
+    print(f"✓ Directory {base_path} ready")
 
     for size in sizes:
         output_path = f"{base_path}/icon{size}.png"
