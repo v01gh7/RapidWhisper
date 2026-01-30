@@ -1133,13 +1133,14 @@ class SettingsWindow(QDialog):
         """
         # Сохранить значение в .env
         self.config.set_env_value('FONT_SIZE_FLOATING_MAIN', str(value))
+        # Обновить конфиг в памяти
+        self.config.font_size_floating_main = value
         
         # Применить изменения к FloatingWindow если доступно
-        if self.parent() and hasattr(self.parent(), 'status_label'):
+        if self.parent() and hasattr(self.parent(), '_apply_opacity'):
             try:
-                font = self.parent().status_label.font()
-                font.setPointSize(value)
-                self.parent().status_label.setFont(font)
+                # Вызываем _apply_opacity() чтобы обновить стили с новым размером шрифта
+                self.parent()._apply_opacity()
                 logger.debug(f"Font size floating main changed to {value} with live preview")
             except Exception as e:
                 logger.warning(f"Failed to apply live font preview: {e}")
@@ -1155,18 +1156,14 @@ class SettingsWindow(QDialog):
         """
         # Сохранить значение в .env
         self.config.set_env_value('FONT_SIZE_FLOATING_INFO', str(value))
+        # Обновить конфиг в памяти
+        self.config.font_size_floating_info = value
         
-        # Применить изменения к InfoPanelWidget если доступно
-        if self.parent() and hasattr(self.parent(), 'info_panel'):
+        # Применить изменения к FloatingWindow если доступно
+        if self.parent() and hasattr(self.parent(), '_apply_opacity'):
             try:
-                info_panel = self.parent().info_panel
-                # Обновить шрифт для всех меток в инфо панели
-                # Используем правильные имена атрибутов с подчеркиванием
-                for label in [info_panel._app_name_label, info_panel._record_hotkey_label, 
-                             info_panel._close_hotkey_label]:
-                    font = label.font()
-                    font.setPointSize(value)
-                    label.setFont(font)
+                # Вызываем _apply_opacity() чтобы обновить стили с новым размером шрифта
+                self.parent()._apply_opacity()
                 logger.debug(f"Font size floating info changed to {value} with live preview")
             except Exception as e:
                 logger.warning(f"Failed to apply live font preview: {e}")
