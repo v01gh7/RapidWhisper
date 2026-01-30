@@ -26,6 +26,7 @@ class WindowsWindowMonitor(WindowMonitor):
         self._callback: Optional[Callable[[WindowInfo], None]] = None
         self._icon_cache: Dict[int, QPixmap] = {}
         self._last_window_handle: Optional[int] = None
+        self._last_window_title: Optional[str] = None  # Добавлено для отслеживания изменений названия
         self._cache_max_size = 50
         self._cache_access_count: Dict[int, int] = {}
         self._logger = logging.getLogger(__name__)
@@ -229,9 +230,13 @@ class WindowsWindowMonitor(WindowMonitor):
         try:
             hwnd = win32gui.GetForegroundWindow()
             
-            # Check if window changed
-            if hwnd != self._last_window_handle:
+            # Get current window title
+            title = win32gui.GetWindowText(hwnd) if hwnd else ""
+            
+            # Check if window changed OR title changed (for tab switches)
+            if hwnd != self._last_window_handle or title != self._last_window_title:
                 self._last_window_handle = hwnd
+                self._last_window_title = title
                 window_info = self.get_active_window_info()
                 
                 if window_info and self._callback:

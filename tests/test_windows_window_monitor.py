@@ -220,16 +220,48 @@ class TestWindowsWindowMonitor:
         assert monitor._callback is None
     
     @patch('services.windows_window_monitor.win32gui.GetForegroundWindow')
-    def test_check_active_window_no_change(self, mock_get_window, monitor):
+    @patch('services.windows_window_monitor.win32gui.GetWindowText')
+    def test_check_active_window_no_change(self, mock_get_text, mock_get_window, monitor):
         """Test that callback is not called when window doesn't change"""
         mock_get_window.return_value = 12345
+        mock_get_text.return_value = "Test Window"
         monitor._last_window_handle = 12345
+        monitor._last_window_title = "Test Window"
         callback = Mock()
         monitor._callback = callback
         
         monitor._check_active_window()
         
         callback.assert_not_called()
+    
+    @patch('services.windows_window_monitor.win32gui.GetForegroundWindow')
+    @patch('services.windows_window_monitor.win32gui.GetWindowText')
+    @patch('services.windows_window_monitor.win32process.GetWindowThreadProcessId')
+    @patch('services.windows_window_monitor.psutil.Process')
+    def test_check_active_window_title_change(
+        self, mock_process, mock_get_thread, mock_get_text, mock_get_window, monitor
+    ):
+        """Test that callback is called when window title changes (e.g., tab switch)"""
+        mock_get_window.return_value = 12345  # Same window handle
+        mock_get_text.return_value = "New Tab Title"
+        mock_get_thread.return_value = (0, 9999)
+        
+        mock_proc = Mock()
+        mock_proc.name.return_value = "vscode.exe"
+        mock_process.return_value = mock_proc
+        
+        monitor._last_window_handle = 12345  # Same handle
+        monitor._last_window_title = "Old Tab Title"  # Different title
+        callback = Mock()
+        monitor._callback = callback
+        
+        monitor._check_active_window()
+        
+        # Callback should be called because title changed
+        callback.assert_called_once()
+        args = callback.call_args[0]
+        assert isinstance(args[0], WindowInfo)
+        assert args[0].title == "New Tab Title"
     
     @patch('services.windows_window_monitor.win32gui.GetForegroundWindow')
     @patch('services.windows_window_monitor.win32gui.GetWindowText')
