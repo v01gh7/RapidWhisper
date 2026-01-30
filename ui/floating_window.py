@@ -447,12 +447,19 @@ class FloatingWindow(QWidget):
     def save_position(self) -> None:
         """
         Сохраняет текущую позицию окна в конфигурацию.
+        Сохраняет только если настройка REMEMBER_WINDOW_POSITION включена.
         """
         try:
             from core.config import get_env_path
             import os
             
             env_path = str(get_env_path())
+            
+            # Проверить, включена ли настройка запоминания позиции
+            remember = os.getenv('REMEMBER_WINDOW_POSITION', 'true').lower()
+            if remember not in ('true', '1', 'yes'):
+                # Настройка выключена - не сохранять позицию
+                return
             
             # Получить текущую позицию
             pos = self.pos()

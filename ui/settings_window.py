@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout,
     QLabel, QLineEdit, QComboBox, QDoubleSpinBox,
     QPushButton, QGroupBox, QMessageBox, QWidget, QListWidget, QStackedWidget, QListWidgetItem,
-    QScrollArea, QApplication
+    QScrollArea, QApplication, QCheckBox
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont, QIcon, QScreen
@@ -505,6 +505,13 @@ class SettingsWindow(QDialog):
         hide_label.setToolTip("Задержка автоматического скрытия окна (1.0-10.0)")
         ui_layout.addRow(hide_label, self.auto_hide_spin)
         
+        # Чекбокс для запоминания позиции окна
+        self.remember_position_check = QCheckBox()
+        self.remember_position_check.setCursor(Qt.CursorShape.PointingHandCursor)
+        remember_label = QLabel("Запоминать позицию окна:")
+        remember_label.setToolTip("Если включено, окно записи будет появляться в том месте, куда вы его перетащили")
+        ui_layout.addRow(remember_label, self.remember_position_check)
+        
         ui_group.setLayout(ui_layout)
         layout.addWidget(ui_group)
         
@@ -690,6 +697,7 @@ class SettingsWindow(QDialog):
         self.silence_threshold_spin.setValue(self.config.silence_threshold)
         self.silence_duration_spin.setValue(self.config.silence_duration)
         self.auto_hide_spin.setValue(self.config.auto_hide_delay)
+        self.remember_position_check.setChecked(self.config.remember_window_position)
         
         # Аудио
         self.sample_rate_combo.setCurrentText(str(self.config.sample_rate))
@@ -744,6 +752,7 @@ class SettingsWindow(QDialog):
                 "AUTO_HIDE_DELAY": str(self.auto_hide_spin.value()),
                 "SAMPLE_RATE": self.sample_rate_combo.currentText(),
                 "CHUNK_SIZE": self.chunk_size_combo.currentText(),
+                "REMEMBER_WINDOW_POSITION": "true" if self.remember_position_check.isChecked() else "false",
             }
             
             # Использовать правильный путь к .env (AppData для production)
