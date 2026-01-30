@@ -46,6 +46,30 @@ def get_recordings_dir() -> Path:
     return recordings_dir
 
 
+def get_audio_recordings_dir() -> Path:
+    """
+    Возвращает путь к директории с аудио записями.
+    
+    Returns:
+        Path: Путь к директории recordings/audio
+    """
+    audio_dir = get_recordings_dir() / 'audio'
+    audio_dir.mkdir(parents=True, exist_ok=True)
+    return audio_dir
+
+
+def get_transcriptions_dir() -> Path:
+    """
+    Возвращает путь к директории с транскрипциями.
+    
+    Returns:
+        Path: Путь к директории recordings/transcriptions
+    """
+    transcriptions_dir = get_recordings_dir() / 'transcriptions'
+    transcriptions_dir.mkdir(parents=True, exist_ok=True)
+    return transcriptions_dir
+
+
 def get_env_path() -> Path:
     """
     Возвращает путь к файлу .env.

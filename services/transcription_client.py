@@ -282,6 +282,8 @@ class TranscriptionThread(QThread):
         from utils.logger import get_logger
         logger = get_logger()
         
+        transcribed_text = None
+        
         try:
             logger.info(f"TranscriptionThread.run() начат для файла: {self.audio_file_path}")
             logger.info(f"Провайдер: {self.provider}")
@@ -312,6 +314,7 @@ class TranscriptionThread(QThread):
             # Выполнить транскрипцию
             logger.info("Начало транскрипции...")
             text = self.transcription_client.transcribe_audio(self.audio_file_path)
+            transcribed_text = text
             logger.info(f"Транскрипция завершена: {text[:50]}...")
             
             # Отправить сигнал с результатом
@@ -330,23 +333,34 @@ class TranscriptionThread(QThread):
             try:
                 if os.path.exists(self.audio_file_path):
                     # Загрузить конфигурацию для проверки настройки
-                    from core.config import Config, get_recordings_dir
+                    from core.config import Config, get_audio_recordings_dir, get_transcriptions_dir
                     from datetime import datetime
                     
                     config = Config.load_from_env()
                     
                     if config.keep_recordings:
-                        # Сохранить файл в директорию recordings
-                        recordings_dir = get_recordings_dir()
-                        
                         # Создать имя файла с timestamp
                         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                        filename = f"recording_{timestamp}.wav"
-                        dest_path = recordings_dir / filename
+                        base_filename = f"recording_{timestamp}"
                         
-                        # Переместить файл
-                        shutil.move(self.audio_file_path, str(dest_path))
-                        logger.info(f"Запись сохранена: {dest_path}")
+                        # Сохранить аудио файл в recordings/audio
+                        audio_dir = get_audio_recordings_dir()
+                        audio_filename = f"{base_filename}.wav"
+                        audio_dest_path = audio_dir / audio_filename
+                        
+                        # Переместить аудио файл
+                        shutil.move(self.audio_file_path, str(audio_dest_path))
+                        logger.info(f"Запись сохранена: {audio_dest_path}")
+                        
+                        # Сохранить транскрипцию в recordings/transcriptions (если есть)
+                        if transcribed_text:
+                            transcriptions_dir = get_transcriptions_dir()
+                            transcription_filename = f"{base_filename}.txt"
+                            transcription_path = transcriptions_dir / transcription_filename
+                            
+                            # Записать текст в файл
+                            transcription_path.write_text(transcribed_text, encoding='utf-8')
+                            logger.info(f"Транскрипция сохранена: {transcription_path}")
                     else:
                         # Удалить временный файл
                         import time

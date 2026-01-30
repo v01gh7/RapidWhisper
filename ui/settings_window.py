@@ -671,7 +671,7 @@ class SettingsWindow(QDialog):
         info_label.setWordWrap(True)
         info_label.setOpenExternalLinks(True)
         info_label.setStyleSheet("color: #888888; font-size: 11px; padding: 8px;")
-        info_label.setToolTip("Кликните чтобы открыть папку")
+        info_label.setToolTip("Кликните чтобы открыть папку\n\nАудио: recordings/audio/\nТранскрипции: recordings/transcriptions/")
         save_layout.addWidget(info_label)
         
         save_group.setLayout(save_layout)
@@ -716,11 +716,17 @@ class SettingsWindow(QDialog):
         refresh_btn.clicked.connect(self._refresh_recordings_list)
         buttons_layout.addWidget(refresh_btn)
         
-        play_btn = QPushButton("▶️ Открыть")
+        play_btn = QPushButton("▶️ Открыть аудио")
         play_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        play_btn.setToolTip("Открыть выбранную запись в проигрывателе по умолчанию")
+        play_btn.setToolTip("Открыть выбранную аудиозапись в проигрывателе по умолчанию")
         play_btn.clicked.connect(self._open_recording)
         buttons_layout.addWidget(play_btn)
+        
+        text_btn = QPushButton("📝 Открыть текст")
+        text_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        text_btn.setToolTip("Открыть транскрипцию в текстовом редакторе")
+        text_btn.clicked.connect(self._open_transcription)
+        buttons_layout.addWidget(text_btn)
         
         folder_btn = QPushButton("📁 Показать в папке")
         folder_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -730,7 +736,7 @@ class SettingsWindow(QDialog):
         
         delete_btn = QPushButton("🗑️ Удалить")
         delete_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        delete_btn.setToolTip("Удалить выбранную запись")
+        delete_btn.setToolTip("Удалить выбранную запись (аудио и транскрипцию)")
         delete_btn.setStyleSheet("""
             QPushButton {
                 background-color: #d13438;
@@ -755,13 +761,16 @@ class SettingsWindow(QDialog):
     
     def _refresh_recordings_list(self):
         """Обновляет список сохраненных записей."""
-        from core.config import get_recordings_dir
+        from core.config import get_audio_recordings_dir, get_transcriptions_dir
         from pathlib import Path
         
         self.recordings_list.clear()
         
-        recordings_dir = get_recordings_dir()
-        recordings = sorted(recordings_dir.glob("*.wav"), reverse=True)  # Новые сверху
+        audio_dir = get_audio_recordings_dir()
+        transcriptions_dir = get_transcriptions_dir()
+        
+        # Получить все аудио файлы
+        recordings = sorted(audio_dir.glob("*.wav"), reverse=True)  # Новые сверху
         
         if not recordings:
             item = QListWidgetItem("📭 Нет сохраненных записей")
@@ -777,14 +786,23 @@ class SettingsWindow(QDialog):
                 mtime = datetime.fromtimestamp(recording.stat().st_mtime)
                 time_str = mtime.strftime("%d.%m.%Y %H:%M:%S")
                 
+                # Проверить наличие транскрипции
+                transcription_path = transcriptions_dir / f"{recording.stem}.txt"
+                has_transcription = transcription_path.exists()
+                
                 # Создать элемент списка
-                item_text = f"🎙️ {recording.name}  |  {size_mb:.2f} MB  |  {time_str}"
+                transcription_icon = "📝" if has_transcription else ""
+                item_text = f"🎙️ {recording.name}  {transcription_icon}  |  {size_mb:.2f} MB  |  {time_str}"
                 item = QListWidgetItem(item_text)
-                item.setData(Qt.ItemDataRole.UserRole, str(recording))  # Сохранить путь
+                
+                # Сохранить пути к аудио и транскрипции
+                item.setData(Qt.ItemDataRole.UserRole, str(recording))  # Путь к аудио
+                item.setData(Qt.ItemDataRole.UserRole + 1, str(transcription_path) if has_transcription else None)  # Путь к транскрипции
+                
                 self.recordings_list.addItem(item)
     
     def _open_recording(self):
-        """Открывает выбранную запись в проигрывателе по умолчанию."""
+        """Открывает выбранную аудиозапись в проигрывателе по умолчанию."""
         current_item = self.recordings_list.currentItem()
         if not current_item:
             return
@@ -813,6 +831,42 @@ class SettingsWindow(QDialog):
                 QMessageBox.StandardButton.Ok
             )
     
+    def _open_transcription(self):
+        """Открывает транскрипцию в текстовом редакторе."""
+        current_item = self.recordings_list.currentItem()
+        if not current_item:
+            return
+        
+        transcription_path = current_item.data(Qt.ItemDataRole.UserRole + 1)
+        if not transcription_path:
+            QMessageBox.information(
+                self,
+                "ℹ️ Информация",
+                "У этой записи нет транскрипции",
+                QMessageBox.StandardButton.Ok
+            )
+            return
+        
+        # Открыть файл в текстовом редакторе по умолчанию
+        import subprocess
+        import platform
+        
+        try:
+            if platform.system() == 'Windows':
+                os.startfile(transcription_path)
+            elif platform.system() == 'Darwin':  # macOS
+                subprocess.run(['open', transcription_path])
+            else:  # Linux
+                subprocess.run(['xdg-open', transcription_path])
+        except Exception as e:
+            logger.error(f"Не удалось открыть транскрипцию: {e}")
+            QMessageBox.warning(
+                self,
+                "⚠️ Ошибка",
+                f"Не удалось открыть транскрипцию:\n{str(e)}",
+                QMessageBox.StandardButton.Ok
+            )
+    
     def _open_recordings_folder(self):
         """Открывает папку с записями в проводнике."""
         from core.config import get_recordings_dir
@@ -838,28 +892,43 @@ class SettingsWindow(QDialog):
             )
     
     def _delete_recording(self):
-        """Удаляет выбранную запись."""
+        """Удаляет выбранную запись (аудио и транскрипцию)."""
         current_item = self.recordings_list.currentItem()
         if not current_item:
             return
         
         recording_path = current_item.data(Qt.ItemDataRole.UserRole)
+        transcription_path = current_item.data(Qt.ItemDataRole.UserRole + 1)
+        
         if not recording_path:
             return
         
         # Подтверждение удаления
+        has_transcription = transcription_path is not None
+        message = f"Вы уверены что хотите удалить эту запись?\n\n{Path(recording_path).name}"
+        if has_transcription:
+            message += "\n\n(Аудио и транскрипция будут удалены)"
+        
         reply = QMessageBox.question(
             self,
             "🗑️ Удалить запись?",
-            f"Вы уверены что хотите удалить эту запись?\n\n{Path(recording_path).name}",
+            message,
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No
         )
         
         if reply == QMessageBox.StandardButton.Yes:
             try:
-                os.remove(recording_path)
-                logger.info(f"Запись удалена: {recording_path}")
+                # Удалить аудио файл
+                if os.path.exists(recording_path):
+                    os.remove(recording_path)
+                    logger.info(f"Аудио удалено: {recording_path}")
+                
+                # Удалить транскрипцию если есть
+                if has_transcription and os.path.exists(transcription_path):
+                    os.remove(transcription_path)
+                    logger.info(f"Транскрипция удалена: {transcription_path}")
+                
                 self._refresh_recordings_list()
             except Exception as e:
                 logger.error(f"Не удалось удалить запись: {e}")
