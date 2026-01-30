@@ -6,7 +6,7 @@
 
 ## Tasks
 
-- [ ] 1. Создать утилиту форматирования горячих клавиш
+- [x] 1. Создать утилиту форматирования горячих клавиш
   - [x] 1.1 Реализовать HotkeyFormatter в utils/hotkey_formatter.py
     - Создать класс HotkeyFormatter со статическим методом format_hotkey()
     - Реализовать маппинг специальных клавиш (space → "⎵Space", enter → "↵Enter", и т.д.)
@@ -15,7 +15,7 @@
     - Реализовать логику форматирования обычных клавиш в верхний регистр
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
   
-  - [-] 1.2 Написать unit тесты для HotkeyFormatter
+  - [x] 1.2 Написать unit тесты для HotkeyFormatter
     - Тест форматирования специальных клавиш (space, enter, esc)
     - Тест форматирования модификаторов (ctrl+a, alt+f1, shift+space)
     - Тест форматирования функциональных клавиш (f1-f12)
@@ -23,16 +23,16 @@
     - Тест пустой строки и невалидного ввода
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
   
-  - [~] 1.3 Написать property тест для форматирования модификаторов
+  - [x] 1.3 Написать property тест для форматирования модификаторов
     - **Property 5: Форматирование модификаторов**
     - **Validates: Requirements 4.1, 4.2, 4.3**
   
-  - [~] 1.4 Написать property тест для форматирования клавиш
+  - [x] 1.4 Написать property тест для форматирования клавиш
     - **Property 6: Форматирование клавиш в верхний регистр**
     - **Validates: Requirements 4.5, 4.6**
 
 - [ ] 2. Создать абстрактный базовый класс WindowMonitor
-  - [~] 2.1 Реализовать WindowMonitor в services/window_monitor.py
+  - [-] 2.1 Реализовать WindowMonitor в services/window_monitor.py
     - Создать dataclass WindowInfo с полями (title, process_name, icon, process_id)
     - Создать абстрактный базовый класс WindowMonitor с ABC
     - Определить абстрактный метод get_active_window_info() -> Optional[WindowInfo]
