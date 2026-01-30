@@ -1,0 +1,196 @@
+"""
+Виджет информационной панели для отображения активного приложения и горячих клавиш.
+
+Этот модуль предоставляет InfoPanelWidget - UI компонент для отображения
+информации об активном приложении и доступных горячих клавишах в нижней
+части плавающего окна RapidWhisper.
+"""
+
+from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel
+from PyQt6.QtCore import Qt, pyqtSlot
+from PyQt6.QtGui import QPixmap, QFont
+from typing import Optional
+from utils.hotkey_formatter import HotkeyFormatter
+
+
+class InfoPanelWidget(QWidget):
+    """
+    Панель информации об активном приложении и горячих клавишах.
+    
+    Отображает иконку и название активного приложения слева,
+    и горячие клавиши справа. Панель имеет темный фон и
+    гармонично вписывается в дизайн плавающего окна.
+    
+    Requirements: 1.1, 1.3, 1.4, 3.1, 3.2, 3.3, 5.1-5.8, 6.1-6.5
+    """
+    
+    def __init__(self, config, parent=None):
+        """
+        Инициализирует панель информации.
+        
+        Args:
+            config: Объект конфигурации для доступа к настройкам горячих клавиш
+            parent: Родительский виджет
+        """
+        super().__init__(parent)
+        self._config = config
+        self._default_icon: Optional[QPixmap] = None
+        self._setup_ui()
+        self._apply_styles()
+    
+    def _setup_ui(self) -> None:
+        """
+        Настроить UI компоненты.
+        
+        Создает layout с иконкой и названием приложения слева,
+        и кнопками горячих клавиш справа.
+        
+        Requirements: 5.3, 5.4, 6.1, 6.2, 6.3, 6.4, 6.5
+        """
+        # Главный layout
+        main_layout = QHBoxLayout(self)
+        main_layout.setContentsMargins(8, 6, 8, 6)
+        main_layout.setSpacing(0)
+        
+        # Левая часть: иконка + название приложения
+        left_widget = QWidget()
+        left_layout = QHBoxLayout(left_widget)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+        left_layout.setSpacing(4)
+        
+        self._app_icon_label = QLabel()
+        self._app_icon_label.setFixedSize(20, 20)
+        self._app_icon_label.setScaledContents(True)
+        
+        self._app_name_label = QLabel("Нет активного окна")
+        self._app_name_label.setFont(QFont("Segoe UI", 11))
+        
+        left_layout.addWidget(self._app_icon_label)
+        left_layout.addWidget(self._app_name_label)
+        left_layout.addStretch()
+        
+        # Правая часть: горячие клавиши
+        right_widget = QWidget()
+        right_layout = QHBoxLayout(right_widget)
+        right_layout.setContentsMargins(0, 0, 0, 0)
+        right_layout.setSpacing(12)
+        
+        # Кнопка записи
+        self._record_hotkey_label = QLabel()
+        self._record_hotkey_label.setFont(QFont("Segoe UI", 11))
+        self._update_record_hotkey()
+        
+        # Кнопка закрытия
+        self._close_hotkey_label = QLabel("Закрыть Esc")
+        self._close_hotkey_label.setFont(QFont("Segoe UI", 11))
+        
+        right_layout.addWidget(self._record_hotkey_label)
+        right_layout.addWidget(self._close_hotkey_label)
+        
+        # Добавить в главный layout
+        main_layout.addWidget(left_widget, stretch=1)
+        main_layout.addWidget(right_widget, stretch=0)
+        
+        # Установить фиксированную высоту
+        self.setFixedHeight(40)
+    
+    def _apply_styles(self) -> None:
+        """
+        Применить стили к компонентам.
+        
+        Устанавливает темный фон, границы и цвета текста
+        согласно дизайн-спецификации.
+        
+        Requirements: 5.1, 5.2, 5.6, 5.7, 5.8
+        """
+        # Стиль панели
+        self.setStyleSheet("""
+            InfoPanelWidget {
+                background-color: #1a1a1a;
+                border-top: 1px solid #333333;
+            }
+        """)
+        
+        # Стиль текста приложения
+        self._app_name_label.setStyleSheet("color: #E0E0E0;")
+        
+        # Стиль горячих клавиш
+        hotkey_style = "color: #A0A0A0;"
+        self._record_hotkey_label.setStyleSheet(hotkey_style)
+        self._close_hotkey_label.setStyleSheet(hotkey_style)
+    
+    def _update_record_hotkey(self) -> None:
+        """
+        Обновить отображение горячей клавиши записи.
+        
+        Читает горячую клавишу из конфигурации и форматирует
+        её для отображения.
+        
+        Requirements: 3.2, 4.1-4.6
+        """
+        hotkey = self._config.hotkey
+        formatted = HotkeyFormatter.format_hotkey(hotkey)
+        self._record_hotkey_label.setText(f"Запись {formatted}")
+    
+    @pyqtSlot(object)
+    def update_app_info(self, window_info) -> None:
+        """
+        Обновить информацию об активном приложении.
+        
+        Обновляет иконку и название приложения на основе
+        переданной информации об окне. Усекает длинные названия
+        и масштабирует иконки.
+        
+        Args:
+            window_info: WindowInfo объект с информацией об окне
+        
+        Requirements: 1.1, 1.2, 1.3, 1.4, 5.5
+        """
+        if not window_info:
+            self._app_name_label.setText("Нет активного окна")
+            self._app_icon_label.clear()
+            return
+        
+        # Обновить название (с усечением)
+        title = window_info.title
+        if len(title) > 30:
+            title = title[:27] + "..."
+        self._app_name_label.setText(title)
+        
+        # Обновить иконку
+        if window_info.icon:
+            # Масштабировать иконку до 20x20
+            scaled_icon = window_info.icon.scaled(
+                20, 20,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation
+            )
+            self._app_icon_label.setPixmap(scaled_icon)
+        else:
+            # Использовать иконку по умолчанию
+            if self._default_icon:
+                self._app_icon_label.setPixmap(self._default_icon)
+            else:
+                self._app_icon_label.clear()
+    
+    def update_hotkey_display(self) -> None:
+        """
+        Обновить отображение горячей клавиши.
+        
+        Вызывается при изменении конфигурации для обновления
+        отображаемой горячей клавиши.
+        
+        Requirements: 3.4
+        """
+        self._update_record_hotkey()
+    
+    def set_default_icon(self, icon: QPixmap) -> None:
+        """
+        Установить иконку по умолчанию для неизвестных приложений.
+        
+        Args:
+            icon: QPixmap с иконкой по умолчанию
+        
+        Requirements: 1.3
+        """
+        self._default_icon = icon
