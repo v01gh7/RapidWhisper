@@ -26,14 +26,21 @@ class FloatingWindow(QWidget):
     Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8
     """
     
-    def __init__(self, parent=None):
+    def __init__(self, config=None, parent=None):
         """
         Инициализирует плавающее окно.
         
         Args:
+            config: Объект конфигурации приложения (опциональный)
             parent: Родительский виджет
         """
         super().__init__(parent)
+        
+        # Сохранить конфигурацию
+        self.config = config
+        
+        # Прозрачность окна (читаем из конфигурации или используем дефолт)
+        self._opacity = config.window_opacity if config else 150
         
         # Размеры окна (будут пересчитаны динамически)
         self.window_width = 600
@@ -91,27 +98,8 @@ class FloatingWindow(QWidget):
         self.setMinimumWidth(self._min_width)
         self.setFixedHeight(self.window_height)
         
-        # ВАЖНО: Добавляем стили для видимости окна
-        # border-radius применяется только к главному виджету
-        self.setStyleSheet("""
-            FloatingWindow {
-                background-color: rgba(30, 30, 30, 150);
-                border-radius: 5px;
-                border: 2px solid rgba(255, 255, 255, 100);
-            }
-            QLabel {
-                color: white;
-                font-size: 14px;
-                font-family: 'Segoe UI', Arial, sans-serif;
-                background: transparent;
-                padding: 5px;
-                border: none;
-            }
-            WaveformWidget {
-                background: transparent;
-                border: none;
-            }
-        """)
+        # Применить прозрачность из конфигурации
+        self._apply_opacity()
     
     def _create_ui(self) -> None:
         """Создает UI компоненты окна."""
@@ -137,6 +125,53 @@ class FloatingWindow(QWidget):
         self._main_layout = layout
         
         self.setLayout(layout)
+    
+    def _apply_opacity(self) -> None:
+        """
+        Применяет текущую прозрачность к окну.
+        
+        Обновляет stylesheet с текущим значением прозрачности.
+        
+        Requirements: 1.2, 1.3
+        """
+        # Получить размер шрифта из конфигурации
+        font_size = self.config.font_size_floating_main if self.config else 14
+        
+        # ВАЖНО: Добавляем стили для видимости окна
+        # border-radius применяется только к главному виджету
+        self.setStyleSheet(f"""
+            FloatingWindow {{
+                background-color: rgba(30, 30, 30, {self._opacity});
+                border-radius: 5px;
+                border: 2px solid rgba(255, 255, 255, 100);
+            }}
+            QLabel {{
+                color: white;
+                font-size: {font_size}px;
+                font-family: 'Segoe UI', Arial, sans-serif;
+                background: transparent;
+                padding: 5px;
+                border: none;
+            }}
+            WaveformWidget {{
+                background: transparent;
+                border: none;
+            }}
+        """)
+        self.update()  # Trigger repaint
+    
+    def set_opacity(self, value: int) -> None:
+        """
+        Устанавливает прозрачность окна (вызывается из настроек).
+        
+        Args:
+            value: Значение прозрачности (50-255)
+        
+        Requirements: 1.2
+        """
+        # Constrain to valid range
+        self._opacity = max(50, min(255, value))
+        self._apply_opacity()
     
     def set_config(self, config) -> None:
         """
@@ -395,8 +430,8 @@ class FloatingWindow(QWidget):
                            float(rect.width()), float(rect.height()), 
                            5.0, 5.0)  # border-radius: 5px
         
-        # Заполнить фон
-        painter.fillPath(path, QColor(30, 30, 30, 150))
+        # Заполнить фон с текущей прозрачностью
+        painter.fillPath(path, QColor(30, 30, 30, self._opacity))
         
         # Нарисовать границу
         painter.setPen(QColor(255, 255, 255, 100))

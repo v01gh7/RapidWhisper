@@ -74,6 +74,9 @@ class InfoPanelWidget(QWidget):
         
         Requirements: 5.3, 5.4, 6.1, 6.2, 6.3, 6.4, 6.5
         """
+        # Получить размер шрифта из конфигурации
+        font_size = self._config.font_size_floating_info if self._config else 11
+        
         # Главный layout
         main_layout = QHBoxLayout(self)
         main_layout.setContentsMargins(8, 6, 8, 6)
@@ -85,7 +88,7 @@ class InfoPanelWidget(QWidget):
         self._app_icon_label.setScaledContents(True)
         
         self._app_name_label = QLabel(t("common.no_active_window"))
-        self._app_name_label.setFont(QFont("Segoe UI", 11))
+        self._app_name_label.setFont(QFont("Segoe UI", font_size))
         self._app_name_label.setMaximumWidth(300)  # Ограничить максимальную ширину
         
         main_layout.addWidget(self._app_icon_label)
@@ -97,12 +100,12 @@ class InfoPanelWidget(QWidget):
         # Правая часть: горячие клавиши
         # Кнопка записи
         self._record_hotkey_label = QLabel()
-        self._record_hotkey_label.setFont(QFont("Segoe UI", 11))
+        self._record_hotkey_label.setFont(QFont("Segoe UI", font_size))
         self._update_record_hotkey()
         
         # Кнопка отмены
         self._close_hotkey_label = QLabel(t("common.cancel_esc"))
-        self._close_hotkey_label.setFont(QFont("Segoe UI", 11))
+        self._close_hotkey_label.setFont(QFont("Segoe UI", font_size))
         
         main_layout.addWidget(self._record_hotkey_label)
         main_layout.addWidget(self._close_hotkey_label)

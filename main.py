@@ -151,8 +151,8 @@ class RapidWhisperApp(QObject):
         # State Manager
         self.state_manager = StateManager()
         
-        # Floating Window
-        self.floating_window = FloatingWindow()
+        # Floating Window - передаем конфигурацию для инициализации прозрачности
+        self.floating_window = FloatingWindow(config=self.config)
         self.floating_window.apply_blur_effect()
         
         # Установить конфигурацию для инициализации window monitor и info panel

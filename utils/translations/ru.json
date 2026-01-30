@@ -131,6 +131,22 @@
       "delete_error_title": "❌ Ошибка",
       "delete_error_message": "Не удалось удалить запись:\n{error}"
     },
+    "ui_customization": {
+      "title": "Настройка интерфейса",
+      "window_opacity": "Прозрачность окна",
+      "window_opacity_tooltip": "Настройка прозрачности фона (50=очень прозрачно, 255=непрозрачно)",
+      "font_sizes": "Размеры шрифтов",
+      "font_floating_main": "Плавающее окно - Основной текст:",
+      "font_floating_main_tooltip": "Размер шрифта для основного текста в окне записи (10-24px)",
+      "font_floating_info": "Плавающее окно - Инфо панель:",
+      "font_floating_info_tooltip": "Размер шрифта для текста инфо панели (8-16px)",
+      "font_settings_labels": "Окно настроек - Метки:",
+      "font_settings_labels_tooltip": "Размер шрифта для меток в настройках (10-16px)",
+      "font_settings_titles": "Окно настроек - Заголовки:",
+      "font_settings_titles_tooltip": "Размер шрифта для заголовков секций (16-32px)",
+      "reset_defaults": "Сбросить на значения по умолчанию",
+      "reset_defaults_tooltip": "Сбросить все настройки интерфейса на значения по умолчанию"
+    },
     "about": {
       "title": "О программе",
       "version": "<b>Версия:</b> 1.3.0",

@@ -131,6 +131,22 @@
       "delete_error_title": "❌ Error",
       "delete_error_message": "Failed to delete recording:\n{error}"
     },
+    "ui_customization": {
+      "title": "UI Customization",
+      "window_opacity": "Window Transparency",
+      "window_opacity_tooltip": "Adjust background transparency (50=very transparent, 255=opaque)",
+      "font_sizes": "Font Sizes",
+      "font_floating_main": "Floating Window - Main Text:",
+      "font_floating_main_tooltip": "Font size for main text in recording window (10-24px)",
+      "font_floating_info": "Floating Window - Info Panel:",
+      "font_floating_info_tooltip": "Font size for info panel text (8-16px)",
+      "font_settings_labels": "Settings Window - Labels:",
+      "font_settings_labels_tooltip": "Font size for labels in settings (10-16px)",
+      "font_settings_titles": "Settings Window - Titles:",
+      "font_settings_titles_tooltip": "Font size for section titles (16-32px)",
+      "reset_defaults": "Reset to Defaults",
+      "reset_defaults_tooltip": "Reset all UI customization settings to default values"
+    },
     "about": {
       "title": "About",
       "version": "<b>Version:</b> 1.3.0",

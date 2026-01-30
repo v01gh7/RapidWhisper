@@ -358,9 +358,8 @@ class Config:
         self.post_processing_provider: str = "groq"  # Провайдер для постобработки (groq, openai, glm, llm)
         self.post_processing_model: str = "llama-3.3-70b-versatile"  # Модель для постобработки (по умолчанию Groq)
         
-        # Дефолтный промпт - используем перевод
-        from utils.i18n import t
-        self.post_processing_prompt: str = t("settings.processing.prompt_default")
+        # Дефолтный промпт - используем английский по умолчанию, будет переведен при загрузке
+        self.post_processing_prompt: str = "You are a text editor. Your task: fix grammatical errors, add punctuation and improve text readability. Preserve the original meaning and style. Don't add anything extra. Return only the corrected text without comments."
         
         self.glm_use_coding_plan: bool = False  # Использовать Coding Plan endpoint для GLM
         self.llm_base_url: str = "http://localhost:1234/v1/"  # Base URL для локальных LLM моделей
@@ -368,6 +367,13 @@ class Config:
         
         # Язык интерфейса (для будущей локализации)
         self.interface_language: str = get_system_language()  # Язык интерфейса (определяется из системы)
+        
+        # UI Customization параметры
+        self.window_opacity: int = 150  # Прозрачность окна (50-255)
+        self.font_size_floating_main: int = 14  # Размер шрифта основного текста плавающего окна (10-24)
+        self.font_size_floating_info: int = 11  # Размер шрифта инфопанели плавающего окна (8-16)
+        self.font_size_settings_labels: int = 12  # Размер шрифта меток окна настроек (10-16)
+        self.font_size_settings_titles: int = 24  # Размер шрифта заголовков окна настроек (16-32)
     
     @staticmethod
     def load_from_env(env_path: Optional[str] = None) -> 'Config':
@@ -389,15 +395,54 @@ class Config:
             >>> print(config.hotkey)
             'ctrl+space'
         """
-        # Создать .env если его нет
-        create_default_env()
+        # Запомнить был ли передан custom path
+        is_custom_path = env_path is not None
         
-        # Определить путь к .env
+        # Создать .env если его нет (только для дефолтного пути)
         if env_path is None:
+            create_default_env()
             env_path = str(get_env_path())
         
         # Загрузить переменные окружения из .env файла
         load_dotenv(env_path, override=True)
+        
+        # Если env_path указан явно (для тестов), очистить ключи которых нет в файле
+        if is_custom_path:
+            # Прочитать ключи из файла
+            file_keys = set()
+            try:
+                with open(env_path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith('#') and '=' in line:
+                            key = line.split('=')[0].strip()
+                            file_keys.add(key)
+            except:
+                pass
+            
+            # Список всех ключей конфигурации
+            all_config_keys = [
+                'AI_PROVIDER', 'GROQ_API_KEY', 'OPENAI_API_KEY', 'GLM_API_KEY',
+                'CUSTOM_API_KEY', 'CUSTOM_BASE_URL', 'CUSTOM_MODEL',
+                'HOTKEY', 'SILENCE_THRESHOLD', 'SILENCE_DURATION', 'AUTO_HIDE_DELAY',
+                'WINDOW_WIDTH', 'WINDOW_HEIGHT', 'SAMPLE_RATE', 'CHUNK_SIZE',
+                'SILENCE_PADDING', 'LOG_LEVEL', 'LOG_FILE',
+                'GITHUB_URL', 'DOCS_URL',
+                'REMEMBER_WINDOW_POSITION', 'WINDOW_POSITION_PRESET',
+                'WINDOW_POSITION_X', 'WINDOW_POSITION_Y',
+                'KEEP_RECORDINGS', 'RECORDINGS_PATH', 'MANUAL_STOP',
+                'ENABLE_POST_PROCESSING', 'POST_PROCESSING_PROVIDER',
+                'POST_PROCESSING_MODEL', 'POST_PROCESSING_PROMPT',
+                'GLM_USE_CODING_PLAN', 'LLM_BASE_URL', 'LLM_API_KEY',
+                'INTERFACE_LANGUAGE',
+                'WINDOW_OPACITY', 'FONT_SIZE_FLOATING_MAIN', 'FONT_SIZE_FLOATING_INFO',
+                'FONT_SIZE_SETTINGS_LABELS', 'FONT_SIZE_SETTINGS_TITLES'
+            ]
+            
+            # Удалить ключи которых нет в файле
+            for key in all_config_keys:
+                if key not in file_keys and key in os.environ:
+                    del os.environ[key]
         
         # Создать объект конфигурации
         config = Config()
@@ -530,6 +575,42 @@ class Config:
             # Язык не установлен, определяем из системы
             config.interface_language = get_system_language()
         
+        # Загрузить UI Customization параметры
+        try:
+            value = int(os.getenv("WINDOW_OPACITY", config.window_opacity))
+            # Constrain to valid range (50-255)
+            config.window_opacity = max(50, min(255, value))
+        except (ValueError, TypeError):
+            pass  # Использовать значение по умолчанию
+        
+        try:
+            value = int(os.getenv("FONT_SIZE_FLOATING_MAIN", config.font_size_floating_main))
+            # Constrain to valid range (10-24)
+            config.font_size_floating_main = max(10, min(24, value))
+        except (ValueError, TypeError):
+            pass
+        
+        try:
+            value = int(os.getenv("FONT_SIZE_FLOATING_INFO", config.font_size_floating_info))
+            # Constrain to valid range (8-16)
+            config.font_size_floating_info = max(8, min(16, value))
+        except (ValueError, TypeError):
+            pass
+        
+        try:
+            value = int(os.getenv("FONT_SIZE_SETTINGS_LABELS", config.font_size_settings_labels))
+            # Constrain to valid range (10-16)
+            config.font_size_settings_labels = max(10, min(16, value))
+        except (ValueError, TypeError):
+            pass
+        
+        try:
+            value = int(os.getenv("FONT_SIZE_SETTINGS_TITLES", config.font_size_settings_titles))
+            # Constrain to valid range (16-32)
+            config.font_size_settings_titles = max(16, min(32, value))
+        except (ValueError, TypeError):
+            pass
+        
         return config
     
     def validate(self) -> List[str]:
@@ -612,6 +693,63 @@ class Config:
         elif self.ai_provider == "custom":
             return bool(self.custom_api_key and self.custom_base_url)
         return False
+    
+    def set_env_value(self, key: str, value: str) -> None:
+        """
+        Записывает значение в .env файл.
+        
+        Читает существующий .env файл, обновляет или добавляет ключ,
+        и записывает обратно. Сохраняет форматирование и комментарии.
+        
+        Args:
+            key: Имя переменной окружения
+            value: Значение для записи
+        
+        Example:
+            >>> config = Config()
+            >>> config.set_env_value('WINDOW_OPACITY', '200')
+        """
+        from utils.logger import get_logger
+        logger = get_logger()
+        
+        try:
+            env_path = get_env_path()
+            
+            # Прочитать существующий .env файл
+            env_lines = []
+            if env_path.exists():
+                with open(env_path, 'r', encoding='utf-8') as f:
+                    env_lines = f.readlines()
+            
+            # Найти и обновить ключ или добавить новый
+            key_found = False
+            for i, line in enumerate(env_lines):
+                line_stripped = line.strip()
+                # Пропустить комментарии и пустые строки
+                if line_stripped and not line_stripped.startswith('#'):
+                    if '=' in line_stripped:
+                        existing_key = line_stripped.split('=')[0].strip()
+                        if existing_key == key:
+                            env_lines[i] = f"{key}={value}\n"
+                            key_found = True
+                            break
+            
+            # Если ключ не найден, добавить в конец
+            if not key_found:
+                # Добавить пустую строку перед новым ключом если файл не пустой
+                if env_lines and not env_lines[-1].endswith('\n'):
+                    env_lines.append('\n')
+                env_lines.append(f"{key}={value}\n")
+            
+            # Записать обратно в файл
+            with open(env_path, 'w', encoding='utf-8') as f:
+                f.writelines(env_lines)
+            
+            logger.debug(f"Updated .env: {key}={value}")
+            
+        except Exception as e:
+            logger.error(f"Failed to write to .env file: {e}")
+            raise
     
     def __repr__(self) -> str:
         """Возвращает строковое представление конфигурации."""

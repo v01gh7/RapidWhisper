@@ -350,3 +350,158 @@ def test_string_formatting_with_missing_parameter():
     # Clean up
     if "missing_param" in TRANSLATIONS["en"].get("test", {}):
         del TRANSLATIONS["en"]["test"]["missing_param"]
+
+
+# UI Customization Translation Tests
+
+def test_ui_customization_keys_exist_in_english():
+    """
+    Test that all required UI customization keys exist in en.json.
+    **Validates: Requirements 4.1, 4.2**
+    """
+    required_keys = [
+        "settings.ui_customization.title",
+        "settings.ui_customization.window_opacity",
+        "settings.ui_customization.window_opacity_tooltip",
+        "settings.ui_customization.font_sizes",
+        "settings.ui_customization.font_floating_main",
+        "settings.ui_customization.font_floating_main_tooltip",
+        "settings.ui_customization.font_floating_info",
+        "settings.ui_customization.font_floating_info_tooltip",
+        "settings.ui_customization.font_settings_labels",
+        "settings.ui_customization.font_settings_labels_tooltip",
+        "settings.ui_customization.font_settings_titles",
+        "settings.ui_customization.font_settings_titles_tooltip",
+        "settings.ui_customization.reset_defaults",
+        "settings.ui_customization.reset_defaults_tooltip",
+    ]
+    
+    for key in required_keys:
+        result = t(key, "en")
+        assert result != key, f"English translation missing for key: {key}"
+        assert isinstance(result, str), f"Translation should be string for key: {key}"
+        assert len(result) > 0, f"Translation should not be empty for key: {key}"
+
+
+def test_ui_customization_keys_exist_in_russian():
+    """
+    Test that all required UI customization keys exist in ru.json.
+    **Validates: Requirements 4.1, 4.2**
+    """
+    required_keys = [
+        "settings.ui_customization.title",
+        "settings.ui_customization.window_opacity",
+        "settings.ui_customization.window_opacity_tooltip",
+        "settings.ui_customization.font_sizes",
+        "settings.ui_customization.font_floating_main",
+        "settings.ui_customization.font_floating_main_tooltip",
+        "settings.ui_customization.font_floating_info",
+        "settings.ui_customization.font_floating_info_tooltip",
+        "settings.ui_customization.font_settings_labels",
+        "settings.ui_customization.font_settings_labels_tooltip",
+        "settings.ui_customization.font_settings_titles",
+        "settings.ui_customization.font_settings_titles_tooltip",
+        "settings.ui_customization.reset_defaults",
+        "settings.ui_customization.reset_defaults_tooltip",
+    ]
+    
+    for key in required_keys:
+        result = t(key, "ru")
+        assert result != key, f"Russian translation missing for key: {key}"
+        assert isinstance(result, str), f"Translation should be string for key: {key}"
+        assert len(result) > 0, f"Translation should not be empty for key: {key}"
+
+
+def test_ui_customization_english_translations_are_non_empty():
+    """
+    Test that English UI customization translations are non-empty strings.
+    **Validates: Requirements 4.1, 4.2**
+    """
+    keys_to_check = [
+        "settings.ui_customization.title",
+        "settings.ui_customization.window_opacity",
+        "settings.ui_customization.font_sizes",
+        "settings.ui_customization.font_floating_main",
+        "settings.ui_customization.font_floating_info",
+        "settings.ui_customization.font_settings_labels",
+        "settings.ui_customization.font_settings_titles",
+        "settings.ui_customization.reset_defaults",
+    ]
+    
+    for key in keys_to_check:
+        result = t(key, "en")
+        assert isinstance(result, str), f"Translation should be string for key: {key}"
+        assert len(result.strip()) > 0, f"Translation should not be empty or whitespace for key: {key}"
+        # Verify it's not just the key returned (which would indicate missing translation)
+        assert result != key, f"Translation not found for key: {key}"
+
+
+def test_ui_customization_russian_translations_are_non_empty():
+    """
+    Test that Russian UI customization translations are non-empty strings.
+    **Validates: Requirements 4.1, 4.2**
+    """
+    keys_to_check = [
+        "settings.ui_customization.title",
+        "settings.ui_customization.window_opacity",
+        "settings.ui_customization.font_sizes",
+        "settings.ui_customization.font_floating_main",
+        "settings.ui_customization.font_floating_info",
+        "settings.ui_customization.font_settings_labels",
+        "settings.ui_customization.font_settings_titles",
+        "settings.ui_customization.reset_defaults",
+    ]
+    
+    for key in keys_to_check:
+        result = t(key, "ru")
+        assert isinstance(result, str), f"Translation should be string for key: {key}"
+        assert len(result.strip()) > 0, f"Translation should not be empty or whitespace for key: {key}"
+        # Verify it's not just the key returned (which would indicate missing translation)
+        assert result != key, f"Translation not found for key: {key}"
+
+
+def test_ui_customization_tooltips_exist():
+    """
+    Test that all UI customization tooltips exist in both languages.
+    **Validates: Requirements 4.3, 4.4**
+    """
+    tooltip_keys = [
+        "settings.ui_customization.window_opacity_tooltip",
+        "settings.ui_customization.font_floating_main_tooltip",
+        "settings.ui_customization.font_floating_info_tooltip",
+        "settings.ui_customization.font_settings_labels_tooltip",
+        "settings.ui_customization.font_settings_titles_tooltip",
+        "settings.ui_customization.reset_defaults_tooltip",
+    ]
+    
+    for key in tooltip_keys:
+        # Check English
+        en_result = t(key, "en")
+        assert en_result != key, f"English tooltip missing for key: {key}"
+        assert len(en_result) > 0, f"English tooltip should not be empty for key: {key}"
+        
+        # Check Russian
+        ru_result = t(key, "ru")
+        assert ru_result != key, f"Russian tooltip missing for key: {key}"
+        assert len(ru_result) > 0, f"Russian tooltip should not be empty for key: {key}"
+
+
+def test_ui_customization_translations_differ_between_languages():
+    """
+    Test that English and Russian translations are different (not just copied).
+    **Validates: Requirements 4.1, 4.2**
+    """
+    keys_to_check = [
+        "settings.ui_customization.title",
+        "settings.ui_customization.window_opacity",
+        "settings.ui_customization.font_sizes",
+        "settings.ui_customization.reset_defaults",
+    ]
+    
+    for key in keys_to_check:
+        en_result = t(key, "en")
+        ru_result = t(key, "ru")
+        
+        # Translations should be different (not just copied)
+        assert en_result != ru_result, \
+            f"English and Russian translations should differ for key: {key}"

@@ -7,7 +7,7 @@
 
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout,
-    QLabel, QLineEdit, QComboBox, QDoubleSpinBox,
+    QLabel, QLineEdit, QComboBox, QDoubleSpinBox, QSpinBox,
     QPushButton, QGroupBox, QMessageBox, QWidget, QListWidget, QStackedWidget, QListWidgetItem,
     QScrollArea, QApplication, QCheckBox
 )
@@ -91,27 +91,31 @@ class SettingsWindow(QDialog):
     
     def _apply_style(self):
         """Применяет стиль к окну настроек в стиле macOS."""
-        self.setStyleSheet("""
-            QDialog {
+        # Получить размеры шрифтов из конфигурации
+        label_font_size = self.config.font_size_settings_labels if hasattr(self.config, 'font_size_settings_labels') else 12
+        title_font_size = self.config.font_size_settings_titles if hasattr(self.config, 'font_size_settings_titles') else 24
+        
+        self.setStyleSheet(f"""
+            QDialog {{
                 background-color: #1e1e1e;
                 color: #ffffff;
-            }
-            QLabel {
+            }}
+            QLabel {{
                 color: #ffffff;
-                font-size: 12px;
-            }
-            QLineEdit, QDoubleSpinBox, QComboBox {
+                font-size: {label_font_size}px;
+            }}
+            QLineEdit, QDoubleSpinBox, QComboBox {{
                 background-color: #2d2d2d;
                 color: #ffffff;
                 border: 1px solid #3d3d3d;
                 border-radius: 6px;
                 padding: 8px;
                 font-size: 12px;
-            }
-            QLineEdit:focus, QDoubleSpinBox:focus, QComboBox:focus {
+            }}
+            QLineEdit:focus, QDoubleSpinBox:focus, QComboBox:focus {{
                 border: 1px solid #0078d4;
-            }
-            QPushButton {
+            }}
+            QPushButton {{
                 background-color: #0078d4;
                 color: #ffffff;
                 border: none;
@@ -119,20 +123,20 @@ class SettingsWindow(QDialog):
                 padding: 8px 16px;
                 font-size: 12px;
                 font-weight: bold;
-            }
-            QPushButton:hover {
+            }}
+            QPushButton:hover {{
                 background-color: #1084d8;
-            }
-            QPushButton:pressed {
+            }}
+            QPushButton:pressed {{
                 background-color: #006cc1;
-            }
-            QPushButton#cancelButton {
+            }}
+            QPushButton#cancelButton {{
                 background-color: #3d3d3d;
-            }
-            QPushButton#cancelButton:hover {
+            }}
+            QPushButton#cancelButton:hover {{
                 background-color: #4d4d4d;
-            }
-            QGroupBox {
+            }}
+            QGroupBox {{
                 color: #ffffff;
                 border: 1px solid #3d3d3d;
                 border-radius: 8px;
@@ -140,8 +144,8 @@ class SettingsWindow(QDialog):
                 font-weight: bold;
                 padding-top: 20px;
                 background-color: #252525;
-            }
-            QGroupBox::title {
+            }}
+            QGroupBox::title {{
                 subcontrol-origin: margin;
                 subcontrol-position: top left;
                 padding: 8px 16px;
@@ -151,72 +155,72 @@ class SettingsWindow(QDialog):
                 font-weight: bold;
                 border-radius: 4px;
                 border: 1px solid #0078d4;
-            }
-            QListWidget {
+            }}
+            QListWidget {{
                 background-color: #1a1a1a;
                 border: none;
                 border-right: 1px solid #2d2d2d;
                 outline: none;
                 padding: 8px 0px;
-            }
-            QListWidget::item {
+            }}
+            QListWidget::item {{
                 color: #ffffff;
                 padding: 10px 16px;
                 border-radius: 6px;
                 margin: 2px 8px;
-            }
-            QListWidget::item:selected {
+            }}
+            QListWidget::item:selected {{
                 background-color: #0078d4;
                 color: #ffffff;
-            }
-            QListWidget::item:hover:!selected {
+            }}
+            QListWidget::item:hover:!selected {{
                 background-color: #2d2d2d;
-            }
-            QScrollArea {
+            }}
+            QScrollArea {{
                 border: none;
                 background-color: transparent;
-            }
-            QScrollBar:vertical {
+            }}
+            QScrollBar:vertical {{
                 background-color: #1e1e1e;
                 width: 12px;
                 border-radius: 6px;
                 margin: 0px;
-            }
-            QScrollBar::handle:vertical {
+            }}
+            QScrollBar::handle:vertical {{
                 background-color: #3d3d3d;
                 border-radius: 6px;
                 min-height: 30px;
-            }
-            QScrollBar::handle:vertical:hover {
+            }}
+            QScrollBar::handle:vertical:hover {{
                 background-color: #4d4d4d;
-            }
-            QScrollBar::handle:vertical:pressed {
+            }}
+            QScrollBar::handle:vertical:pressed {{
                 background-color: #0078d4;
-            }
-            QLabel#pageTitle {
+            }}
+            QLabel#pageTitle {{
                 color: #ffffff;
-                font-size: 24px;
+                font-size: {title_font_size}px;
                 font-weight: bold;
                 padding: 12px 20px;
                 background-color: #2d2d2d;
                 border-radius: 6px;
                 border: 2px solid #0078d4;
                 margin-bottom: 8px;
-            }
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+            }}
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
                 height: 0px;
-            }
-            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+            }}
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
                 background: none;
-            }
-            QLabel a {
+            }}
+            QLabel a {{
                 color: #0078d4;
                 text-decoration: none;
-            }
-            QLabel a:hover {
+            }}
+            QLabel a:hover {{
                 color: #1084d8;
                 text-decoration: underline;
-            }
+            }}
         """)
     
     def _create_ui(self):
@@ -239,6 +243,7 @@ class SettingsWindow(QDialog):
             (f"🎤 {t('settings.audio.title')}", "audio"),
             (f"✨ {t('settings.processing.title')}", "processing"),
             (f"🌍 {t('settings.languages.title')}", "languages"),
+            (f"🎨 {t('settings.ui_customization.title')}", "ui_customization"),
             (f"🎙️ {t('settings.recordings.title')}", "recordings"),
             (f"ℹ️ {t('settings.about.title')}", "about")
         ]
@@ -271,6 +276,7 @@ class SettingsWindow(QDialog):
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_audio_page()))
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_processing_page()))
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_languages_page()))
+        self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_ui_customization_page()))
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_recordings_page()))
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_about_page()))
         
@@ -939,6 +945,263 @@ class SettingsWindow(QDialog):
                 button.setChecked(False)
         # Убедиться что нажатая кнопка выбрана
         clicked_button.setChecked(True)
+    
+    def _create_ui_customization_page(self) -> QWidget:
+        """Создает страницу настройки интерфейса."""
+        widget = QWidget()
+        layout = QVBoxLayout()
+        layout.setSpacing(20)
+        
+        # Заголовок
+        title = QLabel(t("settings.ui_customization.title"))
+        title.setObjectName("pageTitle")
+        layout.addWidget(title)
+        
+        # Группа: Прозрачность окна
+        opacity_group = QGroupBox(t("settings.ui_customization.window_opacity"))
+        opacity_layout = QVBoxLayout()
+        opacity_layout.setSpacing(12)
+        
+        # Слайдер прозрачности с меткой значения
+        opacity_container = QHBoxLayout()
+        opacity_container.setSpacing(12)
+        
+        from PyQt6.QtWidgets import QSlider
+        self.opacity_slider = QSlider(Qt.Orientation.Horizontal)
+        self.opacity_slider.setMinimum(50)
+        self.opacity_slider.setMaximum(255)
+        self.opacity_slider.setValue(self.config.window_opacity)
+        self.opacity_slider.setTickPosition(QSlider.TickPosition.TicksBelow)
+        self.opacity_slider.setTickInterval(25)
+        self.opacity_slider.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.opacity_slider.setToolTip(t("settings.ui_customization.window_opacity_tooltip"))
+        opacity_container.addWidget(self.opacity_slider, 1)
+        
+        # Метка со значением
+        self.opacity_value_label = QLabel(str(self.config.window_opacity))
+        self.opacity_value_label.setMinimumWidth(40)
+        self.opacity_value_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.opacity_value_label.setStyleSheet("""
+            QLabel {
+                background-color: #0078d4;
+                color: #ffffff;
+                border-radius: 4px;
+                padding: 4px 8px;
+                font-weight: bold;
+            }
+        """)
+        opacity_container.addWidget(self.opacity_value_label)
+        
+        # Подключить обновление метки
+        self.opacity_slider.valueChanged.connect(
+            lambda value: self.opacity_value_label.setText(str(value))
+        )
+        # Подключить live preview для opacity
+        self.opacity_slider.valueChanged.connect(self._on_opacity_changed)
+        
+        opacity_layout.addLayout(opacity_container)
+        opacity_group.setLayout(opacity_layout)
+        layout.addWidget(opacity_group)
+        
+        # Группа: Размеры шрифтов
+        fonts_group = QGroupBox(t("settings.ui_customization.font_sizes"))
+        fonts_layout = QFormLayout()
+        fonts_layout.setSpacing(12)
+        
+        # Плавающее окно - Основной текст
+        from PyQt6.QtWidgets import QSpinBox, QAbstractSpinBox
+        self.font_floating_main_spin = QSpinBox()
+        self.font_floating_main_spin.setRange(10, 24)
+        self.font_floating_main_spin.setSingleStep(1)
+        self.font_floating_main_spin.setSuffix(" px")
+        self.font_floating_main_spin.setValue(self.config.font_size_floating_main)
+        self.font_floating_main_spin.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.UpDownArrows)
+        self.font_floating_main_spin.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.font_floating_main_spin.valueChanged.connect(self._on_font_floating_main_changed)
+        font_main_label = QLabel(t("settings.ui_customization.font_floating_main"))
+        font_main_label.setToolTip(t("settings.ui_customization.font_floating_main_tooltip"))
+        fonts_layout.addRow(font_main_label, self.font_floating_main_spin)
+        
+        # Плавающее окно - Инфо панель
+        self.font_floating_info_spin = QSpinBox()
+        self.font_floating_info_spin.setRange(8, 16)
+        self.font_floating_info_spin.setSingleStep(1)
+        self.font_floating_info_spin.setSuffix(" px")
+        self.font_floating_info_spin.setValue(self.config.font_size_floating_info)
+        self.font_floating_info_spin.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.UpDownArrows)
+        self.font_floating_info_spin.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.font_floating_info_spin.valueChanged.connect(self._on_font_floating_info_changed)
+        font_info_label = QLabel(t("settings.ui_customization.font_floating_info"))
+        font_info_label.setToolTip(t("settings.ui_customization.font_floating_info_tooltip"))
+        fonts_layout.addRow(font_info_label, self.font_floating_info_spin)
+        
+        # Окно настроек - Метки
+        self.font_settings_labels_spin = QSpinBox()
+        self.font_settings_labels_spin.setRange(10, 16)
+        self.font_settings_labels_spin.setSingleStep(1)
+        self.font_settings_labels_spin.setSuffix(" px")
+        self.font_settings_labels_spin.setValue(self.config.font_size_settings_labels)
+        self.font_settings_labels_spin.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.UpDownArrows)
+        self.font_settings_labels_spin.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.font_settings_labels_spin.valueChanged.connect(self._on_font_settings_labels_changed)
+        font_labels_label = QLabel(t("settings.ui_customization.font_settings_labels"))
+        font_labels_label.setToolTip(t("settings.ui_customization.font_settings_labels_tooltip"))
+        fonts_layout.addRow(font_labels_label, self.font_settings_labels_spin)
+        
+        # Окно настроек - Заголовки
+        self.font_settings_titles_spin = QSpinBox()
+        self.font_settings_titles_spin.setRange(16, 32)
+        self.font_settings_titles_spin.setSingleStep(1)
+        self.font_settings_titles_spin.setSuffix(" px")
+        self.font_settings_titles_spin.setValue(self.config.font_size_settings_titles)
+        self.font_settings_titles_spin.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.UpDownArrows)
+        self.font_settings_titles_spin.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.font_settings_titles_spin.valueChanged.connect(self._on_font_settings_titles_changed)
+        font_titles_label = QLabel(t("settings.ui_customization.font_settings_titles"))
+        font_titles_label.setToolTip(t("settings.ui_customization.font_settings_titles_tooltip"))
+        fonts_layout.addRow(font_titles_label, self.font_settings_titles_spin)
+        
+        fonts_group.setLayout(fonts_layout)
+        layout.addWidget(fonts_group)
+        
+        # Кнопка сброса на значения по умолчанию
+        reset_btn = QPushButton(t("settings.ui_customization.reset_defaults"))
+        reset_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        reset_btn.setToolTip(t("settings.ui_customization.reset_defaults_tooltip"))
+        reset_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #3d3d3d;
+            }
+            QPushButton:hover {
+                background-color: #4d4d4d;
+            }
+        """)
+        reset_btn.clicked.connect(self._reset_ui_defaults)
+        layout.addWidget(reset_btn)
+        
+        # Прижать контент вверх
+        layout.addStretch()
+        
+        widget.setLayout(layout)
+        return widget
+    
+    def _reset_ui_defaults(self):
+        """Сбрасывает все настройки интерфейса на значения по умолчанию."""
+        # Установить значения по умолчанию в UI контролы
+        self.opacity_slider.setValue(150)
+        self.font_floating_main_spin.setValue(14)
+        self.font_floating_info_spin.setValue(11)
+        self.font_settings_labels_spin.setValue(12)
+        self.font_settings_titles_spin.setValue(24)
+        
+        # Записать значения в .env
+        self.config.set_env_value("WINDOW_OPACITY", "150")
+        self.config.set_env_value("FONT_SIZE_FLOATING_MAIN", "14")
+        self.config.set_env_value("FONT_SIZE_FLOATING_INFO", "11")
+        self.config.set_env_value("FONT_SIZE_SETTINGS_LABELS", "12")
+        self.config.set_env_value("FONT_SIZE_SETTINGS_TITLES", "24")
+        
+        # Обновить FloatingWindow если доступно (для live preview opacity)
+        if self.parent() and hasattr(self.parent(), 'set_opacity'):
+            self.parent().set_opacity(150)
+        
+        logger.info("UI customization settings reset to defaults")
+    
+    def _on_opacity_changed(self, value: int):
+        """
+        Обработчик изменения прозрачности окна с live preview.
+        
+        Args:
+            value: Новое значение прозрачности (50-255)
+        """
+        # Обновить FloatingWindow если доступно
+        if self.parent() and hasattr(self.parent(), 'set_opacity'):
+            try:
+                self.parent().set_opacity(value)
+                logger.debug(f"Opacity changed to {value} with live preview")
+            except Exception as e:
+                logger.warning(f"Failed to apply live opacity preview: {e}")
+        else:
+            logger.debug(f"Opacity changed to {value} (no live preview available)")
+    
+    def _on_font_floating_main_changed(self, value: int):
+        """
+        Обработчик изменения размера шрифта основного текста плавающего окна.
+        
+        Args:
+            value: Новый размер шрифта (10-24)
+        """
+        # Сохранить значение в .env
+        self.config.set_env_value('FONT_SIZE_FLOATING_MAIN', str(value))
+        
+        # Применить изменения к FloatingWindow если доступно
+        if self.parent() and hasattr(self.parent(), 'status_label'):
+            try:
+                font = self.parent().status_label.font()
+                font.setPointSize(value)
+                self.parent().status_label.setFont(font)
+                logger.debug(f"Font size floating main changed to {value} with live preview")
+            except Exception as e:
+                logger.warning(f"Failed to apply live font preview: {e}")
+        else:
+            logger.debug(f"Font size floating main changed to {value} (no live preview available)")
+    
+    def _on_font_floating_info_changed(self, value: int):
+        """
+        Обработчик изменения размера шрифта инфо панели плавающего окна.
+        
+        Args:
+            value: Новый размер шрифта (8-16)
+        """
+        # Сохранить значение в .env
+        self.config.set_env_value('FONT_SIZE_FLOATING_INFO', str(value))
+        
+        # Применить изменения к InfoPanelWidget если доступно
+        if self.parent() and hasattr(self.parent(), 'info_panel'):
+            try:
+                info_panel = self.parent().info_panel
+                # Обновить шрифт для всех меток в инфо панели
+                # Используем правильные имена атрибутов с подчеркиванием
+                for label in [info_panel._app_name_label, info_panel._record_hotkey_label, 
+                             info_panel._close_hotkey_label]:
+                    font = label.font()
+                    font.setPointSize(value)
+                    label.setFont(font)
+                logger.debug(f"Font size floating info changed to {value} with live preview")
+            except Exception as e:
+                logger.warning(f"Failed to apply live font preview: {e}")
+        else:
+            logger.debug(f"Font size floating info changed to {value} (no live preview available)")
+    
+    def _on_font_settings_labels_changed(self, value: int):
+        """
+        Обработчик изменения размера шрифта меток окна настроек.
+        
+        Args:
+            value: Новый размер шрифта (10-16)
+        """
+        # Сохранить значение в .env
+        self.config.set_env_value('FONT_SIZE_SETTINGS_LABELS', str(value))
+        # Обновить конфиг в памяти
+        self.config.font_size_settings_labels = value
+        # Обновить стиль окна настроек
+        self._apply_style()
+        logger.debug(f"Font size settings labels changed to {value}")
+    
+    def _on_font_settings_titles_changed(self, value: int):
+        """
+        Обработчик изменения размера шрифта заголовков окна настроек.
+        
+        Args:
+            value: Новый размер шрифта (16-32)
+        """
+        # Сохранить значение в .env
+        self.config.set_env_value('FONT_SIZE_SETTINGS_TITLES', str(value))
+        # Обновить конфиг в памяти
+        self.config.font_size_settings_titles = value
+        # Обновить стиль окна настроек
+        self._apply_style()
+        logger.debug(f"Font size settings titles changed to {value}")
     
     def _create_recordings_page(self) -> QWidget:
         """Создает страницу управления записями."""
@@ -1764,8 +2027,9 @@ class SettingsWindow(QDialog):
             (f"🎤 {t('settings.audio.title')}", 2),
             (f"✨ {t('settings.processing.title')}", 3),
             (f"🌍 {t('settings.languages.title')}", 4),
-            (f"🎙️ {t('settings.recordings.title')}", 5),
-            (f"ℹ️ {t('settings.about.title')}", 6)
+            (f"🎨 {t('settings.ui_customization.title')}", 5),
+            (f"🎙️ {t('settings.recordings.title')}", 6),
+            (f"ℹ️ {t('settings.about.title')}", 7)
         ]
         
         for text, index in sidebar_items:
@@ -1809,10 +2073,13 @@ class SettingsWindow(QDialog):
         self.content_stack.insertWidget(4, self._wrap_in_scroll_area(self._create_languages_page()))
         
         self.content_stack.removeWidget(self.content_stack.widget(5))
-        self.content_stack.insertWidget(5, self._wrap_in_scroll_area(self._create_recordings_page()))
+        self.content_stack.insertWidget(5, self._wrap_in_scroll_area(self._create_ui_customization_page()))
         
         self.content_stack.removeWidget(self.content_stack.widget(6))
-        self.content_stack.insertWidget(6, self._wrap_in_scroll_area(self._create_about_page()))
+        self.content_stack.insertWidget(6, self._wrap_in_scroll_area(self._create_recordings_page()))
+        
+        self.content_stack.removeWidget(self.content_stack.widget(7))
+        self.content_stack.insertWidget(7, self._wrap_in_scroll_area(self._create_about_page()))
         
         # Восстановить текущую страницу
         self.content_stack.setCurrentIndex(current_index)
@@ -1848,6 +2115,11 @@ class SettingsWindow(QDialog):
             'glm_coding_plan': self.glm_coding_plan_check.isChecked(),
             'llm_base_url': self.llm_base_url_edit.text(),
             'llm_api_key': self.llm_api_key_edit.text(),
+            'opacity': self.opacity_slider.value(),
+            'font_floating_main': self.font_floating_main_spin.value(),
+            'font_floating_info': self.font_floating_info_spin.value(),
+            'font_settings_labels': self.font_settings_labels_spin.value(),
+            'font_settings_titles': self.font_settings_titles_spin.value(),
         }
     
     def _restore_current_values(self, values):
@@ -1888,6 +2160,13 @@ class SettingsWindow(QDialog):
         self.glm_coding_plan_check.setChecked(values['glm_coding_plan'])
         self.llm_base_url_edit.setText(values['llm_base_url'])
         self.llm_api_key_edit.setText(values['llm_api_key'])
+        
+        # UI Customization settings
+        self.opacity_slider.setValue(int(values['opacity']))
+        self.font_floating_main_spin.setValue(values['font_floating_main'])
+        self.font_floating_info_spin.setValue(values['font_floating_info'])
+        self.font_settings_labels_spin.setValue(values['font_settings_labels'])
+        self.font_settings_titles_spin.setValue(values['font_settings_titles'])
         
         # Восстановить выбранный язык
         from utils.i18n import get_language
@@ -1975,6 +2254,11 @@ class SettingsWindow(QDialog):
                 "LLM_BASE_URL": self.llm_base_url_edit.text(),
                 "LLM_API_KEY": self.llm_api_key_edit.text(),
                 "INTERFACE_LANGUAGE": selected_language,
+                "WINDOW_OPACITY": str(int(self.opacity_slider.value())),
+                "FONT_SIZE_FLOATING_MAIN": str(int(self.font_floating_main_spin.value())),
+                "FONT_SIZE_FLOATING_INFO": str(int(self.font_floating_info_spin.value())),
+                "FONT_SIZE_SETTINGS_LABELS": str(int(self.font_settings_labels_spin.value())),
+                "FONT_SIZE_SETTINGS_TITLES": str(int(self.font_settings_titles_spin.value())),
             }
             
             # Использовать правильный путь к .env (AppData для production)

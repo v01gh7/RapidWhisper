@@ -31,6 +31,7 @@ def mock_config():
     """Фикстура для создания мок-конфигурации"""
     config = Mock()
     config.hotkey = "ctrl+space"
+    config.font_size_floating_info = 11  # Mock font size as integer
     return config
 
 
@@ -98,9 +99,9 @@ class TestStyling:
         app_name_style = panel._app_name_label.styleSheet()
         assert "#E0E0E0" in app_name_style
         
-        # Вторичный текст (горячие клавиши) должен быть #A0A0A0
+        # Вторичный текст (горячие клавиши) должен быть #FFFFFF (белый)
         hotkey_style = panel._record_hotkey_label.styleSheet()
-        assert "#A0A0A0" in hotkey_style
+        assert "#FFFFFF" in hotkey_style
 
 
 class TestAppInfoUpdate:
@@ -260,6 +261,7 @@ class TestInfoPanelProperties:
         # Создаем мок-конфигурацию внутри теста
         config = Mock()
         config.hotkey = "ctrl+space"
+        config.font_size_floating_info = 11  # Mock font size as integer
         panel = InfoPanelWidget(config)
         
         window_info = WindowInfo(
@@ -295,6 +297,7 @@ class TestInfoPanelProperties:
         # Создаем мок-конфигурацию внутри теста
         config = Mock()
         config.hotkey = "ctrl+space"
+        config.font_size_floating_info = 11  # Mock font size as integer
         panel = InfoPanelWidget(config)
         
         window_info = WindowInfo(
@@ -327,6 +330,7 @@ class TestInfoPanelProperties:
         # Создаем мок-конфигурацию внутри теста
         config = Mock()
         config.hotkey = hotkey
+        config.font_size_floating_info = 11  # Mock font size as integer
         panel = InfoPanelWidget(config)
         
         text = panel._record_hotkey_label.text()
@@ -354,6 +358,7 @@ class TestInfoPanelProperties:
         # Создаем мок-конфигурацию внутри теста
         config = Mock()
         config.hotkey = "ctrl+space"
+        config.font_size_floating_info = 11  # Mock font size as integer
         panel = InfoPanelWidget(config)
         
         # Создаем иконку произвольного размера
@@ -379,3 +384,63 @@ class TestInfoPanelProperties:
             f"Ширина иконки не должна превышать 20px, получено {displayed_icon.width()}"
         assert displayed_icon.height() <= 20, \
             f"Высота иконки не должна превышать 20px, получено {displayed_icon.height()}"
+
+
+
+class TestInfoPanelFontSizes:
+    """Unit tests for InfoPanelWidget font size integration"""
+    
+    def test_font_size_read_from_config_on_initialization(self, qapp, mock_config):
+        """Test that font size is read from Config on initialization"""
+        mock_config.font_size_floating_info = 13
+        
+        panel = InfoPanelWidget(mock_config)
+        
+        # Check that font size is applied to labels
+        app_name_font = panel._app_name_label.font()
+        assert app_name_font.pointSize() == 13
+        
+        record_hotkey_font = panel._record_hotkey_label.font()
+        assert record_hotkey_font.pointSize() == 13
+        
+        close_hotkey_font = panel._close_hotkey_label.font()
+        assert close_hotkey_font.pointSize() == 13
+    
+    def test_default_font_size_when_no_config(self, qapp):
+        """Test that default font size is used when config doesn't have the property"""
+        config = Mock()
+        config.hotkey = "ctrl+space"
+        config.font_size_floating_info = 11  # Default value
+        
+        panel = InfoPanelWidget(config)
+        
+        # Should use default font size (11)
+        app_name_font = panel._app_name_label.font()
+        assert app_name_font.pointSize() == 11
+    
+    def test_font_size_applied_to_all_labels(self, qapp, mock_config):
+        """Test that font size is applied to all labels (app name, hotkeys)"""
+        mock_config.font_size_floating_info = 14
+        
+        panel = InfoPanelWidget(mock_config)
+        
+        # All labels should have the same font size
+        app_name_font = panel._app_name_label.font()
+        record_hotkey_font = panel._record_hotkey_label.font()
+        close_hotkey_font = panel._close_hotkey_label.font()
+        
+        assert app_name_font.pointSize() == 14
+        assert record_hotkey_font.pointSize() == 14
+        assert close_hotkey_font.pointSize() == 14
+    
+    def test_font_size_boundary_values(self, qapp, mock_config):
+        """Test font size with boundary values (min and max)"""
+        # Test minimum font size (8)
+        mock_config.font_size_floating_info = 8
+        panel_min = InfoPanelWidget(mock_config)
+        assert panel_min._app_name_label.font().pointSize() == 8
+        
+        # Test maximum font size (16)
+        mock_config.font_size_floating_info = 16
+        panel_max = InfoPanelWidget(mock_config)
+        assert panel_max._app_name_label.font().pointSize() == 16

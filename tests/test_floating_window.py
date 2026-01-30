@@ -649,3 +649,213 @@ class TestInfoPanelIntegrationProperties:
             f"Высота WaveformWidget должна остаться {height_before}px"
         assert height_after == 50, \
             "Высота WaveformWidget должна быть фиксированной 50px"
+
+
+
+class TestFloatingWindowOpacity:
+    """Tests for FloatingWindow opacity functionality."""
+    
+    def test_opacity_read_from_config_on_initialization(self, qapp):
+        """Test opacity is read from Config on initialization."""
+        from core.config import Config
+        import tempfile
+        from pathlib import Path
+        from unittest.mock import patch
+        
+        # Create temp env file with custom opacity
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.env', delete=False, encoding='utf-8') as f:
+            f.write('WINDOW_OPACITY=200\n')
+            temp_path = f.name
+        
+        try:
+            with patch('core.config.get_env_path', return_value=Path(temp_path)):
+                config = Config.load_from_env()
+                window = FloatingWindow(config=config)
+                
+                # Verify opacity is read from config
+                assert window._opacity == 200, \
+                    f"Expected _opacity=200, got {window._opacity}"
+                
+                window.close()
+        finally:
+            import os
+            os.unlink(temp_path)
+    
+    def test_opacity_default_when_no_config(self, qapp):
+        """Test opacity uses default value when no config is provided."""
+        window = FloatingWindow(config=None)
+        
+        # Verify default opacity is used
+        assert window._opacity == 150, \
+            f"Expected default _opacity=150, got {window._opacity}"
+        
+        window.close()
+    
+    def test_set_opacity_updates_field(self, qapp):
+        """Test set_opacity() updates _opacity field."""
+        window = FloatingWindow()
+        
+        # Set opacity
+        window.set_opacity(100)
+        
+        # Verify field is updated
+        assert window._opacity == 100, \
+            f"Expected _opacity=100, got {window._opacity}"
+        
+        window.close()
+    
+    def test_set_opacity_clamps_below_minimum(self, qapp):
+        """Test set_opacity() clamps values below minimum."""
+        window = FloatingWindow()
+        
+        # Set opacity below minimum
+        window.set_opacity(30)
+        
+        # Verify clamped to minimum
+        assert window._opacity == 50, \
+            f"Expected _opacity=50 (clamped), got {window._opacity}"
+        
+        window.close()
+    
+    def test_set_opacity_clamps_above_maximum(self, qapp):
+        """Test set_opacity() clamps values above maximum."""
+        window = FloatingWindow()
+        
+        # Set opacity above maximum
+        window.set_opacity(300)
+        
+        # Verify clamped to maximum
+        assert window._opacity == 255, \
+            f"Expected _opacity=255 (clamped), got {window._opacity}"
+        
+        window.close()
+    
+    def test_set_opacity_triggers_repaint(self, qapp):
+        """Test set_opacity() triggers repaint."""
+        from unittest.mock import Mock
+        
+        window = FloatingWindow()
+        
+        # Mock update() to track calls
+        original_update = window.update
+        window.update = Mock(side_effect=original_update)
+        
+        # Set opacity
+        window.set_opacity(100)
+        
+        # Verify update() was called
+        assert window.update.called, \
+            "Expected update() to be called after set_opacity()"
+        
+        window.close()
+    
+    def test_opacity_applied_in_stylesheet(self, qapp):
+        """Test opacity is applied in stylesheet."""
+        from core.config import Config
+        import tempfile
+        from pathlib import Path
+        from unittest.mock import patch
+        
+        # Create temp env file with custom opacity
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.env', delete=False, encoding='utf-8') as f:
+            f.write('WINDOW_OPACITY=180\n')
+            temp_path = f.name
+        
+        try:
+            with patch('core.config.get_env_path', return_value=Path(temp_path)):
+                config = Config.load_from_env()
+                window = FloatingWindow(config=config)
+                
+                # Get stylesheet
+                stylesheet = window.styleSheet()
+                
+                # Verify opacity is in stylesheet
+                assert '180' in stylesheet, \
+                    f"Expected opacity 180 in stylesheet, got: {stylesheet}"
+                
+                window.close()
+        finally:
+            import os
+            os.unlink(temp_path)
+    
+    def test_opacity_applied_in_paint_event(self, qapp):
+        """Test opacity is applied in paintEvent."""
+        from PyQt6.QtGui import QPaintEvent
+        from PyQt6.QtCore import QRect
+        from unittest.mock import Mock, patch
+        
+        window = FloatingWindow()
+        window.set_opacity(120)
+        
+        # Create a paint event
+        event = QPaintEvent(QRect(0, 0, window.width(), window.height()))
+        
+        # Mock QPainter to capture fillPath call
+        with patch('ui.floating_window.QPainter') as MockPainter:
+            mock_painter = Mock()
+            MockPainter.return_value = mock_painter
+            
+            # Trigger paint event
+            window.paintEvent(event)
+            
+            # Verify fillPath was called (which uses _opacity)
+            assert mock_painter.fillPath.called, \
+                "Expected fillPath to be called in paintEvent"
+        
+        window.close()
+
+
+
+class TestFloatingWindowFontSizes:
+    """Unit tests for FloatingWindow font size integration"""
+    
+    def test_font_size_read_from_config_on_initialization(self, qapp):
+        """Test that font size is read from Config on initialization"""
+        config = Mock()
+        config.window_width = 400
+        config.window_height = 120
+        config.window_opacity = 150
+        config.auto_hide_delay = 2.5
+        config.hotkey = "ctrl+space"
+        config.font_size_floating_main = 16
+        config.font_size_floating_info = 11
+        
+        window = FloatingWindow(config)
+        
+        # Font size should be applied to stylesheet
+        stylesheet = window.styleSheet()
+        assert "font-size: 16px" in stylesheet or "16px" in stylesheet
+    
+    def test_default_font_size_when_no_config(self, qapp):
+        """Test that default font size is used when config doesn't have the property"""
+        config = Mock()
+        config.window_width = 400
+        config.window_height = 120
+        config.window_opacity = 150
+        config.auto_hide_delay = 2.5
+        config.hotkey = "ctrl+space"
+        config.font_size_floating_info = 11
+        # Don't set font_size_floating_main - should use default
+        
+        window = FloatingWindow(config)
+        
+        # Should not crash and should have some font size applied
+        stylesheet = window.styleSheet()
+        assert stylesheet is not None
+    
+    def test_font_size_applied_to_status_label(self, qapp):
+        """Test that font size is applied to status label"""
+        config = Mock()
+        config.window_width = 400
+        config.window_height = 120
+        config.window_opacity = 150
+        config.auto_hide_delay = 2.5
+        config.hotkey = "ctrl+space"
+        config.font_size_floating_main = 18
+        config.font_size_floating_info = 11
+        
+        window = FloatingWindow(config)
+        
+        # Check that stylesheet contains font size
+        stylesheet = window.styleSheet()
+        assert "18px" in stylesheet or "font-size: 18px" in stylesheet
