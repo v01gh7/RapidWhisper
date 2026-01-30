@@ -114,7 +114,6 @@ class SettingsWindow(QDialog):
                 border: 1px solid #3d3d3d;
                 border-radius: 6px;
                 padding: 8px;
-                font-size: 12px;
             }}
             QLineEdit:focus, QDoubleSpinBox:focus, QComboBox:focus {{
                 border: 1px solid #0078d4;

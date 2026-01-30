@@ -5,6 +5,7 @@ from PyQt6.QtWidgets import (
     QComboBox, QFrame, QGridLayout
 )
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont
 from typing import Dict
 
 from core.statistics_manager import StatisticsManager, TimePeriod, AggregatedStats
@@ -37,12 +38,19 @@ class MetricCard(QFrame):
         layout = QVBoxLayout(self)
         
         self.label_widget = QLabel(label)
+        # Установить шрифт программно
+        label_font = QFont("Segoe UI", 12)
+        self.label_widget.setFont(label_font)
         # Light gray text for labels, readable on dark background
-        self.label_widget.setStyleSheet("font-size: 12px; color: #aaaaaa;")
+        self.label_widget.setStyleSheet("color: #aaaaaa;")
         
         self.value_widget = QLabel(value)
-        # White text for values, bold and larger
-        self.value_widget.setStyleSheet("font-size: 24px; font-weight: bold; color: #ffffff;")
+        # Установить шрифт программно
+        value_font = QFont("Segoe UI", 24)
+        value_font.setBold(True)
+        self.value_widget.setFont(value_font)
+        # White text for values
+        self.value_widget.setStyleSheet("color: #ffffff;")
         
         layout.addWidget(self.label_widget)
         layout.addWidget(self.value_widget)
@@ -80,9 +88,19 @@ class StatisticsTab(QWidget):
         # Time period filter section
         filter_layout = QHBoxLayout()
         filter_label = QLabel(t('settings.statistics.time_period_label'))
-        filter_label.setStyleSheet("color: #ffffff; font-size: 14px;")
+        filter_label.setStyleSheet("color: #ffffff;")
+        filter_label.setFont(QFont("Segoe UI", 14))
         
         self.period_combo = QComboBox()
+        
+        # Установить шрифт программно для QComboBox
+        combo_font = QFont("Segoe UI", 12)
+        self.period_combo.setFont(combo_font)
+        
+        # Установить шрифт для выпадающего списка
+        self.period_combo.view().setFont(combo_font)
+        
+        # Простой stylesheet БЕЗ кастомизации стрелочки - Qt сам её нарисует
         self.period_combo.setStyleSheet("""
             QComboBox {
                 background-color: #2d2d2d;
@@ -90,22 +108,10 @@ class StatisticsTab(QWidget):
                 border: 1px solid #3d3d3d;
                 border-radius: 6px;
                 padding: 8px;
-                font-size: 12px;
                 min-width: 150px;
             }
             QComboBox:hover {
                 border: 1px solid #0078d4;
-            }
-            QComboBox::drop-down {
-                border: none;
-                width: 20px;
-            }
-            QComboBox::down-arrow {
-                image: none;
-                border-left: 5px solid transparent;
-                border-right: 5px solid transparent;
-                border-top: 5px solid #ffffff;
-                margin-right: 5px;
             }
             QComboBox QAbstractItemView {
                 background-color: #2d2d2d;
@@ -113,9 +119,15 @@ class StatisticsTab(QWidget):
                 selection-background-color: #0078d4;
                 selection-color: #ffffff;
                 border: 1px solid #3d3d3d;
+                outline: none;
+            }
+            QComboBox QAbstractItemView::item {
+                padding: 6px;
+                min-height: 25px;
             }
         """)
         
+        # Добавить элементы
         self.period_combo.addItem(t('settings.statistics.period_today'), TimePeriod.TODAY)
         self.period_combo.addItem(t('settings.statistics.period_last_7_days'), TimePeriod.LAST_7_DAYS)
         self.period_combo.addItem(t('settings.statistics.period_last_30_days'), TimePeriod.LAST_30_DAYS)
