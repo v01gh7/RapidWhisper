@@ -197,7 +197,7 @@ This plan implements full internationalization (i18n) for RapidWhisper, supporti
   - Verify logs remain in English
   - Ask the user if questions arise
 
-- [ ] 15. Update configuration and documentation
+- [x] 15. Update configuration and documentation
   - Update Config class to include interface_language property
   - Update .env.example with INTERFACE_LANGUAGE setting
   - Add comments explaining language codes
@@ -205,7 +205,7 @@ This plan implements full internationalization (i18n) for RapidWhisper, supporti
   - Document how to add new languages
   - _Requirements: 1.3_
 
-- [ ] 16. Final integration and polish
+- [x] 16. Final integration and polish
   - Verify no hardcoded strings remain in UI code
   - Test all UI components with very long translations
   - Test all UI components with special characters

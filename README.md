@@ -14,6 +14,7 @@ A modern speech-to-text transcription application using Zhipu GLM API, inspired 
 - ⚙️ **Settings Window** - Easy configuration through graphical interface
 - 🔔 **System Tray** - Runs in background with tray notifications
 - 🚫 **Cancel Recording** - Press ESC to cancel recording without transcription
+- 🌍 **Multi-language Support** - Interface available in 15 languages with automatic detection
 
 ## Requirements
 
@@ -149,6 +150,35 @@ All settings can be customized through the **Settings Window** (no restart requi
 - `CHUNK_SIZE` - Audio chunk size (default: 1024 frames)
 
 See `docs/settings_guide.md` for detailed configuration guide.
+
+## Localization
+
+RapidWhisper supports 15 languages with automatic system language detection:
+
+🇬🇧 English • 🇨🇳 Chinese • 🇮🇳 Hindi • 🇪🇸 Spanish • 🇫🇷 French • 🇸🇦 Arabic • 🇧🇩 Bengali • 🇷🇺 Russian • 🇵🇹 Portuguese • 🇵🇰 Urdu • 🇮🇩 Indonesian • 🇩🇪 German • 🇯🇵 Japanese • 🇹🇷 Turkish • 🇰🇷 Korean
+
+### Changing Language
+
+**Via Settings Window:**
+1. Open Settings (tray icon → Settings)
+2. Go to "Languages" tab
+3. Click your preferred language
+4. Click "Save"
+5. Interface updates immediately!
+
+**Via Configuration:**
+```env
+# In .env file
+INTERFACE_LANGUAGE=en-us  # or ru, zh, es, fr, etc.
+```
+
+**Note**: This changes the interface language only. You can speak any language - Whisper auto-detects!
+
+See `docs/LOCALIZATION.md` for:
+- Adding new languages
+- Translation guidelines
+- RTL language support
+- Contributing translations
 
 ## Development
 

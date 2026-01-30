@@ -162,7 +162,7 @@ class InfoPanelWidget(QWidget):
         Requirements: 1.1, 1.2, 1.3, 1.4, 5.5
         """
         if not window_info:
-            self._app_name_label.setText("Нет активного окна")
+            self._app_name_label.setText(t("common.no_active_window") if "no_active_window" in str(t("common")) else "No active window")
             self._app_icon_label.clear()
             return
         

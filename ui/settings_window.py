@@ -460,7 +460,7 @@ class SettingsWindow(QDialog):
         info_label = QLabel(t("settings.ai_provider.info"))
         info_label.setWordWrap(True)
         info_label.setOpenExternalLinks(True)  # Открывать ссылки в браузере
-        info_label.setToolTip("Кликните на ссылку чтобы открыть в браузере")
+        info_label.setToolTip(t("settings.ai_provider.info_tooltip") if "info_tooltip" in t("settings.ai_provider") else "Click link to open in browser")
         info_label.setStyleSheet(
             "color: #888888; "
             "font-size: 11px; "
@@ -973,7 +973,7 @@ class SettingsWindow(QDialog):
         self.recordings_path_label.setWordWrap(True)
         self.recordings_path_label.setOpenExternalLinks(True)
         self.recordings_path_label.setStyleSheet("color: #888888; font-size: 11px; padding: 8px;")
-        self.recordings_path_label.setToolTip("Кликните чтобы открыть папку\n\nАудио: recordings/audio/\nТранскрипции: recordings/transcriptions/")
+        # Tooltip will be set dynamically when path is updated
         folder_container.addWidget(self.recordings_path_label, 1)
         
         change_folder_btn = QPushButton(t("settings.recordings.change_folder"))
