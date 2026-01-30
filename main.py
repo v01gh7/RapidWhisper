@@ -540,6 +540,9 @@ class RapidWhisperApp(QObject):
             self.transcription_thread.transcription_error.connect(
                 self._on_transcription_error
             )
+            self.transcription_thread.model_not_found.connect(
+                self._on_model_not_found
+            )
             
             self.logger.info("Сигналы TranscriptionThread подключены")
             
@@ -573,6 +576,27 @@ class RapidWhisperApp(QObject):
         """
         self.logger.error(f"Ошибка транскрипции: {error}")
         self.state_manager.on_error(error)
+    
+    def _on_model_not_found(self, model: str, provider: str) -> None:
+        """
+        Обработчик ошибки "модель не найдена".
+        
+        Показывает уведомление пользователю через tray icon.
+        
+        Args:
+            model: Название модели
+            provider: Провайдер
+        """
+        self.logger.warning(f"Модель не найдена: {model} для провайдера {provider}")
+        
+        # Показать уведомление в трее
+        self.tray_icon.show_message(
+            t("tray.notification.model_not_found"),
+            t("tray.notification.model_not_found_message", model=model, provider=provider),
+            duration=8000  # 8 секунд - дольше чем обычные уведомления
+        )
+        
+        self.logger.info("Уведомление о модели не найдена показано пользователю")
     
     def _display_result(self, text: str) -> None:
         """

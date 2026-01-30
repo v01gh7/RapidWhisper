@@ -9,7 +9,7 @@ import os
 import shutil
 from typing import BinaryIO, Optional
 from pathlib import Path
-from openai import OpenAI, AuthenticationError, APIConnectionError, APITimeoutError, Timeout
+from openai import OpenAI, AuthenticationError, APIConnectionError, APITimeoutError, Timeout, NotFoundError, BadRequestError
 
 from utils.exceptions import (
     APIError,
@@ -307,7 +307,6 @@ class TranscriptionClient:
             
             # Создать клиент для постобработки с жестким таймаутом
             logger.info("Создание OpenAI клиента...")
-            from openai import Timeout
             client = OpenAI(
                 api_key=api_key,
                 base_url=base_url,
@@ -379,14 +378,6 @@ class TranscriptionClient:
             logger.error("=" * 80)
             return text
         
-        except Timeout as e:
-            logger.error("=" * 80)
-            logger.error(f"⏱️ ТАЙМАУТ ПОСТОБРАБОТКИ (Timeout): {e}")
-            logger.error("Запрос превысил 60 секунд")
-            logger.warning("⚠️ Возвращаем оригинальный текст без обработки")
-            logger.error("=" * 80)
-            return text
-        
         except AuthenticationError as e:
             logger.error("=" * 80)
             logger.error(f"🔐 ОШИБКА АУТЕНТИФИКАЦИИ: {e}")
@@ -400,6 +391,26 @@ class TranscriptionClient:
             logger.error(f"🌐 ОШИБКА ПОДКЛЮЧЕНИЯ: {e}")
             logger.error(f"Не удалось подключиться к {base_url}")
             logger.error("Проверьте интернет-соединение и доступность API")
+            logger.warning("⚠️ Возвращаем оригинальный текст без обработки")
+            logger.error("=" * 80)
+            return text
+        
+        except NotFoundError as e:
+            logger.error("=" * 80)
+            logger.error(f"🔍 МОДЕЛЬ НЕ НАЙДЕНА: {e}")
+            logger.error(f"Модель '{model}' не существует для провайдера {provider}")
+            logger.error("Проверьте название модели в настройках")
+            logger.error("Доступные модели можно посмотреть в выпадающем списке")
+            logger.warning("⚠️ Пробрасываем исключение для уведомления пользователя")
+            logger.error("=" * 80)
+            # Пробросить исключение чтобы TranscriptionThread мог показать уведомление
+            raise
+        
+        except BadRequestError as e:
+            logger.error("=" * 80)
+            logger.error(f"❌ НЕВЕРНЫЙ ЗАПРОС: {e}")
+            logger.error(f"Возможно модель '{model}' недоступна или параметры запроса некорректны")
+            logger.error("Проверьте настройки постобработки")
             logger.warning("⚠️ Возвращаем оригинальный текст без обработки")
             logger.error("=" * 80)
             return text
@@ -441,6 +452,7 @@ class TranscriptionThread(QThread):
     Signals:
         transcription_complete: Сигнал с результатом транскрипции (str)
         transcription_error: Сигнал при ошибке транскрипции (Exception)
+        model_not_found: Сигнал при ошибке "модель не найдена" (model: str, provider: str)
     
     Requirements: 9.2
     """
@@ -448,6 +460,7 @@ class TranscriptionThread(QThread):
     # Сигналы
     transcription_complete = pyqtSignal(str)  # Транскрибированный текст
     transcription_error = pyqtSignal(Exception)  # Ошибка транскрипции
+    model_not_found = pyqtSignal(str, str)  # Модель не найдена (model, provider)
     
     def __init__(self, audio_file_path: str, provider: str = "openai", api_key: Optional[str] = None, base_url: Optional[str] = None, model: Optional[str] = None):
         """
@@ -521,14 +534,20 @@ class TranscriptionThread(QThread):
                 logger.info("=" * 80)
                 logger.info("ПОСТОБРАБОТКА ВКЛЮЧЕНА В НАСТРОЙКАХ")
                 logger.info(f"Провайдер постобработки: {config.post_processing_provider}")
-                logger.info(f"Модель постобработки: {config.post_processing_model}")
+                
+                # Определить какую модель использовать: кастомную или из выпадающего списка
+                model_to_use = config.post_processing_custom_model if config.post_processing_custom_model else config.post_processing_model
+                logger.info(f"Модель постобработки: {model_to_use}")
+                if config.post_processing_custom_model:
+                    logger.info(f"  (используется кастомная модель)")
+                
                 logger.info(f"Промпт: {config.post_processing_prompt[:100]}...")
                 logger.info("Начинаем постобработку текста...")
                 try:
                     processed_text = self.transcription_client.post_process_text(
                         text=text,
                         provider=config.post_processing_provider,
-                        model=config.post_processing_model,
+                        model=model_to_use,
                         system_prompt=config.post_processing_prompt,
                         base_url=config.llm_base_url if config.post_processing_provider == "llm" else None,
                         use_coding_plan=config.glm_use_coding_plan if config.post_processing_provider == "glm" else False
@@ -536,6 +555,13 @@ class TranscriptionThread(QThread):
                     transcribed_text = processed_text
                     logger.info(f"✅ Постобработка завершена успешно")
                     logger.info(f"Результат: {processed_text[:100]}...")
+                except NotFoundError as nf_error:
+                    logger.error(f"❌ Модель не найдена: {nf_error}")
+                    logger.info("Отправка сигнала model_not_found для уведомления пользователя")
+                    # Отправить специальный сигнал для уведомления
+                    self.model_not_found.emit(model_to_use, config.post_processing_provider)
+                    logger.info("Используем оригинальный текст без постобработки")
+                    # Продолжаем с оригинальным текстом
                 except Exception as pp_error:
                     logger.error(f"❌ Ошибка постобработки: {pp_error}")
                     logger.info("Используем оригинальный текст без постобработки")

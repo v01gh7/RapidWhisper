@@ -357,6 +357,7 @@ class Config:
         self.enable_post_processing: bool = False  # Включить дополнительную обработку текста
         self.post_processing_provider: str = "groq"  # Провайдер для постобработки (groq, openai, glm, llm)
         self.post_processing_model: str = "llama-3.3-70b-versatile"  # Модель для постобработки (по умолчанию Groq)
+        self.post_processing_custom_model: str = ""  # Кастомная модель для постобработки (если не пустая, используется вместо post_processing_model)
         
         # Дефолтный промпт - используем английский по умолчанию, будет переведен при загрузке
         self.post_processing_prompt: str = "You are a text editor. Your task: fix grammatical errors, add punctuation and improve text readability. Preserve the original meaning and style. Don't add anything extra. Return only the corrected text without comments."
@@ -432,7 +433,7 @@ class Config:
                 'WINDOW_POSITION_X', 'WINDOW_POSITION_Y',
                 'KEEP_RECORDINGS', 'RECORDINGS_PATH', 'MANUAL_STOP',
                 'ENABLE_POST_PROCESSING', 'POST_PROCESSING_PROVIDER',
-                'POST_PROCESSING_MODEL', 'POST_PROCESSING_PROMPT',
+                'POST_PROCESSING_MODEL', 'POST_PROCESSING_CUSTOM_MODEL', 'POST_PROCESSING_PROMPT',
                 'GLM_USE_CODING_PLAN', 'LLM_BASE_URL', 'LLM_API_KEY',
                 'INTERFACE_LANGUAGE',
                 'WINDOW_OPACITY', 'FONT_SIZE_FLOATING_MAIN', 'FONT_SIZE_FLOATING_INFO',
@@ -554,6 +555,7 @@ class Config:
         
         config.post_processing_provider = os.getenv("POST_PROCESSING_PROVIDER", config.post_processing_provider).lower()
         config.post_processing_model = os.getenv("POST_PROCESSING_MODEL", config.post_processing_model)
+        config.post_processing_custom_model = os.getenv("POST_PROCESSING_CUSTOM_MODEL", "")
         config.post_processing_prompt = os.getenv("POST_PROCESSING_PROMPT", config.post_processing_prompt)
         
         # GLM Coding Plan

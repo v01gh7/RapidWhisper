@@ -716,6 +716,13 @@ class SettingsWindow(QDialog):
         model_label.setToolTip(t("settings.processing.model_tooltip"))
         settings_form.addRow(model_label, self.post_processing_model_combo)
         
+        # Кастомная модель (для всех провайдеров)
+        self.post_processing_custom_model_label = QLabel(t("settings.processing.custom_model"))
+        self.post_processing_custom_model_label.setToolTip(t("settings.processing.custom_model_tooltip"))
+        self.post_processing_custom_model_edit = QLineEdit()
+        self.post_processing_custom_model_edit.setPlaceholderText(t("settings.processing.custom_model_placeholder"))
+        settings_form.addRow(self.post_processing_custom_model_label, self.post_processing_custom_model_edit)
+        
         # GLM Coding Plan чекбокс (показывается только для GLM)
         self.glm_coding_plan_check = QCheckBox(t("settings.processing.glm_coding_plan"))
         self.glm_coding_plan_check.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -1857,6 +1864,9 @@ class SettingsWindow(QDialog):
         # Установить модель
         self.post_processing_model_combo.setCurrentText(self.config.post_processing_model)
         
+        # Установить кастомную модель
+        self.post_processing_custom_model_edit.setText(self.config.post_processing_custom_model)
+        
         # Установить промпт
         self.post_processing_prompt_edit.setPlainText(self.config.post_processing_prompt)
         
@@ -1949,6 +1959,7 @@ class SettingsWindow(QDialog):
         """Обработчик включения/выключения постобработки."""
         self.post_processing_provider_combo.setEnabled(checked)
         self.post_processing_model_combo.setEnabled(checked)
+        self.post_processing_custom_model_edit.setEnabled(checked)
         self.post_processing_prompt_edit.setEnabled(checked)
     
     def _on_post_processing_provider_changed(self, provider: str):
@@ -2108,6 +2119,7 @@ class SettingsWindow(QDialog):
             'enable_post_processing': self.enable_post_processing_check.isChecked(),
             'post_processing_provider': self.post_processing_provider_combo.currentText(),
             'post_processing_model': self.post_processing_model_combo.currentText(),
+            'post_processing_custom_model': self.post_processing_custom_model_edit.text(),
             'post_processing_prompt': self.post_processing_prompt_edit.toPlainText(),
             'glm_coding_plan': self.glm_coding_plan_check.isChecked(),
             'llm_base_url': self.llm_base_url_edit.text(),
@@ -2142,6 +2154,7 @@ class SettingsWindow(QDialog):
         self.enable_post_processing_check.setChecked(values['enable_post_processing'])
         self.post_processing_provider_combo.setCurrentText(values['post_processing_provider'])
         self.post_processing_model_combo.setCurrentText(values['post_processing_model'])
+        self.post_processing_custom_model_edit.setText(values['post_processing_custom_model'])
         
         # Проверить, является ли промпт дефолтным на любом языке
         current_prompt = values['post_processing_prompt']
@@ -2246,6 +2259,7 @@ class SettingsWindow(QDialog):
                 "ENABLE_POST_PROCESSING": "true" if self.enable_post_processing_check.isChecked() else "false",
                 "POST_PROCESSING_PROVIDER": self.post_processing_provider_combo.currentText(),
                 "POST_PROCESSING_MODEL": self.post_processing_model_combo.currentText(),
+                "POST_PROCESSING_CUSTOM_MODEL": self.post_processing_custom_model_edit.text(),
                 "POST_PROCESSING_PROMPT": self.post_processing_prompt_edit.toPlainText(),
                 "GLM_USE_CODING_PLAN": "true" if self.glm_coding_plan_check.isChecked() else "false",
                 "LLM_BASE_URL": self.llm_base_url_edit.text(),
