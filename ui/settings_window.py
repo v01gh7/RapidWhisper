@@ -508,9 +508,25 @@ class SettingsWindow(QDialog):
         # Чекбокс для запоминания позиции окна
         self.remember_position_check = QCheckBox()
         self.remember_position_check.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.remember_position_check.toggled.connect(self._on_remember_position_changed)
         remember_label = QLabel("Запоминать позицию окна:")
         remember_label.setToolTip("Если включено, окно записи будет появляться в том месте, куда вы его перетащили")
         ui_layout.addRow(remember_label, self.remember_position_check)
+        
+        # Выпадающий список предустановленных позиций
+        self.window_position_combo = QComboBox()
+        self.window_position_combo.addItems([
+            "Центр",
+            "Левый верхний угол",
+            "Правый верхний угол",
+            "Левый нижний угол",
+            "Правый нижний угол",
+            "Пользовательская"
+        ])
+        self.window_position_combo.setCursor(Qt.CursorShape.PointingHandCursor)
+        position_label = QLabel("Позиция окна:")
+        position_label.setToolTip("Выберите где будет появляться окно записи")
+        ui_layout.addRow(position_label, self.window_position_combo)
         
         ui_group.setLayout(ui_layout)
         layout.addWidget(ui_group)
@@ -699,12 +715,37 @@ class SettingsWindow(QDialog):
         self.auto_hide_spin.setValue(self.config.auto_hide_delay)
         self.remember_position_check.setChecked(self.config.remember_window_position)
         
+        # Загрузить предустановленную позицию
+        position_preset = getattr(self.config, 'window_position_preset', 'center')
+        position_map = {
+            'center': 0,
+            'top_left': 1,
+            'top_right': 2,
+            'bottom_left': 3,
+            'bottom_right': 4,
+            'custom': 5
+        }
+        self.window_position_combo.setCurrentIndex(position_map.get(position_preset, 0))
+        
+        # Обновить состояние выпадающего списка
+        self._on_remember_position_changed(self.config.remember_window_position)
+        
         # Аудио
         self.sample_rate_combo.setCurrentText(str(self.config.sample_rate))
         self.chunk_size_combo.setCurrentText(str(self.config.chunk_size))
         
         # Обновить подсветку активного провайдера
         self._on_provider_changed(self.config.ai_provider)
+    
+    def _on_remember_position_changed(self, checked: bool):
+        """
+        Обработчик изменения чекбокса запоминания позиции.
+        
+        Включает/выключает выпадающий список позиций.
+        """
+        # Если чекбокс выключен, показываем выпадающий список
+        # Если включен, скрываем (используется пользовательская позиция)
+        self.window_position_combo.setEnabled(not checked)
     
     def _on_provider_changed(self, provider: str):
         """
@@ -738,6 +779,9 @@ class SettingsWindow(QDialog):
             from core.config import get_env_path
             
             # Получить новые значения
+            position_index = self.window_position_combo.currentIndex()
+            position_presets = ['center', 'top_left', 'top_right', 'bottom_left', 'bottom_right', 'custom']
+            
             new_config = {
                 "AI_PROVIDER": self.provider_combo.currentText(),
                 "GROQ_API_KEY": self.groq_key_edit.text(),
@@ -753,6 +797,7 @@ class SettingsWindow(QDialog):
                 "SAMPLE_RATE": self.sample_rate_combo.currentText(),
                 "CHUNK_SIZE": self.chunk_size_combo.currentText(),
                 "REMEMBER_WINDOW_POSITION": "true" if self.remember_position_check.isChecked() else "false",
+                "WINDOW_POSITION_PRESET": position_presets[position_index],
             }
             
             # Использовать правильный путь к .env (AppData для production)
@@ -807,3 +852,22 @@ class SettingsWindow(QDialog):
                 f"Не удалось сохранить настройки:\n{str(e)}",
                 QMessageBox.StandardButton.Ok
             )
+    
+    def center_on_screen(self) -> None:
+        """
+        Центрирует окно настроек на экране.
+        
+        Вызывается перед показом окна, чтобы оно всегда появлялось по центру,
+        независимо от настроек позиции окна записи.
+        """
+        # Получить геометрию экрана
+        screen = QApplication.primaryScreen()
+        if screen:
+            screen_geometry = screen.availableGeometry()
+            
+            # Вычислить центр
+            x = screen_geometry.center().x() - self.width() // 2
+            y = screen_geometry.center().y() - self.height() // 2
+            
+            # Переместить окно
+            self.move(x, y)

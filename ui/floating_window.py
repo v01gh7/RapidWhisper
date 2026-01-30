@@ -137,30 +137,72 @@ class FloatingWindow(QWidget):
         
         Requirements: 2.2, 2.7
         """
-        # Попытаться загрузить сохраненную позицию
-        saved_pos = None
-        if use_saved_position:
-            saved_pos = self.load_position()
+        from PyQt6.QtWidgets import QApplication
+        from dotenv import load_dotenv
+        from core.config import get_env_path
+        import os
         
-        if saved_pos:
-            # Использовать сохраненную позицию
-            x, y = saved_pos
-            self.move(x, y)
-        else:
-            # Получаем геометрию экрана для центрирования
-            from PyQt6.QtWidgets import QApplication
-            app = QApplication.instance()
-            if app:
-                screen = app.primaryScreen()
-                if screen:
-                    geometry = screen.availableGeometry()
-                    
-                    # Вычисляем центр
+        # ВАЖНО: Перезагрузить переменные окружения перед чтением
+        env_path = str(get_env_path())
+        load_dotenv(env_path, override=True)
+        
+        # Получаем геометрию экрана
+        app = QApplication.instance()
+        screen = None
+        geometry = None
+        
+        if app:
+            screen = app.primaryScreen()
+            if screen:
+                geometry = screen.availableGeometry()
+        
+        # Определить позицию окна
+        x, y = None, None
+        
+        if use_saved_position:
+            # Проверить предустановленную позицию
+            preset = os.getenv('WINDOW_POSITION_PRESET', 'center')
+            
+            # Логирование для отладки
+            from utils.logger import get_logger
+            logger = get_logger()
+            logger.info(f"Показ окна: preset={preset}, remember={os.getenv('REMEMBER_WINDOW_POSITION', 'true')}")
+            
+            if preset == 'custom':
+                # Использовать пользовательскую позицию
+                saved_pos = self.load_position()
+                if saved_pos:
+                    x, y = saved_pos
+            elif geometry:
+                # Использовать предустановленную позицию
+                margin = 20  # Отступ от краев экрана
+                
+                if preset == 'center':
                     x = geometry.center().x() - self.window_width // 2
                     y = geometry.center().y() - self.window_height // 2
-                    
-                    # Позиционируем окно
-                    self.move(x, y)
+                elif preset == 'top_left':
+                    x = geometry.left() + margin
+                    y = geometry.top() + margin
+                elif preset == 'top_right':
+                    x = geometry.right() - self.window_width - margin
+                    y = geometry.top() + margin
+                elif preset == 'bottom_left':
+                    x = geometry.left() + margin
+                    y = geometry.bottom() - self.window_height - margin
+                elif preset == 'bottom_right':
+                    x = geometry.right() - self.window_width - margin
+                    y = geometry.bottom() - self.window_height - margin
+        
+        # Если позиция не определена, использовать центр
+        if x is None or y is None:
+            if geometry:
+                x = geometry.center().x() - self.window_width // 2
+                y = geometry.center().y() - self.window_height // 2
+            else:
+                x, y = 100, 100  # Fallback позиция
+        
+        # Позиционируем окно
+        self.move(x, y)
         
         # Показываем окно с анимацией
         self.show()
@@ -448,6 +490,7 @@ class FloatingWindow(QWidget):
         """
         Сохраняет текущую позицию окна в конфигурацию.
         Сохраняет только если настройка REMEMBER_WINDOW_POSITION включена.
+        При перетаскивании автоматически устанавливает preset в "custom".
         """
         try:
             from core.config import get_env_path
@@ -474,6 +517,7 @@ class FloatingWindow(QWidget):
             # Обновить или добавить позицию
             position_x_found = False
             position_y_found = False
+            preset_found = False
             
             for i, line in enumerate(env_lines):
                 if line.strip().startswith('WINDOW_POSITION_X='):
@@ -482,12 +526,17 @@ class FloatingWindow(QWidget):
                 elif line.strip().startswith('WINDOW_POSITION_Y='):
                     env_lines[i] = f'WINDOW_POSITION_Y={y}\n'
                     position_y_found = True
+                elif line.strip().startswith('WINDOW_POSITION_PRESET='):
+                    env_lines[i] = f'WINDOW_POSITION_PRESET=custom\n'
+                    preset_found = True
             
             # Добавить если не найдено
             if not position_x_found:
                 env_lines.append(f'WINDOW_POSITION_X={x}\n')
             if not position_y_found:
                 env_lines.append(f'WINDOW_POSITION_Y={y}\n')
+            if not preset_found:
+                env_lines.append(f'WINDOW_POSITION_PRESET=custom\n')
             
             # Сохранить обратно
             with open(env_path, 'w', encoding='utf-8') as f:

@@ -87,12 +87,13 @@ class TrayIcon(QObject):
     
     def _show_about(self) -> None:
         """Показывает информацию о программе."""
-        from PyQt6.QtWidgets import QMessageBox
-        # Используем parent() если доступен, иначе None
-        parent_widget = self.parent() if self.parent() else None
-        QMessageBox.information(
-            parent_widget,
-            "О программе RapidWhisper",
+        from PyQt6.QtWidgets import QMessageBox, QApplication
+        
+        # Создаем окно БЕЗ parent, чтобы оно центрировалось на экране
+        msg = QMessageBox()
+        msg.setWindowTitle("О программе RapidWhisper")
+        msg.setIcon(QMessageBox.Icon.Information)
+        msg.setText(
             "RapidWhisper v1.0\n\n"
             "Быстрая транскрипция речи с микрофона\n"
             "используя AI API (Groq, OpenAI, GLM).\n\n"
@@ -100,6 +101,18 @@ class TrayIcon(QObject):
             "Отмена записи: ESC\n\n"
             "© 2026 RapidWhisper"
         )
+        msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+        
+        # Центрируем окно на экране
+        screen = QApplication.primaryScreen()
+        if screen:
+            screen_geometry = screen.availableGeometry()
+            msg_size = msg.sizeHint()
+            x = screen_geometry.center().x() - msg_size.width() // 2
+            y = screen_geometry.center().y() - msg_size.height() // 2
+            msg.move(x, y)
+        
+        msg.exec()
     
     def show_message(self, title: str, message: str, duration: int = 5000) -> None:
         """

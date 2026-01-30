@@ -162,3 +162,5 @@ rapidwhisper.log
 # OS specific
 Thumbs.db
 Desktop.ini
+
+public/

@@ -126,8 +126,13 @@ DOCS_URL=https://github.com/yourusername/rapidwhisper/tree/main/docs
 # Options: true, false
 REMEMBER_WINDOW_POSITION=true
 
+# Window position preset
+# Default: center
+# Options: center, top_left, top_right, bottom_left, bottom_right, custom
+WINDOW_POSITION_PRESET=center
+
 # Window position (automatically saved when you drag the window)
-# Leave empty for center position
+# Leave empty for preset position
 WINDOW_POSITION_X=
 WINDOW_POSITION_Y=
 """
@@ -197,6 +202,7 @@ class Config:
         
         # Позиция окна
         self.remember_window_position: bool = True
+        self.window_position_preset: str = "center"  # center, top_left, top_right, bottom_left, bottom_right, custom
         self.window_position_x: Optional[int] = None
         self.window_position_y: Optional[int] = None
     
@@ -301,6 +307,8 @@ class Config:
         # Загрузить настройки позиции окна
         remember_pos = os.getenv("REMEMBER_WINDOW_POSITION", "true").lower()
         config.remember_window_position = remember_pos in ("true", "1", "yes")
+        
+        config.window_position_preset = os.getenv("WINDOW_POSITION_PRESET", "center")
         
         try:
             pos_x = os.getenv("WINDOW_POSITION_X")

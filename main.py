@@ -351,9 +351,15 @@ class RapidWhisperApp(QObject):
     def _show_window_with_config(self) -> None:
         """
         Показывает окно с учетом настройки запоминания позиции.
+        
+        Логика:
+        - Всегда передаем use_saved_position=True
+        - Внутри show_at_center() проверяется WINDOW_POSITION_PRESET
+        - Если preset='custom' - используется пользовательская позиция
+        - Если preset='center'/'top_left'/etc - используется предустановленная позиция
         """
-        use_saved = self.config.remember_window_position
-        self.floating_window.show_at_center(use_saved_position=use_saved)
+        # Всегда используем сохраненную позицию (preset или custom)
+        self.floating_window.show_at_center(use_saved_position=True)
     
     def _start_recording(self) -> None:
         """
@@ -637,6 +643,10 @@ class RapidWhisperApp(QObject):
         settings_window = SettingsWindow(self.config, parent=self.floating_window)
         # Подключить сигнал сохранения настроек
         settings_window.settings_saved.connect(self._on_settings_saved)
+        
+        # Центрировать окно настроек на экране
+        settings_window.center_on_screen()
+        
         settings_window.exec()
     
     def _on_settings_saved(self):
@@ -719,6 +729,13 @@ class RapidWhisperApp(QObject):
         """
         try:
             self.logger.info("Перезагрузка настроек...")
+            
+            # ВАЖНО: Перезагрузить переменные окружения из .env файла
+            from dotenv import load_dotenv
+            from core.config import get_env_path
+            env_path = str(get_env_path())
+            load_dotenv(env_path, override=True)
+            self.logger.info(f"Переменные окружения перезагружены из {env_path}")
             
             # Загрузить новую конфигурацию
             new_config = Config.load_from_env()
