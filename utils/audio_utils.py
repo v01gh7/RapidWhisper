@@ -13,13 +13,14 @@ from utils.logger import get_logger
 logger = get_logger()
 
 
-def trim_silence(audio_file_path: str, threshold: float = 0.02) -> str:
+def trim_silence(audio_file_path: str, threshold: float = 0.02, padding_ms: int = 100) -> str:
     """
-    Обрезает тишину в начале и конце аудио файла.
+    Удаляет ВСЮ тишину из аудио файла (в начале, середине и конце).
     
     Args:
         audio_file_path: Путь к аудио файлу (WAV)
         threshold: Порог RMS для определения тишины (по умолчанию 0.02)
+        padding_ms: Паддинг в миллисекундах перед и после каждого блока тишины (по умолчанию 100ms)
     
     Returns:
         str: Путь к обрезанному файлу (тот же файл, перезаписанный)
@@ -28,7 +29,8 @@ def trim_silence(audio_file_path: str, threshold: float = 0.02) -> str:
         Exception: Если не удалось обработать файл
     """
     try:
-        logger.info(f"Обрезка тишины в файле: {audio_file_path}")
+        logger.info(f"Удаление тишины из файла: {audio_file_path}")
+        logger.info(f"Порог: {threshold}, Паддинг: {padding_ms}ms")
         
         # Открыть WAV файл
         with wave.open(audio_file_path, 'rb') as wf:
@@ -83,25 +85,61 @@ def trim_silence(audio_file_path: str, threshold: float = 0.02) -> str:
         
         rms_values = np.array(rms_values)
         
-        # Найти первый и последний чанк выше порога
-        above_threshold = rms_values > threshold
+        # Найти все чанки выше порога (это звук, не тишина)
+        is_sound = rms_values > threshold
         
-        if not np.any(above_threshold):
+        if not np.any(is_sound):
             logger.warning("Весь файл состоит из тишины, не обрезаем")
             return audio_file_path
         
-        first_sound = np.argmax(above_threshold)
-        last_sound = len(rms_values) - 1 - np.argmax(above_threshold[::-1])
+        # Вычислить паддинг в чанках
+        padding_samples = int((padding_ms / 1000.0) * framerate)
+        padding_chunks = max(1, padding_samples // chunk_size)
         
-        # Конвертировать индексы чанков в индексы сэмплов
-        start_sample = first_sound * chunk_size
-        end_sample = (last_sound + 1) * chunk_size
+        logger.info(f"Паддинг: {padding_chunks} чанков ({padding_chunks * chunk_size / framerate * 1000:.0f}ms)")
         
-        # Обрезать аудио данные
-        if n_channels == 2:
-            trimmed_audio = audio_data[start_sample:end_sample]
-        else:
-            trimmed_audio = audio_data[start_sample:end_sample]
+        # Собрать все сегменты звука с паддингом
+        segments = []
+        in_sound = False
+        start_chunk = 0
+        
+        for i in range(len(is_sound)):
+            if is_sound[i] and not in_sound:
+                # Начало звука
+                start_chunk = max(0, i - padding_chunks)  # Добавить паддинг перед звуком
+                in_sound = True
+            elif not is_sound[i] and in_sound:
+                # Конец звука
+                end_chunk = min(len(is_sound), i + padding_chunks)  # Добавить паддинг после звука
+                segments.append((start_chunk, end_chunk))
+                in_sound = False
+        
+        # Если файл заканчивается звуком
+        if in_sound:
+            end_chunk = min(len(is_sound), len(is_sound) + padding_chunks)
+            segments.append((start_chunk, end_chunk))
+        
+        logger.info(f"Найдено {len(segments)} сегментов звука")
+        
+        # Объединить все сегменты
+        result_chunks = []
+        for start, end in segments:
+            start_sample = start * chunk_size
+            end_sample = end * chunk_size
+            
+            if n_channels == 2:
+                segment = audio_data[start_sample:end_sample]
+            else:
+                segment = audio_data[start_sample:end_sample]
+            
+            result_chunks.append(segment)
+        
+        if not result_chunks:
+            logger.warning("Не найдено сегментов звука")
+            return audio_file_path
+        
+        # Склеить все сегменты
+        trimmed_audio = np.concatenate(result_chunks)
         
         # Сохранить обрезанный файл
         with wave.open(audio_file_path, 'wb') as wf:
@@ -114,13 +152,14 @@ def trim_silence(audio_file_path: str, threshold: float = 0.02) -> str:
         duration_after = len(trimmed_audio) / framerate
         trimmed_seconds = duration_before - duration_after
         
-        logger.info(f"Тишина обрезана: {trimmed_seconds:.2f} сек удалено")
+        logger.info(f"Тишина удалена: {trimmed_seconds:.2f} сек удалено")
         logger.info(f"Длительность: {duration_before:.2f}с -> {duration_after:.2f}с")
+        logger.info(f"Сохранено {len(segments)} сегментов звука")
         
         return audio_file_path
         
     except Exception as e:
-        logger.error(f"Ошибка обрезки тишины: {e}")
+        logger.error(f"Ошибка удаления тишины: {e}")
         import traceback
         logger.error(traceback.format_exc())
         # Вернуть исходный файл если не удалось обрезать
