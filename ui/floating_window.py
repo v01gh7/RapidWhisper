@@ -95,7 +95,7 @@ class FloatingWindow(QWidget):
         # border-radius применяется только к главному виджету
         self.setStyleSheet("""
             FloatingWindow {
-                background-color: rgba(30, 30, 30, 240);
+                background-color: rgba(30, 30, 30, 180);
                 border-radius: 5px;
                 border: 2px solid rgba(255, 255, 255, 100);
             }
@@ -396,7 +396,7 @@ class FloatingWindow(QWidget):
                            5.0, 5.0)  # border-radius: 5px
         
         # Заполнить фон
-        painter.fillPath(path, QColor(30, 30, 30, 240))
+        painter.fillPath(path, QColor(30, 30, 30, 180))
         
         # Нарисовать границу
         painter.setPen(QColor(255, 255, 255, 100))
