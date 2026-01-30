@@ -52,7 +52,7 @@
     - **Validates: Requirements 9.3, 9.4**
 
 - [ ] 3. Реализовать WindowsWindowMonitor
-  - [-] 3.1 Создать WindowsWindowMonitor в services/windows_window_monitor.py
+  - [x] 3.1 Создать WindowsWindowMonitor в services/windows_window_monitor.py
     - Наследовать от WindowMonitor
     - Реализовать __init__ с инициализацией кэша иконок и таймера
     - Реализовать get_active_window_info() с использованием win32gui.GetForegroundWindow()
@@ -62,7 +62,7 @@
     - Реализовать обработку ошибок (NoSuchProcess, AccessDenied)
     - _Requirements: 2.1, 2.2, 2.3, 2.5_
   
-  - [~] 3.2 Реализовать извлечение иконок в WindowsWindowMonitor
+  - [x] 3.2 Реализовать извлечение иконок в WindowsWindowMonitor
     - Реализовать метод _get_window_icon() с проверкой кэша
     - Реализовать извлечение иконки через win32gui.SendMessage(WM_GETICON)
     - Реализовать fallback на win32gui.GetClassLong(GCL_HICON)
@@ -72,14 +72,14 @@
     - Добавить обработку ошибок с логированием через ErrorLogger
     - _Requirements: 2.4, 2.5, 7.5_
   
-  - [~] 3.3 Реализовать кэширование иконок
+  - [x] 3.3 Реализовать кэширование иконок
     - Реализовать метод _cache_icon() для добавления иконки в кэш
     - Реализовать LRU логику с отслеживанием количества обращений
     - Реализовать удаление наименее используемых записей при превышении 50 элементов
     - Реализовать проверку кэша перед извлечением новой иконки
     - _Requirements: 8.3, 8.4_
   
-  - [~] 3.4 Реализовать мониторинг активного окна
+  - [x] 3.4 Реализовать мониторинг активного окна
     - Реализовать метод start_monitoring() с созданием QTimer
     - Установить интервал таймера 200ms
     - Реализовать метод _check_active_window() для проверки изменений
@@ -87,7 +87,7 @@
     - Реализовать метод stop_monitoring() для остановки таймера
     - _Requirements: 1.2, 8.1_
   
-  - [~] 3.5 Написать unit тесты для WindowsWindowMonitor
+  - [x] 3.5 Написать unit тесты для WindowsWindowMonitor
     - Тест получения информации об активном окне (с моками win32gui)
     - Тест обработки ошибки недоступного окна
     - Тест обработки ошибки недоступного процесса (AccessDenied)
