@@ -38,10 +38,21 @@ def get_recordings_dir() -> Path:
     """
     Возвращает путь к директории с сохраненными записями.
     
+    Проверяет настройку RECORDINGS_PATH в .env файле.
+    Если не указана, использует путь по умолчанию.
+    
     Returns:
         Path: Путь к директории recordings
     """
-    recordings_dir = get_config_dir() / 'recordings'
+    # Проверить пользовательский путь в .env
+    custom_path = os.getenv('RECORDINGS_PATH')
+    
+    if custom_path and custom_path.strip():
+        recordings_dir = Path(custom_path).expanduser()
+    else:
+        # Путь по умолчанию
+        recordings_dir = get_config_dir() / 'recordings'
+    
     recordings_dir.mkdir(parents=True, exist_ok=True)
     return recordings_dir
 
@@ -180,6 +191,11 @@ WINDOW_POSITION_Y=
 # Options: true, false
 KEEP_RECORDINGS=false
 
+# Custom path for recordings (leave empty for default)
+# Default: %APPDATA%/RapidWhisper/recordings
+# Example: D:/MyRecordings
+RECORDINGS_PATH=
+
 # Manual stop mode (disable automatic silence detection)
 # When enabled, recording will only stop when you press the hotkey again
 # Silence at the beginning and end will be automatically trimmed
@@ -264,6 +280,7 @@ class Config:
         
         # Сохранение записей
         self.keep_recordings: bool = False  # По умолчанию удалять записи после транскрипции
+        self.recordings_path: str = ""  # Пользовательский путь для записей (пустая строка = путь по умолчанию)
         
         # Ручная остановка записи
         self.manual_stop: bool = False  # По умолчанию автоматическая остановка по тишине
@@ -394,6 +411,8 @@ class Config:
         # Загрузить настройки сохранения записей
         keep_rec = os.getenv("KEEP_RECORDINGS", "false").lower()
         config.keep_recordings = keep_rec in ("true", "1", "yes")
+        
+        config.recordings_path = os.getenv("RECORDINGS_PATH", "")
         
         # Загрузить настройки ручной остановки
         manual_stop = os.getenv("MANUAL_STOP", "false").lower()

@@ -675,16 +675,35 @@ class SettingsWindow(QDialog):
         self.keep_recordings_check.setToolTip("Если включено, аудиозаписи будут сохраняться в папку recordings")
         save_layout.addWidget(self.keep_recordings_check)
         
-        # Информация о папке
+        # Информация о папке с кнопкой изменения
         from core.config import get_recordings_dir
         recordings_dir = get_recordings_dir()
         
-        info_label = QLabel(f"📁 Папка с записями: <a href='file:///{recordings_dir}'>{recordings_dir}</a>")
-        info_label.setWordWrap(True)
-        info_label.setOpenExternalLinks(True)
-        info_label.setStyleSheet("color: #888888; font-size: 11px; padding: 8px;")
-        info_label.setToolTip("Кликните чтобы открыть папку\n\nАудио: recordings/audio/\nТранскрипции: recordings/transcriptions/")
-        save_layout.addWidget(info_label)
+        folder_container = QHBoxLayout()
+        folder_container.setSpacing(8)
+        
+        self.recordings_path_label = QLabel(f"📁 <a href='file:///{recordings_dir}'>{recordings_dir}</a>")
+        self.recordings_path_label.setWordWrap(True)
+        self.recordings_path_label.setOpenExternalLinks(True)
+        self.recordings_path_label.setStyleSheet("color: #888888; font-size: 11px; padding: 8px;")
+        self.recordings_path_label.setToolTip("Кликните чтобы открыть папку\n\nАудио: recordings/audio/\nТранскрипции: recordings/transcriptions/")
+        folder_container.addWidget(self.recordings_path_label, 1)
+        
+        change_folder_btn = QPushButton("📁 Изменить папку")
+        change_folder_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        change_folder_btn.setToolTip("Выбрать другую папку для сохранения записей")
+        change_folder_btn.clicked.connect(self._change_recordings_folder)
+        change_folder_btn.setMaximumWidth(150)
+        folder_container.addWidget(change_folder_btn)
+        
+        reset_folder_btn = QPushButton("🔄")
+        reset_folder_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        reset_folder_btn.setToolTip("Сбросить на папку по умолчанию")
+        reset_folder_btn.clicked.connect(self._reset_recordings_folder)
+        reset_folder_btn.setMaximumWidth(40)
+        folder_container.addWidget(reset_folder_btn)
+        
+        save_layout.addLayout(folder_container)
         
         save_group.setLayout(save_layout)
         layout.addWidget(save_group)
@@ -695,8 +714,6 @@ class SettingsWindow(QDialog):
         recordings_layout.setSpacing(12)
         
         # Список записей
-        from PyQt6.QtWidgets import QListWidget, QListWidgetItem, QHBoxLayout, QPushButton
-        
         self.recordings_list = QListWidget()
         self.recordings_list.setMinimumHeight(250)  # Фиксированная минимальная высота
         self.recordings_list.setMaximumHeight(350)  # Фиксированная максимальная высота
@@ -955,6 +972,101 @@ class SettingsWindow(QDialog):
                     self,
                     "❌ Ошибка",
                     f"Не удалось удалить запись:\n{str(e)}",
+                    QMessageBox.StandardButton.Ok
+                )
+    
+    def _change_recordings_folder(self):
+        """Изменяет папку для сохранения записей."""
+        from PyQt6.QtWidgets import QFileDialog
+        from core.config import get_env_path
+        from dotenv import set_key
+        
+        # Получить текущую папку
+        from core.config import get_recordings_dir
+        current_dir = str(get_recordings_dir())
+        
+        # Открыть диалог выбора папки
+        new_folder = QFileDialog.getExistingDirectory(
+            self,
+            "Выберите папку для сохранения записей",
+            current_dir,
+            QFileDialog.Option.ShowDirsOnly
+        )
+        
+        if new_folder:
+            try:
+                # Сохранить в .env
+                env_path = str(get_env_path())
+                set_key(env_path, "RECORDINGS_PATH", new_folder)
+                
+                # Обновить label
+                self.recordings_path_label.setText(f"📁 <a href='file:///{new_folder}'>{new_folder}</a>")
+                
+                # Обновить список записей
+                self._refresh_recordings_list()
+                
+                logger.info(f"Папка записей изменена на: {new_folder}")
+                
+                QMessageBox.information(
+                    self,
+                    "✅ Успешно",
+                    f"Папка для записей изменена на:\n{new_folder}\n\nНовые записи будут сохраняться в:\n• {new_folder}/audio/\n• {new_folder}/transcriptions/",
+                    QMessageBox.StandardButton.Ok
+                )
+            except Exception as e:
+                logger.error(f"Не удалось изменить папку: {e}")
+                QMessageBox.critical(
+                    self,
+                    "❌ Ошибка",
+                    f"Не удалось изменить папку:\n{str(e)}",
+                    QMessageBox.StandardButton.Ok
+                )
+    
+    def _reset_recordings_folder(self):
+        """Сбрасывает папку записей на значение по умолчанию."""
+        from core.config import get_env_path, get_config_dir
+        from dotenv import set_key
+        
+        # Подтверждение
+        reply = QMessageBox.question(
+            self,
+            "🔄 Сбросить папку?",
+            "Вы уверены что хотите вернуть папку записей по умолчанию?\n\n"
+            "Новые записи будут сохраняться в:\n"
+            f"{get_config_dir() / 'recordings'}",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            try:
+                # Удалить RECORDINGS_PATH из .env (установить пустое значение)
+                env_path = str(get_env_path())
+                set_key(env_path, "RECORDINGS_PATH", "")
+                
+                # Получить папку по умолчанию
+                default_dir = get_config_dir() / 'recordings'
+                
+                # Обновить label
+                self.recordings_path_label.setText(f"📁 <a href='file:///{default_dir}'>{default_dir}</a>")
+                
+                # Обновить список записей
+                self._refresh_recordings_list()
+                
+                logger.info("Папка записей сброшена на значение по умолчанию")
+                
+                QMessageBox.information(
+                    self,
+                    "✅ Успешно",
+                    f"Папка записей сброшена на значение по умолчанию:\n{default_dir}",
+                    QMessageBox.StandardButton.Ok
+                )
+            except Exception as e:
+                logger.error(f"Не удалось сбросить папку: {e}")
+                QMessageBox.critical(
+                    self,
+                    "❌ Ошибка",
+                    f"Не удалось сбросить папку:\n{str(e)}",
                     QMessageBox.StandardButton.Ok
                 )
     
