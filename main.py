@@ -894,7 +894,7 @@ class RapidWhisperApp(QObject):
         else:
             # Показать окно при запуске на 2 секунды - ВСЕГДА ПО ЦЕНТРУ
             self.floating_window.show_at_center(use_saved_position=False)
-            self.floating_window.set_status("RapidWhisper загружен!")
+            self.floating_window.set_startup_message("RapidWhisper загружен!")
             
             # Установить флаг что идет инициализация
             self._startup_window_visible = True
@@ -903,6 +903,8 @@ class RapidWhisperApp(QObject):
             def hide_startup_window():
                 self._startup_window_visible = False
                 self.floating_window.hide_with_animation()
+                # Сбросить стиль ПОСЛЕ анимации (300ms + небольшая задержка)
+                QTimer.singleShot(400, self.floating_window.reset_status_style)
             
             QTimer.singleShot(2000, hide_startup_window)
         

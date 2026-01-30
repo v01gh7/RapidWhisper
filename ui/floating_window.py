@@ -431,6 +431,51 @@ class FloatingWindow(QWidget):
         
         self.status_label.setText(display_text)
     
+    def set_startup_message(self, text: str) -> None:
+        """
+        Устанавливает текст стартового сообщения с увеличенным шрифтом.
+        
+        Используется только для стартового окна при запуске программы.
+        
+        Args:
+            text: Текст для отображения
+        """
+        # Скрыть waveform для стартового окна
+        self.waveform_widget.hide()
+        
+        # Убрать фиксированную высоту и дать label занять всё пространство
+        self.status_label.setFixedHeight(0)  # Убрать фиксированную высоту
+        self.status_label.setMinimumHeight(0)
+        self.status_label.setMaximumHeight(16777215)  # Максимальное значение Qt
+        
+        # Применить специальный стиль для стартового сообщения
+        # Центрирование по вертикали и горизонтали
+        self.status_label.setStyleSheet("""
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        """)
+        self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter)
+        self.status_label.setText(text)
+    
+    def reset_status_style(self) -> None:
+        """
+        Сбрасывает стиль status_label к обычному.
+        
+        Вызывается после скрытия стартового окна.
+        """
+        # Показать waveform обратно
+        self.waveform_widget.show()
+        
+        # Вернуть фиксированную высоту для label
+        self.status_label.setFixedHeight(40)
+        
+        # Вернуть обычный стиль (из setStyleSheet окна)
+        self.status_label.setStyleSheet("")
+        # Вернуть обычное выравнивание (только по центру горизонтально)
+        self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    
     def start_auto_hide_timer(self, delay_ms: int = 2500) -> None:
         """
         Запускает таймер автоматического скрытия окна.
