@@ -19,7 +19,7 @@ class TestConfigDefaults:
         config = Config()
         
         assert config.glm_api_key == ""
-        assert config.hotkey == "F1"
+        assert config.hotkey == "ctrl+space"
         assert config.silence_threshold == 0.02
         assert config.silence_duration == 1.5
         assert config.auto_hide_delay == 2.5
@@ -39,12 +39,14 @@ class TestConfigLoadFromEnv:
         # Очистить все переменные окружения
         for key in ["GLM_API_KEY", "HOTKEY", "SILENCE_THRESHOLD", "SILENCE_DURATION", 
                     "AUTO_HIDE_DELAY", "WINDOW_WIDTH", "WINDOW_HEIGHT", "SAMPLE_RATE",
-                    "CHUNK_SIZE", "LOG_LEVEL", "LOG_FILE"]:
+                    "CHUNK_SIZE", "LOG_LEVEL", "LOG_FILE", "GROQ_API_KEY", "OPENAI_API_KEY",
+                    "CUSTOM_API_KEY", "AI_PROVIDER"]:
             monkeypatch.delenv(key, raising=False)
         
         env_file = tmp_path / ".env"
         env_content = """
-GLM_API_KEY=test_key_123
+AI_PROVIDER=groq
+GROQ_API_KEY=test_key_123
 HOTKEY=F2
 SILENCE_THRESHOLD=0.03
 SILENCE_DURATION=2.0
@@ -60,7 +62,7 @@ LOG_FILE=test.log
         
         config = Config.load_from_env(str(env_file))
         
-        assert config.glm_api_key == "test_key_123"
+        assert config.groq_api_key == "test_key_123"
         assert config.hotkey == "F2"
         assert config.silence_threshold == 0.03
         assert config.silence_duration == 2.0
@@ -77,17 +79,17 @@ LOG_FILE=test.log
         # Очистить все переменные окружения
         for key in ["GLM_API_KEY", "HOTKEY", "SILENCE_THRESHOLD", "SILENCE_DURATION", 
                     "AUTO_HIDE_DELAY", "WINDOW_WIDTH", "WINDOW_HEIGHT", "SAMPLE_RATE",
-                    "CHUNK_SIZE", "LOG_LEVEL", "LOG_FILE"]:
+                    "CHUNK_SIZE", "LOG_LEVEL", "LOG_FILE", "GROQ_API_KEY"]:
             monkeypatch.delenv(key, raising=False)
         
         env_file = tmp_path / ".env"
-        env_file.write_text("GLM_API_KEY=test_key_456\n")
+        env_file.write_text("GROQ_API_KEY=test_key_456\n")
         
         config = Config.load_from_env(str(env_file))
         
-        assert config.glm_api_key == "test_key_456"
+        assert config.groq_api_key == "test_key_456"
         # Проверить, что остальные параметры имеют значения по умолчанию
-        assert config.hotkey == "F1"
+        assert config.hotkey == "ctrl+space"
         assert config.silence_threshold == 0.02
         assert config.window_width == 400
     
@@ -96,12 +98,14 @@ LOG_FILE=test.log
         # Очистить все переменные окружения
         for key in ["GLM_API_KEY", "HOTKEY", "SILENCE_THRESHOLD", "SILENCE_DURATION", 
                     "AUTO_HIDE_DELAY", "WINDOW_WIDTH", "WINDOW_HEIGHT", "SAMPLE_RATE",
-                    "CHUNK_SIZE", "LOG_LEVEL", "LOG_FILE"]:
+                    "CHUNK_SIZE", "LOG_LEVEL", "LOG_FILE", "GROQ_API_KEY", "OPENAI_API_KEY",
+                    "CUSTOM_API_KEY", "AI_PROVIDER"]:
             monkeypatch.delenv(key, raising=False)
         
         env_file = tmp_path / ".env"
         env_content = """
-GLM_API_KEY=partial_key
+AI_PROVIDER=groq
+GROQ_API_KEY=partial_key
 HOTKEY=F3
 WINDOW_WIDTH=600
 """
@@ -109,7 +113,7 @@ WINDOW_WIDTH=600
         
         config = Config.load_from_env(str(env_file))
         
-        assert config.glm_api_key == "partial_key"
+        assert config.groq_api_key == "partial_key"
         assert config.hotkey == "F3"
         assert config.window_width == 600
         # Остальные параметры должны быть по умолчанию
@@ -122,7 +126,7 @@ WINDOW_WIDTH=600
         # Очистить все переменные окружения
         for key in ["GLM_API_KEY", "HOTKEY", "SILENCE_THRESHOLD", "SILENCE_DURATION", 
                     "AUTO_HIDE_DELAY", "WINDOW_WIDTH", "WINDOW_HEIGHT", "SAMPLE_RATE",
-                    "CHUNK_SIZE", "LOG_LEVEL", "LOG_FILE"]:
+                    "CHUNK_SIZE", "LOG_LEVEL", "LOG_FILE", "GROQ_API_KEY"]:
             monkeypatch.delenv(key, raising=False)
         
         env_file = tmp_path / ".env"
@@ -132,7 +136,7 @@ WINDOW_WIDTH=600
         
         # Все параметры должны быть по умолчанию
         assert config.glm_api_key == ""
-        assert config.hotkey == "F1"
+        assert config.hotkey == "ctrl+space"
         assert config.silence_threshold == 0.02
     
     def test_load_with_invalid_numeric_values(self, tmp_path, monkeypatch):
@@ -140,12 +144,14 @@ WINDOW_WIDTH=600
         # Очистить все переменные окружения
         for key in ["GLM_API_KEY", "HOTKEY", "SILENCE_THRESHOLD", "SILENCE_DURATION", 
                     "AUTO_HIDE_DELAY", "WINDOW_WIDTH", "WINDOW_HEIGHT", "SAMPLE_RATE",
-                    "CHUNK_SIZE", "LOG_LEVEL", "LOG_FILE"]:
+                    "CHUNK_SIZE", "LOG_LEVEL", "LOG_FILE", "GROQ_API_KEY", "OPENAI_API_KEY",
+                    "CUSTOM_API_KEY", "AI_PROVIDER"]:
             monkeypatch.delenv(key, raising=False)
         
         env_file = tmp_path / ".env"
         env_content = """
-GLM_API_KEY=test_key
+AI_PROVIDER=groq
+GROQ_API_KEY=test_key
 SILENCE_THRESHOLD=invalid
 WINDOW_WIDTH=not_a_number
 CHUNK_SIZE=abc
@@ -164,11 +170,12 @@ CHUNK_SIZE=abc
         # Очистить все переменные окружения
         for key in ["GLM_API_KEY", "HOTKEY", "SILENCE_THRESHOLD", "SILENCE_DURATION", 
                     "AUTO_HIDE_DELAY", "WINDOW_WIDTH", "WINDOW_HEIGHT", "SAMPLE_RATE",
-                    "CHUNK_SIZE", "LOG_LEVEL", "LOG_FILE"]:
+                    "CHUNK_SIZE", "LOG_LEVEL", "LOG_FILE", "GROQ_API_KEY", "OPENAI_API_KEY",
+                    "CUSTOM_API_KEY", "AI_PROVIDER"]:
             monkeypatch.delenv(key, raising=False)
         
         env_file = tmp_path / ".env"
-        env_file.write_text("GLM_API_KEY=test\nLOG_LEVEL=debug\n")
+        env_file.write_text("AI_PROVIDER=groq\nGROQ_API_KEY=test\nLOG_LEVEL=debug\n")
         
         config = Config.load_from_env(str(env_file))
         
@@ -179,17 +186,18 @@ CHUNK_SIZE=abc
         # Очистить все переменные окружения
         for key in ["GLM_API_KEY", "HOTKEY", "SILENCE_THRESHOLD", "SILENCE_DURATION", 
                     "AUTO_HIDE_DELAY", "WINDOW_WIDTH", "WINDOW_HEIGHT", "SAMPLE_RATE",
-                    "CHUNK_SIZE", "LOG_LEVEL", "LOG_FILE"]:
+                    "CHUNK_SIZE", "LOG_LEVEL", "LOG_FILE", "GROQ_API_KEY", "OPENAI_API_KEY",
+                    "CUSTOM_API_KEY", "AI_PROVIDER"]:
             monkeypatch.delenv(key, raising=False)
         
         # Создать .env в изолированной директории
         env_file = tmp_path / ".env"
-        env_file.write_text("GLM_API_KEY=default_path_key\n")
+        env_file.write_text("AI_PROVIDER=groq\nGROQ_API_KEY=default_path_key\n")
         
         # Загрузить конфигурацию с явным указанием пути
         config = Config.load_from_env(str(env_file))
         
-        assert config.glm_api_key == "default_path_key"
+        assert config.groq_api_key == "default_path_key"
 
 
 class TestConfigValidation:
@@ -198,7 +206,8 @@ class TestConfigValidation:
     def test_valid_configuration(self):
         """Тест валидации корректной конфигурации."""
         config = Config()
-        config.glm_api_key = "valid_key"
+        config.ai_provider = "groq"
+        config.groq_api_key = "valid_key"
         
         errors = config.validate()
         
@@ -207,18 +216,20 @@ class TestConfigValidation:
     def test_missing_api_key(self):
         """Тест валидации при отсутствии API ключа."""
         config = Config()
-        config.glm_api_key = ""
+        config.ai_provider = "groq"
+        config.groq_api_key = ""
         
         errors = config.validate()
         
         assert len(errors) == 1
-        assert "GLM_API_KEY" in errors[0]
+        assert "GROQ_API_KEY" in errors[0]
         assert "не найден" in errors[0]
     
     def test_invalid_silence_threshold_too_low(self):
         """Тест валидации слишком низкого порога тишины."""
         config = Config()
-        config.glm_api_key = "valid_key"
+        config.ai_provider = "groq"
+        config.groq_api_key = "valid_key"
         config.silence_threshold = 0.005
         
         errors = config.validate()
@@ -230,7 +241,8 @@ class TestConfigValidation:
     def test_invalid_silence_threshold_too_high(self):
         """Тест валидации слишком высокого порога тишины."""
         config = Config()
-        config.glm_api_key = "valid_key"
+        config.ai_provider = "groq"
+        config.groq_api_key = "valid_key"
         config.silence_threshold = 0.15
         
         errors = config.validate()
@@ -241,7 +253,8 @@ class TestConfigValidation:
     def test_invalid_silence_duration(self):
         """Тест валидации некорректной длительности тишины."""
         config = Config()
-        config.glm_api_key = "valid_key"
+        config.ai_provider = "groq"
+        config.groq_api_key = "valid_key"
         config.silence_duration = 0.3
         
         errors = config.validate()
@@ -253,7 +266,8 @@ class TestConfigValidation:
     def test_invalid_auto_hide_delay(self):
         """Тест валидации некорректной задержки автоскрытия."""
         config = Config()
-        config.glm_api_key = "valid_key"
+        config.ai_provider = "groq"
+        config.groq_api_key = "valid_key"
         config.auto_hide_delay = 15.0
         
         errors = config.validate()
@@ -264,7 +278,8 @@ class TestConfigValidation:
     def test_invalid_window_dimensions(self):
         """Тест валидации некорректных размеров окна."""
         config = Config()
-        config.glm_api_key = "valid_key"
+        config.ai_provider = "groq"
+        config.groq_api_key = "valid_key"
         config.window_width = 100
         config.window_height = 600
         
@@ -277,7 +292,8 @@ class TestConfigValidation:
     def test_invalid_sample_rate(self):
         """Тест валидации некорректной частоты дискретизации."""
         config = Config()
-        config.glm_api_key = "valid_key"
+        config.ai_provider = "groq"
+        config.groq_api_key = "valid_key"
         config.sample_rate = 22050
         
         errors = config.validate()
@@ -289,7 +305,8 @@ class TestConfigValidation:
     def test_invalid_chunk_size(self):
         """Тест валидации некорректного размера чанка."""
         config = Config()
-        config.glm_api_key = "valid_key"
+        config.ai_provider = "groq"
+        config.groq_api_key = "valid_key"
         config.chunk_size = 100
         
         errors = config.validate()
@@ -300,7 +317,8 @@ class TestConfigValidation:
     def test_invalid_log_level(self):
         """Тест валидации некорректного уровня логирования."""
         config = Config()
-        config.glm_api_key = "valid_key"
+        config.ai_provider = "groq"
+        config.groq_api_key = "valid_key"
         config.log_level = "TRACE"
         
         errors = config.validate()
@@ -311,7 +329,8 @@ class TestConfigValidation:
     def test_multiple_validation_errors(self):
         """Тест валидации с несколькими ошибками."""
         config = Config()
-        config.glm_api_key = ""
+        config.ai_provider = "groq"
+        config.groq_api_key = ""
         config.silence_threshold = 0.005
         config.window_width = 50
         config.sample_rate = 8000
@@ -319,7 +338,7 @@ class TestConfigValidation:
         errors = config.validate()
         
         assert len(errors) == 4
-        assert any("GLM_API_KEY" in error for error in errors)
+        assert any("GROQ_API_KEY" in error for error in errors)
         assert any("SILENCE_THRESHOLD" in error for error in errors)
         assert any("WINDOW_WIDTH" in error for error in errors)
         assert any("SAMPLE_RATE" in error for error in errors)
@@ -331,12 +350,13 @@ class TestConfigRepr:
     def test_repr(self):
         """Тест строкового представления."""
         config = Config()
-        config.glm_api_key = "test_key"
+        config.ai_provider = "groq"
+        config.groq_api_key = "test_key"
         
         repr_str = repr(config)
         
         assert "Config(" in repr_str
-        assert "hotkey='F1'" in repr_str
+        assert "hotkey='ctrl+space'" in repr_str
         assert "silence_threshold=0.02" in repr_str
         assert "window_size=(400x120)" in repr_str
         assert "log_level='INFO'" in repr_str
@@ -350,12 +370,13 @@ class TestConfigIntegration:
         # Очистить все переменные окружения
         for key in ["GLM_API_KEY", "HOTKEY", "SILENCE_THRESHOLD", "SILENCE_DURATION", 
                     "AUTO_HIDE_DELAY", "WINDOW_WIDTH", "WINDOW_HEIGHT", "SAMPLE_RATE",
-                    "CHUNK_SIZE", "LOG_LEVEL", "LOG_FILE"]:
+                    "CHUNK_SIZE", "LOG_LEVEL", "LOG_FILE", "GROQ_API_KEY", "AI_PROVIDER"]:
             monkeypatch.delenv(key, raising=False)
         
         env_file = tmp_path / ".env"
         env_content = """
-GLM_API_KEY=integration_test_key
+AI_PROVIDER=groq
+GROQ_API_KEY=integration_test_key
 HOTKEY=F4
 SILENCE_THRESHOLD=0.025
 WINDOW_WIDTH=450
@@ -366,7 +387,7 @@ WINDOW_WIDTH=450
         errors = config.validate()
         
         assert errors == []
-        assert config.glm_api_key == "integration_test_key"
+        assert config.groq_api_key == "integration_test_key"
         assert config.hotkey == "F4"
     
     def test_load_and_validate_invalid_config(self, tmp_path, monkeypatch):
@@ -374,11 +395,12 @@ WINDOW_WIDTH=450
         # Очистить все переменные окружения
         for key in ["GLM_API_KEY", "HOTKEY", "SILENCE_THRESHOLD", "SILENCE_DURATION", 
                     "AUTO_HIDE_DELAY", "WINDOW_WIDTH", "WINDOW_HEIGHT", "SAMPLE_RATE",
-                    "CHUNK_SIZE", "LOG_LEVEL", "LOG_FILE"]:
+                    "CHUNK_SIZE", "LOG_LEVEL", "LOG_FILE", "GROQ_API_KEY", "AI_PROVIDER"]:
             monkeypatch.delenv(key, raising=False)
         
         env_file = tmp_path / ".env"
         env_content = """
+AI_PROVIDER=groq
 SILENCE_THRESHOLD=0.005
 WINDOW_WIDTH=50
 """
@@ -388,7 +410,7 @@ WINDOW_WIDTH=50
         errors = config.validate()
         
         assert len(errors) >= 2
-        assert any("GLM_API_KEY" in error for error in errors)
+        assert any("GROQ_API_KEY" in error for error in errors)
 
 
 
@@ -436,13 +458,15 @@ class TestConfigPropertyBasedTests:
         # Очистить все переменные окружения
         for key in ["GLM_API_KEY", "HOTKEY", "SILENCE_THRESHOLD", "SILENCE_DURATION", 
                     "AUTO_HIDE_DELAY", "WINDOW_WIDTH", "WINDOW_HEIGHT", "SAMPLE_RATE",
-                    "CHUNK_SIZE", "LOG_LEVEL", "LOG_FILE"]:
+                    "CHUNK_SIZE", "LOG_LEVEL", "LOG_FILE", "GROQ_API_KEY", "OPENAI_API_KEY", 
+                    "CUSTOM_API_KEY", "AI_PROVIDER"]:
             monkeypatch.delenv(key, raising=False)
         
         # Создать .env файл с сгенерированными значениями
         env_file = tmp_path / ".env"
         env_content = f"""
-GLM_API_KEY=test_api_key_property
+AI_PROVIDER=groq
+GROQ_API_KEY=test_api_key_property
 HOTKEY={hotkey}
 SILENCE_THRESHOLD={silence_threshold}
 SILENCE_DURATION={silence_duration}
@@ -505,12 +529,13 @@ LOG_LEVEL={log_level}
         # Очистить все переменные окружения
         for key in ["GLM_API_KEY", "HOTKEY", "SILENCE_THRESHOLD", "SILENCE_DURATION", 
                     "AUTO_HIDE_DELAY", "WINDOW_WIDTH", "WINDOW_HEIGHT", "SAMPLE_RATE",
-                    "CHUNK_SIZE", "LOG_LEVEL", "LOG_FILE"]:
+                    "CHUNK_SIZE", "LOG_LEVEL", "LOG_FILE", "GROQ_API_KEY", "OPENAI_API_KEY",
+                    "CUSTOM_API_KEY", "AI_PROVIDER"]:
             monkeypatch.delenv(key, raising=False)
         
         # Определить значения по умолчанию
         defaults = {
-            "HOTKEY": "F1",
+            "HOTKEY": "ctrl+space",
             "SILENCE_THRESHOLD": 0.02,
             "SILENCE_DURATION": 1.5,
             "AUTO_HIDE_DELAY": 2.5,
@@ -523,7 +548,7 @@ LOG_LEVEL={log_level}
         
         # Создать .env файл только с параметрами, которые НЕ отсутствуют
         env_file = tmp_path / ".env"
-        env_content = "GLM_API_KEY=test_key\n"
+        env_content = "AI_PROVIDER=groq\nGROQ_API_KEY=test_key\n"
         
         # Добавить только те параметры, которые не в списке отсутствующих
         all_params = list(defaults.keys())
@@ -620,13 +645,15 @@ LOG_LEVEL={log_level}
         # Очистить все переменные окружения
         for key in ["GLM_API_KEY", "HOTKEY", "SILENCE_THRESHOLD", "SILENCE_DURATION", 
                     "AUTO_HIDE_DELAY", "WINDOW_WIDTH", "WINDOW_HEIGHT", "SAMPLE_RATE",
-                    "CHUNK_SIZE", "LOG_LEVEL", "LOG_FILE"]:
+                    "CHUNK_SIZE", "LOG_LEVEL", "LOG_FILE", "GROQ_API_KEY", "OPENAI_API_KEY",
+                    "CUSTOM_API_KEY", "AI_PROVIDER"]:
             monkeypatch.delenv(key, raising=False)
         
         # Создать .env файл с некорректными значениями
         env_file = tmp_path / ".env"
         env_content = f"""
-GLM_API_KEY=test_key
+AI_PROVIDER=groq
+GROQ_API_KEY=test_key
 SILENCE_THRESHOLD={invalid_float}
 SILENCE_DURATION={invalid_float}
 AUTO_HIDE_DELAY={invalid_float}
@@ -673,13 +700,15 @@ CHUNK_SIZE={invalid_int}
         # Очистить все переменные окружения
         for key in ["GLM_API_KEY", "HOTKEY", "SILENCE_THRESHOLD", "SILENCE_DURATION", 
                     "AUTO_HIDE_DELAY", "WINDOW_WIDTH", "WINDOW_HEIGHT", "SAMPLE_RATE",
-                    "CHUNK_SIZE", "LOG_LEVEL", "LOG_FILE"]:
+                    "CHUNK_SIZE", "LOG_LEVEL", "LOG_FILE", "GROQ_API_KEY", "OPENAI_API_KEY",
+                    "CUSTOM_API_KEY", "AI_PROVIDER"]:
             monkeypatch.delenv(key, raising=False)
         
         # Создать .env файл
         env_file = tmp_path / ".env"
         env_content = f"""
-GLM_API_KEY={api_key}
+AI_PROVIDER=groq
+GROQ_API_KEY={api_key}
 HOTKEY={hotkey}
 LOG_FILE={log_file}
 """
@@ -689,8 +718,8 @@ LOG_FILE={log_file}
         config = Config.load_from_env(str(env_file))
         
         # Проверить, что строковые значения загружены точно
-        assert config.glm_api_key == api_key, \
-            f"API key should be loaded exactly: expected '{api_key}', got '{config.glm_api_key}'"
+        assert config.groq_api_key == api_key, \
+            f"API key should be loaded exactly: expected '{api_key}', got '{config.groq_api_key}'"
         assert config.hotkey == hotkey, \
             f"Hotkey should be loaded exactly: expected '{hotkey}', got '{config.hotkey}'"
         assert config.log_file == log_file, \
