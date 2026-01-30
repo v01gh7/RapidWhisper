@@ -35,8 +35,34 @@ class InfoPanelWidget(QWidget):
         super().__init__(parent)
         self._config = config
         self._default_icon: Optional[QPixmap] = None
+        self._create_default_icon()
         self._setup_ui()
         self._apply_styles()
+    
+    def _create_default_icon(self) -> None:
+        """
+        Создать иконку по умолчанию.
+        
+        Создает простую серую иконку для отображения когда
+        иконка приложения недоступна.
+        """
+        from PyQt6.QtGui import QPainter, QColor
+        
+        # Создать серую иконку 20x20
+        icon = QPixmap(20, 20)
+        icon.fill(Qt.GlobalColor.transparent)
+        
+        painter = QPainter(icon)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        # Нарисовать серый квадрат с закругленными углами
+        painter.setBrush(QColor("#555555"))
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.drawRoundedRect(2, 2, 16, 16, 3, 3)
+        
+        painter.end()
+        
+        self._default_icon = icon
     
     def _setup_ui(self) -> None:
         """
@@ -80,15 +106,16 @@ class InfoPanelWidget(QWidget):
         self._record_hotkey_label.setFont(QFont("Segoe UI", 11))
         self._update_record_hotkey()
         
-        # Кнопка закрытия
-        self._close_hotkey_label = QLabel("Закрыть Esc")
+        # Кнопка отмены
+        self._close_hotkey_label = QLabel("Отменить Esc")
         self._close_hotkey_label.setFont(QFont("Segoe UI", 11))
         
         right_layout.addWidget(self._record_hotkey_label)
         right_layout.addWidget(self._close_hotkey_label)
         
-        # Добавить в главный layout
-        main_layout.addWidget(left_widget, stretch=1)
+        # Добавить в главный layout с stretch между левой и правой частями
+        main_layout.addWidget(left_widget, stretch=0)
+        main_layout.addStretch(1)  # Разделитель между левой и правой частями
         main_layout.addWidget(right_widget, stretch=0)
         
         # Установить фиксированную высоту

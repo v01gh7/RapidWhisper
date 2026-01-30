@@ -42,7 +42,7 @@ class TestInfoPanelInitialization:
         panel = InfoPanelWidget(mock_config)
         
         assert panel._config == mock_config
-        assert panel._default_icon is None
+        assert panel._default_icon is not None  # Теперь создается автоматически
     
     def test_fixed_height(self, qapp, mock_config):
         """Тест фиксированной высоты панели"""
@@ -75,7 +75,7 @@ class TestInfoPanelInitialization:
         assert hasattr(panel, '_record_hotkey_label')
         assert hasattr(panel, '_close_hotkey_label')
         assert "Запись" in panel._record_hotkey_label.text()
-        assert "Закрыть Esc" in panel._close_hotkey_label.text()
+        assert "Отменить Esc" in panel._close_hotkey_label.text()
 
 
 class TestStyling:
