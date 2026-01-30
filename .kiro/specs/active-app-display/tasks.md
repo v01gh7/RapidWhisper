@@ -32,7 +32,7 @@
     - **Validates: Requirements 4.5, 4.6**
 
 - [ ] 2. Создать абстрактный базовый класс WindowMonitor
-  - [-] 2.1 Реализовать WindowMonitor в services/window_monitor.py
+  - [x] 2.1 Реализовать WindowMonitor в services/window_monitor.py
     - Создать dataclass WindowInfo с полями (title, process_name, icon, process_id)
     - Создать абстрактный базовый класс WindowMonitor с ABC
     - Определить абстрактный метод get_active_window_info() -> Optional[WindowInfo]
@@ -41,7 +41,7 @@
     - Реализовать фабричный метод create() для выбора реализации на основе platform.system()
     - _Requirements: 9.1, 9.2, 9.3, 9.4_
   
-  - [~] 2.2 Написать unit тесты для WindowMonitor
+  - [-] 2.2 Написать unit тесты для WindowMonitor
     - Тест создания WindowInfo с корректными полями
     - Тест фабричного метода create() для Windows платформы
     - Тест фабричного метода create() для неподдерживаемых платформ
