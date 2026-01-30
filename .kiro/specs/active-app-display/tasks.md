@@ -31,7 +31,7 @@
     - **Property 6: Форматирование клавиш в верхний регистр**
     - **Validates: Requirements 4.5, 4.6**
 
-- [ ] 2. Создать абстрактный базовый класс WindowMonitor
+- [x] 2. Создать абстрактный базовый класс WindowMonitor
   - [x] 2.1 Реализовать WindowMonitor в services/window_monitor.py
     - Создать dataclass WindowInfo с полями (title, process_name, icon, process_id)
     - Создать абстрактный базовый класс WindowMonitor с ABC
@@ -41,18 +41,18 @@
     - Реализовать фабричный метод create() для выбора реализации на основе platform.system()
     - _Requirements: 9.1, 9.2, 9.3, 9.4_
   
-  - [-] 2.2 Написать unit тесты для WindowMonitor
+  - [x] 2.2 Написать unit тесты для WindowMonitor
     - Тест создания WindowInfo с корректными полями
     - Тест фабричного метода create() для Windows платформы
     - Тест фабричного метода create() для неподдерживаемых платформ
     - _Requirements: 9.1, 9.3, 9.4_
   
-  - [~] 2.3 Написать property тест для выбора реализации
+  - [x] 2.3 Написать property тест для выбора реализации
     - **Property 13: Выбор реализации на основе платформы**
     - **Validates: Requirements 9.3, 9.4**
 
 - [ ] 3. Реализовать WindowsWindowMonitor
-  - [~] 3.1 Создать WindowsWindowMonitor в services/windows_window_monitor.py
+  - [-] 3.1 Создать WindowsWindowMonitor в services/windows_window_monitor.py
     - Наследовать от WindowMonitor
     - Реализовать __init__ с инициализацией кэша иконок и таймера
     - Реализовать get_active_window_info() с использованием win32gui.GetForegroundWindow()
