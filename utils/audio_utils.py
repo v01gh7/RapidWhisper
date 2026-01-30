@@ -13,14 +13,14 @@ from utils.logger import get_logger
 logger = get_logger()
 
 
-def trim_silence(audio_file_path: str, threshold: float = 0.02, padding_ms: int = 100) -> str:
+def trim_silence(audio_file_path: str, threshold: float = 0.02, padding_ms: int = 300) -> str:
     """
     Удаляет ВСЮ тишину из аудио файла (в начале, середине и конце).
     
     Args:
         audio_file_path: Путь к аудио файлу (WAV)
         threshold: Порог RMS для определения тишины (по умолчанию 0.02)
-        padding_ms: Паддинг в миллисекундах перед и после каждого блока тишины (по умолчанию 100ms)
+        padding_ms: Паддинг в миллисекундах перед и после каждого блока тишины (по умолчанию 300ms)
     
     Returns:
         str: Путь к обрезанному файлу (тот же файл, перезаписанный)
@@ -119,11 +119,34 @@ def trim_silence(audio_file_path: str, threshold: float = 0.02, padding_ms: int 
             end_chunk = min(len(is_sound), len(is_sound) + padding_chunks)
             segments.append((start_chunk, end_chunk))
         
-        logger.info(f"Найдено {len(segments)} сегментов звука")
+        logger.info(f"Найдено {len(segments)} сегментов звука (до объединения)")
+        
+        # Объединить сегменты если расстояние между ними меньше чем padding_ms * 2
+        # Это предотвращает удаление коротких пауз между словами
+        min_silence_chunks = padding_chunks * 2  # Минимальная длина тишины для удаления
+        
+        merged_segments = []
+        for i, (start, end) in enumerate(segments):
+            if i == 0:
+                merged_segments.append([start, end])
+            else:
+                prev_start, prev_end = merged_segments[-1]
+                gap = start - prev_end  # Расстояние между сегментами
+                
+                if gap < min_silence_chunks:
+                    # Тишина слишком короткая - объединяем сегменты
+                    merged_segments[-1][1] = end
+                    logger.debug(f"Объединены сегменты: gap={gap} чанков ({gap * chunk_size / framerate * 1000:.0f}ms)")
+                else:
+                    # Тишина достаточно длинная - оставляем как отдельный сегмент
+                    merged_segments.append([start, end])
+        
+        logger.info(f"После объединения: {len(merged_segments)} сегментов")
+        logger.info(f"Минимальная длина тишины для удаления: {min_silence_chunks * chunk_size / framerate * 1000:.0f}ms")
         
         # Объединить все сегменты
         result_chunks = []
-        for start, end in segments:
+        for start, end in merged_segments:
             start_sample = start * chunk_size
             end_sample = end * chunk_size
             
