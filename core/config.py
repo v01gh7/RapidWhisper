@@ -117,6 +117,19 @@ GITHUB_URL=https://github.com/yourusername/rapidwhisper
 
 # Documentation URL
 DOCS_URL=https://github.com/yourusername/rapidwhisper/tree/main/docs
+
+# ============================================
+# Window Position (OPTIONAL)
+# ============================================
+# Remember window position after dragging
+# Default: true
+# Options: true, false
+REMEMBER_WINDOW_POSITION=true
+
+# Window position (automatically saved when you drag the window)
+# Leave empty for center position
+WINDOW_POSITION_X=
+WINDOW_POSITION_Y=
 """
         env_path.write_text(default_content, encoding='utf-8')
 
@@ -181,6 +194,11 @@ class Config:
         # Ссылки для раздела "О программе"
         self.github_url: str = "https://github.com/yourusername/rapidwhisper"
         self.docs_url: str = "https://github.com/yourusername/rapidwhisper/tree/main/docs"
+        
+        # Позиция окна
+        self.remember_window_position: bool = True
+        self.window_position_x: Optional[int] = None
+        self.window_position_y: Optional[int] = None
     
     @staticmethod
     def load_from_env(env_path: Optional[str] = None) -> 'Config':
@@ -279,6 +297,24 @@ class Config:
         # Загрузить ссылки
         config.github_url = os.getenv("GITHUB_URL", config.github_url)
         config.docs_url = os.getenv("DOCS_URL", config.docs_url)
+        
+        # Загрузить настройки позиции окна
+        remember_pos = os.getenv("REMEMBER_WINDOW_POSITION", "true").lower()
+        config.remember_window_position = remember_pos in ("true", "1", "yes")
+        
+        try:
+            pos_x = os.getenv("WINDOW_POSITION_X")
+            if pos_x:
+                config.window_position_x = int(pos_x)
+        except ValueError:
+            pass
+        
+        try:
+            pos_y = os.getenv("WINDOW_POSITION_Y")
+            if pos_y:
+                config.window_position_y = int(pos_y)
+        except ValueError:
+            pass
         
         return config
     

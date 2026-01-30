@@ -36,6 +36,10 @@ class FloatingWindow(QWidget):
         self.window_width = 400
         self.window_height = 120
         
+        # Для перетаскивания окна
+        self._drag_position = None
+        self._is_dragging = False
+        
         # Настройка свойств окна
         self.setup_window_properties()
         
@@ -121,29 +125,42 @@ class FloatingWindow(QWidget):
         
         self.setLayout(layout)
     
-    def show_at_center(self) -> None:
+    def show_at_center(self, use_saved_position: bool = True) -> None:
         """
-        Показывает окно в центре экрана с fade-in анимацией.
+        Показывает окно в центре экрана или в сохраненной позиции с fade-in анимацией.
         
         Вычисляет центр экрана и позиционирует окно, затем
         анимирует появление.
         
+        Args:
+            use_saved_position: Использовать сохраненную позицию если доступна
+        
         Requirements: 2.2, 2.7
         """
-        # Получаем геометрию экрана
-        from PyQt6.QtWidgets import QApplication
-        app = QApplication.instance()
-        if app:
-            screen = app.primaryScreen()
-            if screen:
-                geometry = screen.availableGeometry()
-                
-                # Вычисляем центр
-                x = geometry.center().x() - self.window_width // 2
-                y = geometry.center().y() - self.window_height // 2
-                
-                # Позиционируем окно
-                self.move(x, y)
+        # Попытаться загрузить сохраненную позицию
+        saved_pos = None
+        if use_saved_position:
+            saved_pos = self.load_position()
+        
+        if saved_pos:
+            # Использовать сохраненную позицию
+            x, y = saved_pos
+            self.move(x, y)
+        else:
+            # Получаем геометрию экрана для центрирования
+            from PyQt6.QtWidgets import QApplication
+            app = QApplication.instance()
+            if app:
+                screen = app.primaryScreen()
+                if screen:
+                    geometry = screen.availableGeometry()
+                    
+                    # Вычисляем центр
+                    x = geometry.center().x() - self.window_width // 2
+                    y = geometry.center().y() - self.window_height // 2
+                    
+                    # Позиционируем окно
+                    self.move(x, y)
         
         # Показываем окно с анимацией
         self.show()
@@ -350,3 +367,145 @@ class FloatingWindow(QWidget):
             # Если не удалось применить нативный эффект,
             # используем базовую полупрозрачность Qt
             pass
+    
+    def mousePressEvent(self, event) -> None:
+        """
+        Обрабатывает нажатие кнопки мыши для начала перетаскивания.
+        
+        Args:
+            event: Событие нажатия мыши
+        """
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._is_dragging = True
+            self._drag_position = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
+            event.accept()
+            # Изменить курсор на "перемещение"
+            self.setCursor(Qt.CursorShape.ClosedHandCursor)
+    
+    def mouseMoveEvent(self, event) -> None:
+        """
+        Обрабатывает перемещение мыши для перетаскивания окна.
+        
+        Args:
+            event: Событие перемещения мыши
+        """
+        if self._is_dragging and self._drag_position is not None:
+            new_pos = event.globalPosition().toPoint() - self._drag_position
+            self.move(new_pos)
+            event.accept()
+    
+    def mouseReleaseEvent(self, event) -> None:
+        """
+        Обрабатывает отпускание кнопки мыши для завершения перетаскивания.
+        
+        Args:
+            event: Событие отпускания мыши
+        """
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._is_dragging = False
+            self._drag_position = None
+            event.accept()
+            # Вернуть обычный курсор
+            self.setCursor(Qt.CursorShape.ArrowCursor)
+            
+            # Сохранить позицию окна
+            self.save_position()
+    
+    def enterEvent(self, event) -> None:
+        """
+        Обрабатывает наведение курсора на окно.
+        
+        Отменяет автоскрытие при наведении курсора и меняет курсор.
+        
+        Args:
+            event: Событие наведения
+        
+        Requirements: 8.7
+        """
+        self.cancel_auto_hide_timer()
+        # Показать, что окно можно перетаскивать
+        if not self._is_dragging:
+            self.setCursor(Qt.CursorShape.OpenHandCursor)
+        super().enterEvent(event)
+    
+    def leaveEvent(self, event) -> None:
+        """
+        Обрабатывает уход курсора с окна.
+        
+        Возобновляет таймер автоскрытия при уходе курсора.
+        
+        Args:
+            event: Событие ухода
+        
+        Requirements: 8.7
+        """
+        # Вернуть обычный курсор
+        if not self._is_dragging:
+            self.setCursor(Qt.CursorShape.ArrowCursor)
+        super().leaveEvent(event)
+    
+    def save_position(self) -> None:
+        """
+        Сохраняет текущую позицию окна в конфигурацию.
+        """
+        try:
+            from core.config import get_env_path
+            import os
+            
+            env_path = str(get_env_path())
+            
+            # Получить текущую позицию
+            pos = self.pos()
+            x, y = pos.x(), pos.y()
+            
+            # Прочитать существующий .env
+            env_lines = []
+            if os.path.exists(env_path):
+                with open(env_path, 'r', encoding='utf-8') as f:
+                    env_lines = f.readlines()
+            
+            # Обновить или добавить позицию
+            position_x_found = False
+            position_y_found = False
+            
+            for i, line in enumerate(env_lines):
+                if line.strip().startswith('WINDOW_POSITION_X='):
+                    env_lines[i] = f'WINDOW_POSITION_X={x}\n'
+                    position_x_found = True
+                elif line.strip().startswith('WINDOW_POSITION_Y='):
+                    env_lines[i] = f'WINDOW_POSITION_Y={y}\n'
+                    position_y_found = True
+            
+            # Добавить если не найдено
+            if not position_x_found:
+                env_lines.append(f'WINDOW_POSITION_X={x}\n')
+            if not position_y_found:
+                env_lines.append(f'WINDOW_POSITION_Y={y}\n')
+            
+            # Сохранить обратно
+            with open(env_path, 'w', encoding='utf-8') as f:
+                f.writelines(env_lines)
+                
+        except Exception as e:
+            # Игнорируем ошибки сохранения позиции
+            pass
+    
+    def load_position(self) -> tuple[int, int] | None:
+        """
+        Загружает сохраненную позицию окна из конфигурации.
+        
+        Returns:
+            Кортеж (x, y) с позицией или None если позиция не сохранена
+        """
+        try:
+            import os
+            
+            x = os.getenv('WINDOW_POSITION_X')
+            y = os.getenv('WINDOW_POSITION_Y')
+            
+            if x is not None and y is not None:
+                return (int(x), int(y))
+        except:
+            pass
+        
+        return None

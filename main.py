@@ -188,7 +188,7 @@ class RapidWhisperApp(QObject):
         self.state_manager.state_changed.connect(self._on_state_changed)
         
         # Подключаем внутренние сигналы к UI методам
-        self._show_window_signal.connect(self.floating_window.show_at_center)
+        self._show_window_signal.connect(self._show_window_with_config)
         self._hide_window_signal.connect(self.floating_window.hide_with_animation)
         self._set_status_signal.connect(self.floating_window.set_status)
         self._set_result_signal.connect(lambda text: self.floating_window.set_result_text(text, max_length=100))
@@ -347,6 +347,13 @@ class RapidWhisperApp(QObject):
             new_state: Новое состояние
         """
         self.logger.info(f"Состояние изменено: {new_state.value}")
+    
+    def _show_window_with_config(self) -> None:
+        """
+        Показывает окно с учетом настройки запоминания позиции.
+        """
+        use_saved = self.config.remember_window_position
+        self.floating_window.show_at_center(use_saved_position=use_saved)
     
     def _start_recording(self) -> None:
         """
