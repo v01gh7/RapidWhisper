@@ -191,6 +191,7 @@ class SettingsWindow(QDialog):
         self.sidebar = QListWidget()
         self.sidebar.setFixedWidth(200)
         self.sidebar.setSpacing(0)
+        self.sidebar.setCursor(Qt.CursorShape.PointingHandCursor)  # Курсор "рука" для всего списка
         
         # Добавить пункты меню
         items = [
@@ -236,10 +237,12 @@ class SettingsWindow(QDialog):
         
         cancel_btn = QPushButton("Отмена")
         cancel_btn.setObjectName("cancelButton")
+        cancel_btn.setCursor(Qt.CursorShape.PointingHandCursor)  # Курсор "рука"
         cancel_btn.clicked.connect(self.reject)
         buttons_layout.addWidget(cancel_btn)
         
         save_btn = QPushButton("💾 Сохранить")
+        save_btn.setCursor(Qt.CursorShape.PointingHandCursor)  # Курсор "рука"
         save_btn.clicked.connect(self._save_settings)
         buttons_layout.addWidget(save_btn)
         
@@ -279,8 +282,7 @@ class SettingsWindow(QDialog):
         
         # Заголовок
         title = QLabel("AI Provider")
-        title_font = QFont()
-        title_font.setPointSize(20)
+        title_font = QFont("Segoe UI", 20)  # Явно указываем шрифт и размер
         title_font.setBold(True)
         title.setFont(title_font)
         layout.addWidget(title)
@@ -293,6 +295,7 @@ class SettingsWindow(QDialog):
         self.provider_combo = QComboBox()
         self.provider_combo.addItems(["groq", "openai", "glm", "custom"])
         self.provider_combo.currentTextChanged.connect(self._on_provider_changed)
+        self.provider_combo.setCursor(Qt.CursorShape.PointingHandCursor)  # Курсор "рука"
         provider_layout.addRow("Провайдер:", self.provider_combo)
         
         provider_group.setLayout(provider_layout)
@@ -312,6 +315,7 @@ class SettingsWindow(QDialog):
         groq_show_btn = QPushButton("👁")
         groq_show_btn.setMaximumWidth(40)
         groq_show_btn.setCheckable(True)
+        groq_show_btn.setCursor(Qt.CursorShape.PointingHandCursor)  # Курсор "рука"
         groq_show_btn.toggled.connect(
             lambda checked: self.groq_key_edit.setEchoMode(
                 QLineEdit.EchoMode.Normal if checked else QLineEdit.EchoMode.Password
@@ -333,6 +337,7 @@ class SettingsWindow(QDialog):
         openai_show_btn = QPushButton("👁")
         openai_show_btn.setMaximumWidth(40)
         openai_show_btn.setCheckable(True)
+        openai_show_btn.setCursor(Qt.CursorShape.PointingHandCursor)  # Курсор "рука"
         openai_show_btn.toggled.connect(
             lambda checked: self.openai_key_edit.setEchoMode(
                 QLineEdit.EchoMode.Normal if checked else QLineEdit.EchoMode.Password
@@ -354,6 +359,7 @@ class SettingsWindow(QDialog):
         glm_show_btn = QPushButton("👁")
         glm_show_btn.setMaximumWidth(40)
         glm_show_btn.setCheckable(True)
+        glm_show_btn.setCursor(Qt.CursorShape.PointingHandCursor)  # Курсор "рука"
         glm_show_btn.toggled.connect(
             lambda checked: self.glm_key_edit.setEchoMode(
                 QLineEdit.EchoMode.Normal if checked else QLineEdit.EchoMode.Password
@@ -375,6 +381,7 @@ class SettingsWindow(QDialog):
         custom_show_btn = QPushButton("👁")
         custom_show_btn.setMaximumWidth(40)
         custom_show_btn.setCheckable(True)
+        custom_show_btn.setCursor(Qt.CursorShape.PointingHandCursor)  # Курсор "рука"
         custom_show_btn.toggled.connect(
             lambda checked: self.custom_key_edit.setEchoMode(
                 QLineEdit.EchoMode.Normal if checked else QLineEdit.EchoMode.Password
@@ -440,8 +447,7 @@ class SettingsWindow(QDialog):
         
         # Заголовок
         title = QLabel("Приложение")
-        title_font = QFont()
-        title_font.setPointSize(20)
+        title_font = QFont("Segoe UI", 20)  # Явно указываем шрифт и размер
         title_font.setBold(True)
         title.setFont(title_font)
         layout.addWidget(title)
@@ -513,8 +519,7 @@ class SettingsWindow(QDialog):
         
         # Заголовок
         title = QLabel("Аудио")
-        title_font = QFont()
-        title_font.setPointSize(20)
+        title_font = QFont("Segoe UI", 20)  # Явно указываем шрифт и размер
         title_font.setBold(True)
         title.setFont(title_font)
         layout.addWidget(title)
@@ -526,12 +531,14 @@ class SettingsWindow(QDialog):
         
         self.sample_rate_combo = QComboBox()
         self.sample_rate_combo.addItems(["16000", "44100", "48000"])
+        self.sample_rate_combo.setCursor(Qt.CursorShape.PointingHandCursor)  # Курсор "рука"
         rate_label = QLabel("Частота дискретизации:")
         rate_label.setToolTip("Гц. 16000 рекомендуется для речи")
         audio_layout.addRow(rate_label, self.sample_rate_combo)
         
         self.chunk_size_combo = QComboBox()
         self.chunk_size_combo.addItems(["256", "512", "1024", "2048", "4096"])
+        self.chunk_size_combo.setCursor(Qt.CursorShape.PointingHandCursor)  # Курсор "рука"
         chunk_label = QLabel("Размер чанка:")
         chunk_label.setToolTip("Фреймов. 1024 - оптимальное значение")
         audio_layout.addRow(chunk_label, self.chunk_size_combo)
@@ -559,8 +566,7 @@ class SettingsWindow(QDialog):
         
         # Заголовок
         title = QLabel("О программе")
-        title_font = QFont()
-        title_font.setPointSize(20)
+        title_font = QFont("Segoe UI", 20)  # Явно указываем шрифт и размер
         title_font.setBold(True)
         title.setFont(title_font)
         layout.addWidget(title)
