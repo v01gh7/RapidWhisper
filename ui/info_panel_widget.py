@@ -85,6 +85,7 @@ class InfoPanelWidget(QWidget):
         
         self._app_name_label = QLabel("Нет активного окна")
         self._app_name_label.setFont(QFont("Segoe UI", 11))
+        self._app_name_label.setMaximumWidth(300)  # Ограничить максимальную ширину
         
         main_layout.addWidget(self._app_icon_label)
         main_layout.addWidget(self._app_name_label)

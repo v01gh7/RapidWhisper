@@ -35,9 +35,9 @@ class FloatingWindow(QWidget):
         super().__init__(parent)
         
         # Размеры окна (будут пересчитаны динамически)
-        self.window_width = 400
+        self.window_width = 600
         self.window_height = 120
-        self._min_width = 400  # Минимальная ширина
+        self._min_width = 600  # Минимальная ширина (увеличена для лучшего spacing)
         self._max_width_percent = 0.3  # Максимум 30% ширины экрана
         
         # Для перетаскивания окна
