@@ -130,8 +130,8 @@ class InfoPanelWidget(QWidget):
         # Стиль текста приложения
         self._app_name_label.setStyleSheet("color: #E0E0E0;")
         
-        # Стиль горячих клавиш
-        hotkey_style = "color: #A0A0A0;"
+        # Стиль горячих клавиш - белый цвет
+        hotkey_style = "color: #FFFFFF;"
         self._record_hotkey_label.setStyleSheet(hotkey_style)
         self._close_hotkey_label.setStyleSheet(hotkey_style)
     
