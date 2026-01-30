@@ -112,6 +112,7 @@ class HotkeyInput(QLineEdit):
         Обрабатывает нажатие клавиши.
         
         Захватывает нажатые клавиши и формирует строку горячей клавиши.
+        Поддерживает любые символы независимо от раскладки клавиатуры.
         
         Args:
             event: Событие нажатия клавиши
@@ -136,17 +137,40 @@ class HotkeyInput(QLineEdit):
             parts.append('alt')
         
         # Добавить основную клавишу
+        key_part = None
+        
+        # Сначала проверяем специальные клавиши (F1-F12, стрелки, и т.д.)
         if key in self.KEY_MAP:
-            # Специальная клавиша из маппинга
-            parts.append(self.KEY_MAP[key])
-        elif Qt.Key.Key_A <= key <= Qt.Key.Key_Z:
-            # Буквы A-Z
-            parts.append(chr(key).lower())
-        elif Qt.Key.Key_0 <= key <= Qt.Key.Key_9:
-            # Цифры 0-9
-            parts.append(chr(key))
+            key_part = self.KEY_MAP[key]
         else:
-            # Неизвестная клавиша - игнорируем
+            # Попробовать получить текст клавиши (работает для любой раскладки)
+            text = event.text()
+            
+            if text and text.isprintable() and not text.isspace():
+                # Используем реальный символ, который был нажат
+                # Это работает для любой раскладки клавиатуры
+                key_part = text.lower()
+            elif Qt.Key.Key_A <= key <= Qt.Key.Key_Z:
+                # Буквы A-Z (fallback если text пустой)
+                key_part = chr(key).lower()
+            elif Qt.Key.Key_0 <= key <= Qt.Key.Key_9:
+                # Цифры 0-9
+                key_part = chr(key)
+            else:
+                # Для неизвестных клавиш используем nativeScanCode
+                # Это позволит работать с любыми устройствами ввода
+                scan_code = event.nativeScanCode()
+                if scan_code > 0:
+                    # Используем scan code для уникальной идентификации клавиши
+                    key_part = f"scan_{scan_code}"
+                else:
+                    # Последний fallback - используем key code
+                    key_part = f"key_{key}"
+        
+        if key_part:
+            parts.append(key_part)
+        else:
+            # Если не удалось определить клавишу - игнорируем
             return
         
         # Сформировать строку горячей клавиши
