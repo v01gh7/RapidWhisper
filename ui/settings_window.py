@@ -168,6 +168,16 @@ class SettingsWindow(QDialog):
             QScrollBar::handle:vertical:pressed {
                 background-color: #0078d4;
             }
+            QLabel#pageTitle {
+                color: #ffffff;
+                font-size: 24px;
+                font-weight: bold;
+                padding: 12px 20px;
+                background-color: #2d2d2d;
+                border-radius: 6px;
+                border: 2px solid #0078d4;
+                margin-bottom: 8px;
+            }
             QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
                 height: 0px;
             }
@@ -195,6 +205,7 @@ class SettingsWindow(QDialog):
         self.sidebar.setFixedWidth(200)
         self.sidebar.setSpacing(0)
         self.sidebar.setCursor(Qt.CursorShape.PointingHandCursor)  # Курсор "рука" для всего списка
+        self.sidebar.setFocusPolicy(Qt.FocusPolicy.NoFocus)  # Не терять выделение при потере фокуса
         
         # Добавить пункты меню
         items = [
@@ -260,7 +271,10 @@ class SettingsWindow(QDialog):
     
     def _on_sidebar_changed(self, index: int):
         """Обработчик переключения пунктов в боковой панели."""
-        self.content_stack.setCurrentIndex(index)
+        if index >= 0:  # Проверка что индекс валидный
+            self.content_stack.setCurrentIndex(index)
+            # Убедиться что элемент остается выделенным
+            self.sidebar.setCurrentRow(index)
     
     def _wrap_in_scroll_area(self, widget: QWidget) -> QScrollArea:
         """
@@ -287,9 +301,7 @@ class SettingsWindow(QDialog):
         
         # Заголовок
         title = QLabel("AI Provider")
-        title_font = QFont("Segoe UI", 20)  # Явно указываем шрифт и размер
-        title_font.setBold(True)
-        title.setFont(title_font)
+        title.setObjectName("pageTitle")  # Применить стиль
         layout.addWidget(title)
         
         # Группа: Выбор провайдера
@@ -452,9 +464,7 @@ class SettingsWindow(QDialog):
         
         # Заголовок
         title = QLabel("Приложение")
-        title_font = QFont("Segoe UI", 20)  # Явно указываем шрифт и размер
-        title_font.setBold(True)
-        title.setFont(title_font)
+        title.setObjectName("pageTitle")  # Применить стиль
         layout.addWidget(title)
         
         # Группа: Горячие клавиши
@@ -537,9 +547,7 @@ class SettingsWindow(QDialog):
         
         # Заголовок
         title = QLabel("Аудио")
-        title_font = QFont("Segoe UI", 20)  # Явно указываем шрифт и размер
-        title_font.setBold(True)
-        title.setFont(title_font)
+        title.setObjectName("pageTitle")  # Применить стиль
         layout.addWidget(title)
         
         # Группа: Параметры записи
@@ -653,9 +661,7 @@ class SettingsWindow(QDialog):
         
         # Заголовок
         title = QLabel("Записи")
-        title_font = QFont("Segoe UI", 20)
-        title_font.setBold(True)
-        title.setFont(title_font)
+        title.setObjectName("pageTitle")  # Применить стиль
         layout.addWidget(title)
         
         # Группа: Настройки сохранения
@@ -960,9 +966,7 @@ class SettingsWindow(QDialog):
         
         # Заголовок
         title = QLabel("О программе")
-        title_font = QFont("Segoe UI", 20)  # Явно указываем шрифт и размер
-        title_font.setBold(True)
-        title.setFont(title_font)
+        title.setObjectName("pageTitle")  # Применить стиль
         layout.addWidget(title)
         
         # Информация о программе
