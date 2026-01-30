@@ -8,6 +8,7 @@
 from PyQt6.QtWidgets import QLineEdit
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QKeyEvent
+from utils.i18n import t
 
 
 class HotkeyInput(QLineEdit):
@@ -65,7 +66,7 @@ class HotkeyInput(QLineEdit):
         super().__init__(parent)
         
         # Установить placeholder
-        self.setPlaceholderText("Нажмите сочетание клавиш...")
+        self.setPlaceholderText(t("settings.app.hotkey_placeholder"))
         
         # Сделать поле только для чтения (нельзя вводить текст вручную)
         self.setReadOnly(True)

@@ -11,6 +11,7 @@ from PyQt6.QtCore import Qt, pyqtSlot
 from PyQt6.QtGui import QPixmap, QFont
 from typing import Optional
 from utils.hotkey_formatter import HotkeyFormatter
+from utils.i18n import t
 
 
 class InfoPanelWidget(QWidget):
@@ -83,7 +84,7 @@ class InfoPanelWidget(QWidget):
         self._app_icon_label.setFixedSize(20, 20)
         self._app_icon_label.setScaledContents(True)
         
-        self._app_name_label = QLabel("Нет активного окна")
+        self._app_name_label = QLabel(t("common.no_active_window"))
         self._app_name_label.setFont(QFont("Segoe UI", 11))
         self._app_name_label.setMaximumWidth(300)  # Ограничить максимальную ширину
         
@@ -100,7 +101,7 @@ class InfoPanelWidget(QWidget):
         self._update_record_hotkey()
         
         # Кнопка отмены
-        self._close_hotkey_label = QLabel("Отменить Esc")
+        self._close_hotkey_label = QLabel(t("common.cancel_esc"))
         self._close_hotkey_label.setFont(QFont("Segoe UI", 11))
         
         main_layout.addWidget(self._record_hotkey_label)
@@ -145,7 +146,7 @@ class InfoPanelWidget(QWidget):
         """
         hotkey = self._config.hotkey
         formatted = HotkeyFormatter.format_hotkey(hotkey)
-        self._record_hotkey_label.setText(f"Запись {formatted}")
+        self._record_hotkey_label.setText(f"{t('common.record')} {formatted}")
     
     @pyqtSlot(object)
     def update_app_info(self, window_info) -> None:
@@ -162,7 +163,7 @@ class InfoPanelWidget(QWidget):
         Requirements: 1.1, 1.2, 1.3, 1.4, 5.5
         """
         if not window_info:
-            self._app_name_label.setText(t("common.no_active_window") if "no_active_window" in str(t("common")) else "No active window")
+            self._app_name_label.setText(t("common.no_active_window"))
             self._app_icon_label.clear()
             return
         

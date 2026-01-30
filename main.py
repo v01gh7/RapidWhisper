@@ -733,24 +733,12 @@ class RapidWhisperApp(QObject):
         from PyQt6.QtWidgets import QMessageBox
         
         msg = QMessageBox(self.floating_window)
-        msg.setWindowTitle("👋 Добро пожаловать в RapidWhisper!")
+        msg.setWindowTitle(t("tray.notification.welcome_dialog_title"))
         msg.setIcon(QMessageBox.Icon.Information)
         
-        msg.setText(
-            "<h2>Добро пожаловать в RapidWhisper!</h2>"
-            "<p>Для начала работы необходимо настроить API ключ.</p>"
-        )
+        msg.setText(t("tray.notification.welcome_dialog_text"))
         
-        msg.setInformativeText(
-            "<b>Где получить API ключи:</b><br><br>"
-            "• <b>Groq</b> (рекомендуется - бесплатный и быстрый):<br>"
-            "  <a href='https://console.groq.com/keys'>console.groq.com/keys</a><br><br>"
-            "• <b>OpenAI</b>:<br>"
-            "  <a href='https://platform.openai.com/api-keys'>platform.openai.com/api-keys</a><br><br>"
-            "• <b>GLM</b>:<br>"
-            "  <a href='https://open.bigmodel.cn/usercenter/apikeys'>open.bigmodel.cn/usercenter/apikeys</a><br><br>"
-            "<p>После получения ключа откройте настройки и добавьте его.</p>"
-        )
+        msg.setInformativeText(t("tray.notification.welcome_dialog_info"))
         
         msg.setStandardButtons(QMessageBox.StandardButton.Ok)
         msg.setDefaultButton(QMessageBox.StandardButton.Ok)
