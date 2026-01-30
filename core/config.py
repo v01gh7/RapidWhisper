@@ -34,6 +34,18 @@ def get_config_dir() -> Path:
     return config_dir
 
 
+def get_recordings_dir() -> Path:
+    """
+    Возвращает путь к директории с сохраненными записями.
+    
+    Returns:
+        Path: Путь к директории recordings
+    """
+    recordings_dir = get_config_dir() / 'recordings'
+    recordings_dir.mkdir(parents=True, exist_ok=True)
+    return recordings_dir
+
+
 def get_env_path() -> Path:
     """
     Возвращает путь к файлу .env.
@@ -135,6 +147,14 @@ WINDOW_POSITION_PRESET=center
 # Leave empty for preset position
 WINDOW_POSITION_X=
 WINDOW_POSITION_Y=
+
+# ============================================
+# Recordings (OPTIONAL)
+# ============================================
+# Keep audio recordings after transcription
+# Default: false
+# Options: true, false
+KEEP_RECORDINGS=false
 """
         env_path.write_text(default_content, encoding='utf-8')
 
@@ -205,6 +225,9 @@ class Config:
         self.window_position_preset: str = "center"  # center, top_left, top_right, bottom_left, bottom_right, custom
         self.window_position_x: Optional[int] = None
         self.window_position_y: Optional[int] = None
+        
+        # Сохранение записей
+        self.keep_recordings: bool = False  # По умолчанию удалять записи после транскрипции
     
     @staticmethod
     def load_from_env(env_path: Optional[str] = None) -> 'Config':
@@ -323,6 +346,10 @@ class Config:
                 config.window_position_y = int(pos_y)
         except ValueError:
             pass
+        
+        # Загрузить настройки сохранения записей
+        keep_rec = os.getenv("KEEP_RECORDINGS", "false").lower()
+        config.keep_recordings = keep_rec in ("true", "1", "yes")
         
         return config
     

@@ -16,6 +16,7 @@ from PyQt6.QtGui import QFont, QIcon, QScreen
 from core.config import Config
 from utils.logger import get_logger
 from ui.hotkey_input import HotkeyInput
+from pathlib import Path
 import os
 
 logger = get_logger()
@@ -200,6 +201,7 @@ class SettingsWindow(QDialog):
             ("🤖 AI Provider", "ai"),
             ("⚡ Приложение", "app"),
             ("🎤 Аудио", "audio"),
+            ("🎙️ Записи", "recordings"),
             ("ℹ️ О программе", "about")
         ]
         
@@ -229,6 +231,7 @@ class SettingsWindow(QDialog):
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_ai_page()))
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_app_page()))
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_audio_page()))
+        self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_recordings_page()))
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_about_page()))
         
         right_panel_layout.addWidget(self.content_stack)
@@ -595,6 +598,237 @@ class SettingsWindow(QDialog):
         widget.setLayout(layout)
         return widget
     
+    def _create_recordings_page(self) -> QWidget:
+        """Создает страницу управления записями."""
+        widget = QWidget()
+        layout = QVBoxLayout()
+        layout.setSpacing(20)
+        
+        # Заголовок
+        title = QLabel("Записи")
+        title_font = QFont("Segoe UI", 20)
+        title_font.setBold(True)
+        title.setFont(title_font)
+        layout.addWidget(title)
+        
+        # Группа: Настройки сохранения
+        save_group = QGroupBox("Настройки сохранения")
+        save_layout = QVBoxLayout()
+        save_layout.setSpacing(12)
+        
+        # Чекбокс для сохранения записей
+        self.keep_recordings_check = QCheckBox("Сохранять записи после транскрипции")
+        self.keep_recordings_check.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.keep_recordings_check.setToolTip("Если включено, аудиозаписи будут сохраняться в папку recordings")
+        save_layout.addWidget(self.keep_recordings_check)
+        
+        # Информация о папке
+        from core.config import get_recordings_dir
+        recordings_dir = get_recordings_dir()
+        
+        info_label = QLabel(f"📁 Папка с записями: <a href='file:///{recordings_dir}'>{recordings_dir}</a>")
+        info_label.setWordWrap(True)
+        info_label.setOpenExternalLinks(True)
+        info_label.setStyleSheet("color: #888888; font-size: 11px; padding: 8px;")
+        info_label.setToolTip("Кликните чтобы открыть папку")
+        save_layout.addWidget(info_label)
+        
+        save_group.setLayout(save_layout)
+        layout.addWidget(save_group)
+        
+        # Группа: Сохраненные записи
+        recordings_group = QGroupBox("Сохраненные записи")
+        recordings_layout = QVBoxLayout()
+        recordings_layout.setSpacing(12)
+        
+        # Список записей
+        from PyQt6.QtWidgets import QListWidget, QListWidgetItem, QHBoxLayout, QPushButton
+        
+        self.recordings_list = QListWidget()
+        self.recordings_list.setMinimumHeight(200)
+        self.recordings_list.setStyleSheet("""
+            QListWidget {
+                background-color: #2d2d2d;
+                border: 1px solid #3d3d3d;
+                border-radius: 6px;
+                padding: 8px;
+            }
+            QListWidget::item {
+                padding: 8px;
+                border-radius: 4px;
+                margin: 2px 0px;
+            }
+            QListWidget::item:selected {
+                background-color: #0078d4;
+            }
+            QListWidget::item:hover:!selected {
+                background-color: #3d3d3d;
+            }
+        """)
+        recordings_layout.addWidget(self.recordings_list)
+        
+        # Кнопки управления
+        buttons_layout = QHBoxLayout()
+        
+        refresh_btn = QPushButton("🔄 Обновить")
+        refresh_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        refresh_btn.clicked.connect(self._refresh_recordings_list)
+        buttons_layout.addWidget(refresh_btn)
+        
+        play_btn = QPushButton("▶️ Открыть")
+        play_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        play_btn.setToolTip("Открыть выбранную запись в проигрывателе по умолчанию")
+        play_btn.clicked.connect(self._open_recording)
+        buttons_layout.addWidget(play_btn)
+        
+        folder_btn = QPushButton("📁 Показать в папке")
+        folder_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        folder_btn.setToolTip("Открыть папку с записями в проводнике")
+        folder_btn.clicked.connect(self._open_recordings_folder)
+        buttons_layout.addWidget(folder_btn)
+        
+        delete_btn = QPushButton("🗑️ Удалить")
+        delete_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        delete_btn.setToolTip("Удалить выбранную запись")
+        delete_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #d13438;
+            }
+            QPushButton:hover {
+                background-color: #e13438;
+            }
+        """)
+        delete_btn.clicked.connect(self._delete_recording)
+        buttons_layout.addWidget(delete_btn)
+        
+        recordings_layout.addLayout(buttons_layout)
+        
+        recordings_group.setLayout(recordings_layout)
+        layout.addWidget(recordings_group)
+        
+        # Загрузить список записей
+        self._refresh_recordings_list()
+        
+        widget.setLayout(layout)
+        return widget
+    
+    def _refresh_recordings_list(self):
+        """Обновляет список сохраненных записей."""
+        from core.config import get_recordings_dir
+        from pathlib import Path
+        
+        self.recordings_list.clear()
+        
+        recordings_dir = get_recordings_dir()
+        recordings = sorted(recordings_dir.glob("*.wav"), reverse=True)  # Новые сверху
+        
+        if not recordings:
+            item = QListWidgetItem("📭 Нет сохраненных записей")
+            item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsSelectable)  # Не выбираемый
+            self.recordings_list.addItem(item)
+        else:
+            for recording in recordings:
+                # Получить размер файла
+                size_mb = recording.stat().st_size / (1024 * 1024)
+                
+                # Получить время создания
+                from datetime import datetime
+                mtime = datetime.fromtimestamp(recording.stat().st_mtime)
+                time_str = mtime.strftime("%d.%m.%Y %H:%M:%S")
+                
+                # Создать элемент списка
+                item_text = f"🎙️ {recording.name}  |  {size_mb:.2f} MB  |  {time_str}"
+                item = QListWidgetItem(item_text)
+                item.setData(Qt.ItemDataRole.UserRole, str(recording))  # Сохранить путь
+                self.recordings_list.addItem(item)
+    
+    def _open_recording(self):
+        """Открывает выбранную запись в проигрывателе по умолчанию."""
+        current_item = self.recordings_list.currentItem()
+        if not current_item:
+            return
+        
+        recording_path = current_item.data(Qt.ItemDataRole.UserRole)
+        if not recording_path:
+            return
+        
+        # Открыть файл в проигрывателе по умолчанию
+        import subprocess
+        import platform
+        
+        try:
+            if platform.system() == 'Windows':
+                os.startfile(recording_path)
+            elif platform.system() == 'Darwin':  # macOS
+                subprocess.run(['open', recording_path])
+            else:  # Linux
+                subprocess.run(['xdg-open', recording_path])
+        except Exception as e:
+            logger.error(f"Не удалось открыть запись: {e}")
+            QMessageBox.warning(
+                self,
+                "⚠️ Ошибка",
+                f"Не удалось открыть запись:\n{str(e)}",
+                QMessageBox.StandardButton.Ok
+            )
+    
+    def _open_recordings_folder(self):
+        """Открывает папку с записями в проводнике."""
+        from core.config import get_recordings_dir
+        import subprocess
+        import platform
+        
+        recordings_dir = get_recordings_dir()
+        
+        try:
+            if platform.system() == 'Windows':
+                os.startfile(str(recordings_dir))
+            elif platform.system() == 'Darwin':  # macOS
+                subprocess.run(['open', str(recordings_dir)])
+            else:  # Linux
+                subprocess.run(['xdg-open', str(recordings_dir)])
+        except Exception as e:
+            logger.error(f"Не удалось открыть папку: {e}")
+            QMessageBox.warning(
+                self,
+                "⚠️ Ошибка",
+                f"Не удалось открыть папку:\n{str(e)}",
+                QMessageBox.StandardButton.Ok
+            )
+    
+    def _delete_recording(self):
+        """Удаляет выбранную запись."""
+        current_item = self.recordings_list.currentItem()
+        if not current_item:
+            return
+        
+        recording_path = current_item.data(Qt.ItemDataRole.UserRole)
+        if not recording_path:
+            return
+        
+        # Подтверждение удаления
+        reply = QMessageBox.question(
+            self,
+            "🗑️ Удалить запись?",
+            f"Вы уверены что хотите удалить эту запись?\n\n{Path(recording_path).name}",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            try:
+                os.remove(recording_path)
+                logger.info(f"Запись удалена: {recording_path}")
+                self._refresh_recordings_list()
+            except Exception as e:
+                logger.error(f"Не удалось удалить запись: {e}")
+                QMessageBox.critical(
+                    self,
+                    "❌ Ошибка",
+                    f"Не удалось удалить запись:\n{str(e)}",
+                    QMessageBox.StandardButton.Ok
+                )
+    
     def _create_about_page(self) -> QWidget:
         """Создает страницу О программе."""
         widget = QWidget()
@@ -748,6 +982,9 @@ class SettingsWindow(QDialog):
         self.sample_rate_combo.setCurrentText(str(self.config.sample_rate))
         self.chunk_size_combo.setCurrentText(str(self.config.chunk_size))
         
+        # Записи
+        self.keep_recordings_check.setChecked(self.config.keep_recordings)
+        
         # Обновить подсветку активного провайдера
         self._on_provider_changed(self.config.ai_provider)
     
@@ -829,6 +1066,7 @@ class SettingsWindow(QDialog):
                 "CHUNK_SIZE": self.chunk_size_combo.currentText(),
                 "REMEMBER_WINDOW_POSITION": "true" if self.remember_position_check.isChecked() else "false",
                 "WINDOW_POSITION_PRESET": position_presets[position_index],
+                "KEEP_RECORDINGS": "true" if self.keep_recordings_check.isChecked() else "false",
             }
             
             # Использовать правильный путь к .env (AppData для production)

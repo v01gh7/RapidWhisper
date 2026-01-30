@@ -6,7 +6,9 @@
 """
 
 import os
+import shutil
 from typing import BinaryIO, Optional
+from pathlib import Path
 from openai import OpenAI, AuthenticationError, APIConnectionError, APITimeoutError
 
 from utils.exceptions import (
@@ -311,14 +313,33 @@ class TranscriptionThread(QThread):
             self.transcription_error.emit(e)
             
         finally:
-            # Удалить временный файл
+            # Удалить или сохранить временный файл в зависимости от настроек
             try:
                 if os.path.exists(self.audio_file_path):
-                    # Небольшая задержка перед удалением
-                    import time
-                    time.sleep(0.1)
-                    os.remove(self.audio_file_path)
-                    logger.info(f"Временный файл удален: {self.audio_file_path}")
+                    # Загрузить конфигурацию для проверки настройки
+                    from core.config import Config, get_recordings_dir
+                    from datetime import datetime
+                    
+                    config = Config.load_from_env()
+                    
+                    if config.keep_recordings:
+                        # Сохранить файл в директорию recordings
+                        recordings_dir = get_recordings_dir()
+                        
+                        # Создать имя файла с timestamp
+                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        filename = f"recording_{timestamp}.wav"
+                        dest_path = recordings_dir / filename
+                        
+                        # Переместить файл
+                        shutil.move(self.audio_file_path, str(dest_path))
+                        logger.info(f"Запись сохранена: {dest_path}")
+                    else:
+                        # Удалить временный файл
+                        import time
+                        time.sleep(0.1)
+                        os.remove(self.audio_file_path)
+                        logger.info(f"Временный файл удален: {self.audio_file_path}")
             except Exception as e:
-                # Игнорировать ошибки удаления файла
-                logger.warning(f"Не удалось удалить временный файл: {e}")
+                # Игнорировать ошибки удаления/перемещения файла
+                logger.warning(f"Не удалось обработать временный файл: {e}")
