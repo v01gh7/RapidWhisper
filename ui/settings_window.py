@@ -235,6 +235,7 @@ class SettingsWindow(QDialog):
             ("⚡ Приложение", "app"),
             ("🎤 Аудио", "audio"),
             ("✨ Обработка", "processing"),
+            ("🌍 Языки", "languages"),
             ("🎙️ Записи", "recordings"),
             ("ℹ️ О программе", "about")
         ]
@@ -266,6 +267,7 @@ class SettingsWindow(QDialog):
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_app_page()))
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_audio_page()))
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_processing_page()))
+        self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_languages_page()))
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_recordings_page()))
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_about_page()))
         
@@ -816,6 +818,182 @@ class SettingsWindow(QDialog):
         
         widget.setLayout(layout)
         return widget
+    
+    def _create_languages_page(self) -> QWidget:
+        """Создает страницу выбора языка интерфейса."""
+        widget = QWidget()
+        layout = QVBoxLayout()
+        layout.setSpacing(20)
+        
+        # Заголовок
+        title = QLabel("Языки")
+        title.setObjectName("pageTitle")
+        layout.addWidget(title)
+        
+        # Группа: Выбор языка
+        language_group = QGroupBox("Язык интерфейса")
+        language_layout = QVBoxLayout()
+        language_layout.setSpacing(16)
+        
+        # Описание
+        info_label = QLabel(
+            "💡 <b>Язык интерфейса:</b><br>"
+            "Выберите язык для будущей локализации интерфейса приложения.<br>"
+            "Это НЕ влияет на язык транскрипции - вы можете говорить на любом языке."
+        )
+        info_label.setWordWrap(True)
+        info_label.setStyleSheet(
+            "color: #888888; "
+            "font-size: 11px; "
+            "padding: 8px; "
+            "background-color: #2d2d2d; "
+            "border-radius: 4px;"
+        )
+        language_layout.addWidget(info_label)
+        
+        # Сетка с языками (4 колонки для оптимального отображения)
+        from PyQt6.QtWidgets import QGridLayout, QPushButton, QButtonGroup
+        
+        grid_layout = QGridLayout()
+        grid_layout.setSpacing(12)
+        grid_layout.setHorizontalSpacing(12)
+        
+        # Создать группу кнопок
+        self.language_button_group = QButtonGroup()
+        
+        # Топ-15 языков мира с кодами
+        languages = [
+            ("GB", "English", "en"),
+            ("CN", "中文", "zh"),
+            ("IN", "हिन्दी", "hi"),
+            ("ES", "Español", "es"),
+            ("FR", "Français", "fr"),
+            ("SA", "العربية", "ar"),
+            ("BD", "বাংলা", "bn"),
+            ("RU", "Русский", "ru"),
+            ("PT", "Português", "pt"),
+            ("PK", "اردو", "ur"),
+            ("ID", "Indonesia", "id"),
+            ("DE", "Deutsch", "de"),
+            ("JP", "日本語", "ja"),
+            ("TR", "Türkçe", "tr"),
+            ("KR", "한국어", "ko"),
+        ]
+        
+        # Добавить языки в сетку (5 колонок)
+        row = 0
+        col = 0
+        for idx, (code, name, lang_code) in enumerate(languages):
+            # Создать контейнер для кнопки с вертикальным layout
+            btn_container = QWidget()
+            btn_layout = QVBoxLayout(btn_container)
+            btn_layout.setContentsMargins(0, 0, 0, 0)
+            btn_layout.setSpacing(0)
+            
+            # Создать кнопку
+            btn = QPushButton()
+            btn.setCheckable(True)
+            btn.setMinimumHeight(80)
+            btn.setMinimumWidth(120)
+            btn.setProperty("language_code", lang_code)
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            
+            # Создать layout внутри кнопки
+            btn_inner_layout = QVBoxLayout(btn)
+            btn_inner_layout.setContentsMargins(8, 8, 8, 8)
+            btn_inner_layout.setSpacing(4)
+            btn_inner_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            
+            # Код страны (крупный)
+            code_label = QLabel(code)
+            code_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            code_font = QFont("Segoe UI", 24, QFont.Weight.Bold)
+            code_label.setFont(code_font)
+            code_label.setStyleSheet("color: #ffffff; background: transparent;")
+            btn_inner_layout.addWidget(code_label)
+            
+            # Название языка (мелкий)
+            name_label = QLabel(name)
+            name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            name_font = QFont("Segoe UI", 10)
+            name_label.setFont(name_font)
+            name_label.setStyleSheet("color: #ffffff; background: transparent;")
+            btn_inner_layout.addWidget(name_label)
+            
+            # Стиль кнопки
+            btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #2d2d2d;
+                    color: #ffffff;
+                    border: 2px solid #3d3d3d;
+                    border-radius: 8px;
+                    padding: 0px;
+                }
+                QPushButton:hover {
+                    background-color: #3d3d3d;
+                    border: 2px solid #0078d4;
+                }
+                QPushButton:checked {
+                    background-color: #0078d4;
+                    border: 2px solid #1084d8;
+                }
+            """)
+            
+            # Подключить к группе
+            self.language_button_group.addButton(btn, idx)
+            
+            # Подключить сигнал для эксклюзивного выбора
+            btn.clicked.connect(lambda checked, button=btn: self._on_language_button_clicked(button))
+            
+            grid_layout.addWidget(btn, row, col)
+            
+            col += 1
+            if col >= 4:  # 4 колонки
+                col = 0
+                row += 1
+        
+        language_layout.addLayout(grid_layout)
+        
+        # Выбрать русский по умолчанию (индекс 7)
+        default_button = self.language_button_group.button(7)  # RU
+        if default_button:
+            default_button.setChecked(True)
+        
+        language_group.setLayout(language_layout)
+        layout.addWidget(language_group)
+        
+        # Информация о будущей функциональности
+        future_info = QLabel(
+            "🚧 <b>В разработке:</b><br>"
+            "• Перевод интерфейса на выбранный язык<br>"
+            "• Локализация всех текстов и сообщений<br>"
+            "• Адаптация форматов даты и времени"
+        )
+        future_info.setWordWrap(True)
+        future_info.setStyleSheet(
+            "color: #888888; "
+            "font-size: 11px; "
+            "padding: 8px; "
+            "background-color: #2d2d2d; "
+            "border-radius: 4px; "
+            "border-left: 3px solid #ff8800;"
+        )
+        layout.addWidget(future_info)
+        
+        # Прижать контент вверх
+        layout.addStretch()
+        
+        widget.setLayout(layout)
+        return widget
+    
+    def _on_language_button_clicked(self, clicked_button):
+        """Обработчик клика на кнопку языка для эксклюзивного выбора."""
+        # Снять выделение со всех кнопок
+        for button in self.language_button_group.buttons():
+            if button != clicked_button:
+                button.setChecked(False)
+        # Убедиться что нажатая кнопка выбрана
+        clicked_button.setChecked(True)
     
     def _create_recordings_page(self) -> QWidget:
         """Создает страницу управления записями."""
@@ -1516,6 +1694,22 @@ class SettingsWindow(QDialog):
         
         # Обновить подсветку активного провайдера
         self._on_provider_changed(self.config.ai_provider)
+        
+        # Язык интерфейса
+        language_code = self.config.interface_language
+        # Найти кнопку с нужным language_code
+        found = False
+        for button in self.language_button_group.buttons():
+            if button.property("language_code") == language_code:
+                button.setChecked(True)
+                found = True
+                break
+        
+        # Если не найдено, выбрать русский по умолчанию (индекс 7)
+        if not found:
+            default_button = self.language_button_group.button(7)  # RU
+            if default_button:
+                default_button.setChecked(True)
     
     def _on_remember_position_changed(self, checked: bool):
         """
@@ -1655,6 +1849,14 @@ class SettingsWindow(QDialog):
             position_index = self.window_position_combo.currentIndex()
             position_presets = ['center', 'top_left', 'top_right', 'bottom_left', 'bottom_right', 'custom']
             
+            # Получить выбранный язык интерфейса
+            selected_language = "ru"  # По умолчанию русский
+            checked_button = self.language_button_group.checkedButton()
+            if checked_button:
+                language_code = checked_button.property("language_code")
+                if language_code:
+                    selected_language = language_code
+            
             new_config = {
                 "AI_PROVIDER": self.provider_combo.currentText(),
                 "GROQ_API_KEY": self.groq_key_edit.text(),
@@ -1681,6 +1883,7 @@ class SettingsWindow(QDialog):
                 "GLM_USE_CODING_PLAN": "true" if self.glm_coding_plan_check.isChecked() else "false",
                 "LLM_BASE_URL": self.llm_base_url_edit.text(),
                 "LLM_API_KEY": self.llm_api_key_edit.text(),
+                "INTERFACE_LANGUAGE": selected_language,
             }
             
             # Использовать правильный путь к .env (AppData для production)

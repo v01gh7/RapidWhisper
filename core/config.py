@@ -6,9 +6,76 @@
 """
 
 import os
+import locale
 from typing import List, Optional
 from pathlib import Path
 from dotenv import load_dotenv
+
+
+def get_system_language() -> str:
+    """
+    Определяет язык системы и возвращает соответствующий код языка.
+    
+    Поддерживаемые языки:
+    - en (English)
+    - zh (Chinese)
+    - hi (Hindi)
+    - es (Spanish)
+    - fr (French)
+    - ar (Arabic)
+    - bn (Bengali)
+    - ru (Russian)
+    - pt (Portuguese)
+    - ur (Urdu)
+    - id (Indonesian)
+    - de (German)
+    - ja (Japanese)
+    - tr (Turkish)
+    - ko (Korean)
+    
+    Returns:
+        str: Код языка (например: "ru", "en", "zh")
+             Если язык системы не поддерживается, возвращает "en" (английский)
+    """
+    try:
+        # Получить язык системы (используем getlocale вместо deprecated getdefaultlocale)
+        try:
+            system_locale = locale.getlocale()[0]
+        except Exception:
+            # Если getlocale не работает, пробуем через переменные окружения
+            system_locale = os.getenv('LANG') or os.getenv('LANGUAGE') or os.getenv('LC_ALL')
+        
+        if not system_locale:
+            return "en"
+        
+        # Извлечь код языка (первые 2 символа)
+        lang_code = str(system_locale).lower()[:2]
+        
+        # Маппинг поддерживаемых языков
+        supported_languages = {
+            "en": "en",  # English
+            "zh": "zh",  # Chinese
+            "hi": "hi",  # Hindi
+            "es": "es",  # Spanish
+            "fr": "fr",  # French
+            "ar": "ar",  # Arabic
+            "bn": "bn",  # Bengali
+            "ru": "ru",  # Russian
+            "pt": "pt",  # Portuguese
+            "ur": "ur",  # Urdu
+            "id": "id",  # Indonesian
+            "de": "de",  # German
+            "ja": "ja",  # Japanese
+            "tr": "tr",  # Turkish
+            "ko": "ko",  # Korean
+        }
+        
+        # Вернуть код языка если поддерживается, иначе английский
+        return supported_languages.get(lang_code, "en")
+        
+    except Exception:
+        # В случае ошибки вернуть английский
+        return "en"
 
 
 def get_config_dir() -> Path:
@@ -298,6 +365,9 @@ class Config:
         self.glm_use_coding_plan: bool = False  # Использовать Coding Plan endpoint для GLM
         self.llm_base_url: str = "http://localhost:1234/v1/"  # Base URL для локальных LLM моделей
         self.llm_api_key: str = "local"  # API ключ для локальных LLM (может быть любым)
+        
+        # Язык интерфейса (для будущей локализации)
+        self.interface_language: str = get_system_language()  # Язык интерфейса (определяется из системы)
     
     @staticmethod
     def load_from_env(env_path: Optional[str] = None) -> 'Config':
@@ -447,6 +517,16 @@ class Config:
         # LLM (локальные модели)
         config.llm_base_url = os.getenv("LLM_BASE_URL", config.llm_base_url)
         config.llm_api_key = os.getenv("LLM_API_KEY", config.llm_api_key)
+        
+        # Язык интерфейса (для будущей локализации)
+        # Если язык не установлен в .env, определяем язык системы
+        interface_lang_env = os.getenv("INTERFACE_LANGUAGE", "")
+        if interface_lang_env:
+            # Язык был установлен вручную в .env
+            config.interface_language = interface_lang_env
+        else:
+            # Язык не установлен, определяем из системы
+            config.interface_language = get_system_language()
         
         return config
     
