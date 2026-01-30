@@ -8,10 +8,11 @@
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout,
     QLabel, QLineEdit, QComboBox, QDoubleSpinBox,
-    QPushButton, QGroupBox, QMessageBox, QWidget, QListWidget, QStackedWidget, QListWidgetItem
+    QPushButton, QGroupBox, QMessageBox, QWidget, QListWidget, QStackedWidget, QListWidgetItem,
+    QScrollArea, QApplication
 )
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont, QIcon
+from PyQt6.QtGui import QFont, QIcon, QScreen
 from core.config import Config
 from utils.logger import get_logger
 import os
@@ -44,6 +45,13 @@ class SettingsWindow(QDialog):
         self.setWindowTitle("Настройки RapidWhisper")
         self.setMinimumWidth(800)
         self.setMinimumHeight(600)
+        
+        # Установить максимальную высоту (высота экрана - 160 пикселей)
+        screen = QApplication.primaryScreen()
+        if screen:
+            screen_geometry = screen.availableGeometry()
+            max_height = screen_geometry.height() - 160
+            self.setMaximumHeight(max_height)
         
         # Применить стиль
         self._apply_style()
@@ -136,6 +144,33 @@ class SettingsWindow(QDialog):
             QListWidget::item:hover:!selected {
                 background-color: #2d2d2d;
             }
+            QScrollArea {
+                border: none;
+                background-color: transparent;
+            }
+            QScrollBar:vertical {
+                background-color: #1e1e1e;
+                width: 12px;
+                border-radius: 6px;
+                margin: 0px;
+            }
+            QScrollBar::handle:vertical {
+                background-color: #3d3d3d;
+                border-radius: 6px;
+                min-height: 30px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background-color: #4d4d4d;
+            }
+            QScrollBar::handle:vertical:pressed {
+                background-color: #0078d4;
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                height: 0px;
+            }
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+                background: none;
+            }
             QLabel a {
                 color: #0078d4;
                 text-decoration: none;
@@ -187,11 +222,11 @@ class SettingsWindow(QDialog):
         # Стек виджетов для разных страниц
         self.content_stack = QStackedWidget()
         
-        # Создать страницы
-        self.content_stack.addWidget(self._create_ai_page())
-        self.content_stack.addWidget(self._create_app_page())
-        self.content_stack.addWidget(self._create_audio_page())
-        self.content_stack.addWidget(self._create_about_page())
+        # Создать страницы с прокруткой
+        self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_ai_page()))
+        self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_app_page()))
+        self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_audio_page()))
+        self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_about_page()))
         
         right_panel_layout.addWidget(self.content_stack)
         
@@ -218,6 +253,23 @@ class SettingsWindow(QDialog):
     def _on_sidebar_changed(self, index: int):
         """Обработчик переключения пунктов в боковой панели."""
         self.content_stack.setCurrentIndex(index)
+    
+    def _wrap_in_scroll_area(self, widget: QWidget) -> QScrollArea:
+        """
+        Оборачивает виджет в QScrollArea с красивым скроллом.
+        
+        Args:
+            widget: Виджет для обертывания
+            
+        Returns:
+            QScrollArea: Область прокрутки с виджетом
+        """
+        scroll = QScrollArea()
+        scroll.setWidget(widget)
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        return scroll
     
     def _create_ai_page(self) -> QWidget:
         """Создает страницу настроек AI Provider."""
@@ -377,7 +429,6 @@ class SettingsWindow(QDialog):
         )
         layout.addWidget(info_label)
         
-        layout.addStretch()
         widget.setLayout(layout)
         return widget
     
@@ -451,7 +502,6 @@ class SettingsWindow(QDialog):
         ui_group.setLayout(ui_layout)
         layout.addWidget(ui_group)
         
-        layout.addStretch()
         widget.setLayout(layout)
         return widget
     
@@ -498,7 +548,6 @@ class SettingsWindow(QDialog):
         info_label.setStyleSheet("color: #ff8800; font-size: 11px; padding: 8px;")
         layout.addWidget(info_label)
         
-        layout.addStretch()
         widget.setLayout(layout)
         return widget
     
@@ -616,7 +665,6 @@ class SettingsWindow(QDialog):
         license_group.setLayout(license_layout)
         layout.addWidget(license_group)
         
-        layout.addStretch()
         widget.setLayout(layout)
         return widget
     
