@@ -9,9 +9,11 @@ import sys
 from typing import Optional
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import QObject, pyqtSignal, QTimer
+from pathlib import Path
 
-from core.config import Config
+from core.config import Config, get_config_dir
 from core.state_manager import StateManager, AppState
+from core.statistics_manager import StatisticsManager
 from services.hotkey_manager import HotkeyManager
 from services.audio_engine import AudioRecordingThread
 from services.transcription_client import TranscriptionThread
@@ -72,6 +74,7 @@ class RapidWhisperApp(QObject):
         self.clipboard_manager: ClipboardManager = None
         self.silence_detector: SilenceDetector = None
         self.tray_icon: TrayIcon = None
+        self.statistics_manager: StatisticsManager = None
         
         # Потоки
         self.recording_thread: AudioRecordingThread = None
@@ -150,6 +153,10 @@ class RapidWhisperApp(QObject):
         """Создает все компоненты приложения."""
         # State Manager
         self.state_manager = StateManager()
+        
+        # Statistics Manager
+        config_dir = get_config_dir()
+        self.statistics_manager = StatisticsManager(config_dir)
         
         # Floating Window - передаем конфигурацию для инициализации прозрачности
         self.floating_window = FloatingWindow(config=self.config)
@@ -475,6 +482,18 @@ class RapidWhisperApp(QObject):
         # Сохранить путь для транскрипции
         self._audio_file_path = audio_file_path
         
+        # Track recording statistics
+        try:
+            import wave
+            with wave.open(audio_file_path, 'rb') as wav_file:
+                frames = wav_file.getnframes()
+                rate = wav_file.getframerate()
+                duration_seconds = frames / float(rate)
+                self.statistics_manager.track_recording(duration_seconds)
+                self.logger.info(f"Recording statistics tracked: {duration_seconds:.2f} seconds")
+        except Exception as e:
+            self.logger.error(f"Failed to track recording statistics: {e}")
+        
         # Если мы в состоянии PROCESSING (остановлено вручную или по тишине),
         # запустить транскрипцию
         if self.state_manager.current_state == AppState.PROCESSING:
@@ -533,7 +552,8 @@ class RapidWhisperApp(QObject):
                 provider=self.config.ai_provider,
                 api_key=self._get_api_key_for_provider(),
                 base_url=self.config.custom_base_url if self.config.ai_provider == "custom" else None,
-                model=transcription_model
+                model=transcription_model,
+                statistics_manager=self.statistics_manager
             )
             
             self.logger.info("TranscriptionThread создан")
@@ -573,6 +593,19 @@ class RapidWhisperApp(QObject):
             text: Транскрибированный текст
         """
         self.logger.info(f"Транскрипция завершена: {text[:50]}...")
+        
+        # Track transcription statistics
+        try:
+            import wave
+            with wave.open(self._audio_file_path, 'rb') as wav_file:
+                frames = wav_file.getnframes()
+                rate = wav_file.getframerate()
+                audio_duration = frames / float(rate)
+                self.statistics_manager.track_transcription(audio_duration, text)
+                self.logger.info(f"Transcription statistics tracked: {audio_duration:.2f} seconds, {len(text)} characters")
+        except Exception as e:
+            self.logger.error(f"Failed to track transcription statistics: {e}")
+        
         self.state_manager.on_transcription_complete(text)
     
     def _on_transcription_error(self, error: Exception) -> None:
@@ -756,8 +789,13 @@ class RapidWhisperApp(QObject):
         from ui.settings_window import SettingsWindow
         
         # ВАЖНО: Передаем self.floating_window как parent чтобы окно не закрывало приложение
-        # Также передаем tray_icon для показа уведомлений
-        self.settings_window = SettingsWindow(self.config, tray_icon=self.tray_icon, parent=self.floating_window)
+        # Также передаем tray_icon для показа уведомлений и statistics_manager для статистики
+        self.settings_window = SettingsWindow(
+            self.config, 
+            statistics_manager=self.statistics_manager,
+            tray_icon=self.tray_icon, 
+            parent=self.floating_window
+        )
         
         # Подключить сигнал сохранения настроек
         self.settings_window.settings_saved.connect(self._on_settings_saved)

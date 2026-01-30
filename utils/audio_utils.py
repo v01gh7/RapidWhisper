@@ -13,7 +13,7 @@ from utils.logger import get_logger
 logger = get_logger()
 
 
-def trim_silence(audio_file_path: str, threshold: float = 0.02, padding_ms: int = 300) -> str:
+def trim_silence(audio_file_path: str, threshold: float = 0.02, padding_ms: int = 300) -> Tuple[str, float]:
     """
     Удаляет ВСЮ тишину из аудио файла (в начале, середине и конце).
     
@@ -23,7 +23,7 @@ def trim_silence(audio_file_path: str, threshold: float = 0.02, padding_ms: int 
         padding_ms: Паддинг в миллисекундах перед и после каждого блока тишины (по умолчанию 300ms)
     
     Returns:
-        str: Путь к обрезанному файлу (тот же файл, перезаписанный)
+        Tuple[str, float]: Путь к обрезанному файлу (тот же файл, перезаписанный) и длительность удаленной тишины в секундах
     
     Raises:
         Exception: Если не удалось обработать файл
@@ -75,7 +75,7 @@ def trim_silence(audio_file_path: str, threshold: float = 0.02, padding_ms: int 
         
         if n_chunks == 0:
             logger.warning("Файл слишком короткий для обрезки тишины")
-            return audio_file_path
+            return audio_file_path, 0.0
         
         rms_values = []
         for i in range(n_chunks):
@@ -90,7 +90,7 @@ def trim_silence(audio_file_path: str, threshold: float = 0.02, padding_ms: int 
         
         if not np.any(is_sound):
             logger.warning("Весь файл состоит из тишины, не обрезаем")
-            return audio_file_path
+            return audio_file_path, 0.0
         
         # Вычислить паддинг в чанках
         padding_samples = int((padding_ms / 1000.0) * framerate)
@@ -159,7 +159,7 @@ def trim_silence(audio_file_path: str, threshold: float = 0.02, padding_ms: int 
         
         if not result_chunks:
             logger.warning("Не найдено сегментов звука")
-            return audio_file_path
+            return audio_file_path, 0.0
         
         # Склеить все сегменты
         trimmed_audio = np.concatenate(result_chunks)
@@ -179,11 +179,11 @@ def trim_silence(audio_file_path: str, threshold: float = 0.02, padding_ms: int 
         logger.info(f"Длительность: {duration_before:.2f}с -> {duration_after:.2f}с")
         logger.info(f"Сохранено {len(segments)} сегментов звука")
         
-        return audio_file_path
+        return audio_file_path, trimmed_seconds
         
     except Exception as e:
         logger.error(f"Ошибка удаления тишины: {e}")
         import traceback
         logger.error(traceback.format_exc())
         # Вернуть исходный файл если не удалось обрезать
-        return audio_file_path
+        return audio_file_path, 0.0

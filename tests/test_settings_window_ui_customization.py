@@ -72,8 +72,8 @@ class TestUICustomizationPageCreation:
     
     def test_page_exists_in_sidebar(self, settings_window):
         """Test that UI Customization page is added to sidebar."""
-        # Check sidebar has correct number of items (8 pages including UI Customization)
-        assert settings_window.sidebar.count() == 8
+        # Check sidebar has correct number of items (9 pages including UI Customization and Statistics)
+        assert settings_window.sidebar.count() == 9
         
         # Find UI Customization item
         ui_customization_found = False
@@ -87,8 +87,8 @@ class TestUICustomizationPageCreation:
     
     def test_page_exists_in_content_stack(self, settings_window):
         """Test that UI Customization page is added to content stack."""
-        # Should have 8 pages in content stack
-        assert settings_window.content_stack.count() == 8
+        # Should have 9 pages in content stack (including Statistics)
+        assert settings_window.content_stack.count() == 9
     
     def test_page_has_correct_title(self, settings_window):
         """Test that UI Customization page has correct translated title."""

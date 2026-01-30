@@ -153,6 +153,23 @@
       "reset_defaults": "Reset to Defaults",
       "reset_defaults_tooltip": "Reset all UI customization settings to default values"
     },
+    "statistics": {
+      "title": "Statistics",
+      "time_period_label": "Time Period:",
+      "period_today": "Today",
+      "period_last_7_days": "Last 7 Days",
+      "period_last_30_days": "Last 30 Days",
+      "period_last_365_days": "Last 365 Days",
+      "period_all_time": "All Time",
+      "metric_recordings": "Recordings",
+      "metric_transcriptions": "Transcriptions",
+      "metric_recording_time": "Total Recording Time",
+      "metric_transcribed_time": "Total Transcribed Audio",
+      "metric_characters": "Characters",
+      "metric_words": "Words",
+      "metric_silence": "Removed Silence",
+      "no_data": "No data available for this period"
+    },
     "about": {
       "title": "About",
       "version": "<b>Version:</b> 1.3.0",

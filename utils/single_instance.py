@@ -52,14 +52,13 @@ class SingleInstance:
             
             # Проверить что процесс с таким PID существует
             if psutil.pid_exists(pid):
-                # Проверить что это действительно наше приложение
                 try:
+                    # Проверить что процесс действительно существует и доступен
                     process = psutil.Process(pid)
-                    # Проверяем имя процесса или командную строку
-                    cmdline = ' '.join(process.cmdline())
-                    if 'python' in cmdline.lower() and 'rapidwhisper' in cmdline.lower():
-                        return True
+                    # Если процесс существует и доступен, считаем что приложение запущено
+                    return True
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    # Процесс не существует или недоступен
                     pass
             
             # Процесс не существует - удалить старый lock файл

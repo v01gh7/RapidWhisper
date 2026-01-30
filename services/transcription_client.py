@@ -471,7 +471,7 @@ class TranscriptionThread(QThread):
     model_not_found = pyqtSignal(str, str)  # Модель не найдена в постобработке (model, provider)
     transcription_model_not_found = pyqtSignal(str, str)  # Модель не найдена в транскрипции (model, provider)
     
-    def __init__(self, audio_file_path: str, provider: str = "openai", api_key: Optional[str] = None, base_url: Optional[str] = None, model: Optional[str] = None):
+    def __init__(self, audio_file_path: str, provider: str = "openai", api_key: Optional[str] = None, base_url: Optional[str] = None, model: Optional[str] = None, statistics_manager=None):
         """
         Инициализирует поток транскрипции.
         
@@ -481,6 +481,7 @@ class TranscriptionThread(QThread):
             api_key: API ключ (опционально)
             base_url: Кастомный URL для API (для custom провайдера)
             model: Кастомная модель (для custom провайдера)
+            statistics_manager: StatisticsManager для отслеживания статистики (опционально)
         """
         super().__init__()
         self.audio_file_path = audio_file_path
@@ -488,6 +489,7 @@ class TranscriptionThread(QThread):
         self.api_key = api_key
         self.base_url = base_url
         self.model = model
+        self.statistics_manager = statistics_manager
         self.transcription_client: Optional[TranscriptionClient] = None
     
     def run(self) -> None:
@@ -513,14 +515,21 @@ class TranscriptionThread(QThread):
             from core.config import Config
             config = Config.load_from_env()
             
+            removed_silence_duration = 0.0
             if config.manual_stop:
                 logger.info("Режим ручной остановки: обрезка тишины...")
                 from utils.audio_utils import trim_silence
-                self.audio_file_path = trim_silence(
+                self.audio_file_path, removed_silence_duration = trim_silence(
                     self.audio_file_path, 
                     threshold=config.silence_threshold,
                     padding_ms=config.silence_padding
                 )
+                logger.info(f"Удалено тишины: {removed_silence_duration:.2f} секунд")
+                
+                # Track silence removal statistics if statistics_manager is available
+                if self.statistics_manager and removed_silence_duration > 0:
+                    logger.info(f"Отслеживание статистики удаления тишины: {removed_silence_duration:.2f}с")
+                    self.statistics_manager.track_silence_removal(removed_silence_duration)
             
             # Создать клиент транскрипции
             logger.info(f"Создание TranscriptionClient для {self.provider}...")

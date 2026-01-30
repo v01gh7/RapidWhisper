@@ -14,9 +14,11 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont, QIcon, QScreen
 from core.config import Config
+from core.statistics_manager import StatisticsManager
 from utils.logger import get_logger
 from utils.i18n import t
 from ui.hotkey_input import HotkeyInput
+from ui.statistics_tab import StatisticsTab
 from pathlib import Path
 import os
 
@@ -35,17 +37,19 @@ class SettingsWindow(QDialog):
     
     settings_saved = pyqtSignal()
     
-    def __init__(self, config: Config, tray_icon=None, parent=None):
+    def __init__(self, config: Config, statistics_manager: StatisticsManager = None, tray_icon=None, parent=None):
         """
         Инициализирует окно настроек.
         
         Args:
             config: Текущая конфигурация приложения
+            statistics_manager: Менеджер статистики использования (опционально)
             tray_icon: Иконка трея для показа уведомлений
             parent: Родительский виджет
         """
         super().__init__(parent)
         self.config = config
+        self.statistics_manager = statistics_manager
         self.tray_icon = tray_icon
         self.setWindowTitle(t("settings.title"))
         self.setMinimumWidth(950)  # Увеличена ширина для новых кнопок
@@ -245,6 +249,7 @@ class SettingsWindow(QDialog):
             (f"🌍 {t('settings.languages.title')}", "languages"),
             (f"🎨 {t('settings.ui_customization.title')}", "ui_customization"),
             (f"🎙️ {t('settings.recordings.title')}", "recordings"),
+            (f"📊 {t('settings.statistics.title')}", "statistics"),  # Statistics tab
             (f"ℹ️ {t('settings.about.title')}", "about")
         ]
         
@@ -278,6 +283,21 @@ class SettingsWindow(QDialog):
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_languages_page()))
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_ui_customization_page()))
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_recordings_page()))
+        
+        # Add Statistics tab if statistics_manager is provided
+        if self.statistics_manager:
+            self.statistics_tab = StatisticsTab(self.statistics_manager)
+            self.content_stack.addWidget(self._wrap_in_scroll_area(self.statistics_tab))
+        else:
+            # Add placeholder if no statistics manager
+            placeholder = QWidget()
+            placeholder_layout = QVBoxLayout()
+            placeholder_label = QLabel(t('settings.statistics.no_data'))
+            placeholder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            placeholder_layout.addWidget(placeholder_label)
+            placeholder.setLayout(placeholder_layout)
+            self.content_stack.addWidget(self._wrap_in_scroll_area(placeholder))
+        
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_about_page()))
         
         right_panel_layout.addWidget(self.content_stack)

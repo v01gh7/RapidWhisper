@@ -153,6 +153,23 @@
       "reset_defaults": "Сбросить на значения по умолчанию",
       "reset_defaults_tooltip": "Сбросить все настройки интерфейса на значения по умолчанию"
     },
+    "statistics": {
+      "title": "Статистика",
+      "time_period_label": "Период времени:",
+      "period_today": "Сегодня",
+      "period_last_7_days": "Последние 7 дней",
+      "period_last_30_days": "Последние 30 дней",
+      "period_last_365_days": "Последние 365 дней",
+      "period_all_time": "Всё время",
+      "metric_recordings": "Записи",
+      "metric_transcriptions": "Транскрипции",
+      "metric_recording_time": "Общее время записи",
+      "metric_transcribed_time": "Общее время транскрибированного аудио",
+      "metric_characters": "Символы",
+      "metric_words": "Слова",
+      "metric_silence": "Удалённая тишина",
+      "no_data": "Нет данных за этот период"
+    },
     "about": {
       "title": "О программе",
       "version": "<b>Версия:</b> 1.3.0",
