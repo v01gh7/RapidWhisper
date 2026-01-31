@@ -84,9 +84,21 @@ class ProcessingCoordinator:
         Returns:
             str: Combined system prompt with correct order
         """
+        # CRITICAL: Both steps are MANDATORY and MUST be applied
         # Step 1: Fix grammar and punctuation
-        # Step 2: Apply formatting to the corrected text
-        combined = f"{post_prompt}\n\nAfter correcting the text, apply the following formatting rules:\n\n{format_prompt}"
+        # Step 2: Apply formatting to the corrected text (THIS IS REQUIRED!)
+        combined = f"""CRITICAL: You MUST complete BOTH steps below. Do not skip step 2!
+
+STEP 1 - Grammar and Punctuation Correction:
+{post_prompt}
+
+STEP 2 - Formatting (MANDATORY - DO NOT SKIP THIS STEP):
+After correcting grammar and punctuation in step 1, you MUST apply the following formatting rules to the corrected text:
+
+{format_prompt}
+
+IMPORTANT: Both steps are required. Output must be both corrected AND formatted."""
+        
         logger.debug(f"Combined prompt length: {len(combined)} characters")
         return combined
     
