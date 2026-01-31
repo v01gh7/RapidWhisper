@@ -95,10 +95,13 @@ class TrayIcon(QObject):
         # Открыть настройки при одинарном клике левой кнопкой
         if reason == QSystemTrayIcon.ActivationReason.Trigger:
             self.show_settings.emit()
+        # При правом клике показываем меню сверху от курсора
+        elif reason == QSystemTrayIcon.ActivationReason.Context:
+            self._show_context_menu_above_cursor()
     
     def _create_styled_menu(self) -> None:
         """Создает контекстное меню трея с современным стилем."""
-        menu = QMenu()
+        self.menu = QMenu()
         
         # Apply custom stylesheet using StyleConstants
         opacity = 200  # Slightly more opaque for readability
@@ -133,31 +136,48 @@ class TrayIcon(QObject):
             }}
         """
         
-        menu.setStyleSheet(stylesheet)
+        self.menu.setStyleSheet(stylesheet)
         
         # Действие: Настройки
-        settings_action = QAction(t("tray.menu.settings"), menu)
+        settings_action = QAction(t("tray.menu.settings"), self.menu)
         settings_action.triggered.connect(self.show_settings.emit)
-        menu.addAction(settings_action)
+        self.menu.addAction(settings_action)
         
         # Разделитель
-        menu.addSeparator()
+        self.menu.addSeparator()
         
         # Действие: О программе
-        about_action = QAction(t("tray.menu.about"), menu)
+        about_action = QAction(t("tray.menu.about"), self.menu)
         about_action.triggered.connect(self._show_about)
-        menu.addAction(about_action)
+        self.menu.addAction(about_action)
         
         # Разделитель
-        menu.addSeparator()
+        self.menu.addSeparator()
         
         # Действие: Выход
-        quit_action = QAction(t("tray.menu.quit"), menu)
+        quit_action = QAction(t("tray.menu.quit"), self.menu)
         quit_action.triggered.connect(self.quit_app.emit)
-        menu.addAction(quit_action)
+        self.menu.addAction(quit_action)
         
-        # Установить меню
-        self.tray_icon.setContextMenu(menu)
+        # Установить меню (но мы будем показывать его вручную)
+        self.tray_icon.setContextMenu(self.menu)
+    
+    def _show_context_menu_above_cursor(self) -> None:
+        """Показывает контекстное меню сверху от курсора."""
+        from PyQt6.QtGui import QCursor
+        
+        # Получить позицию курсора
+        cursor_pos = QCursor.pos()
+        
+        # Получить размер меню
+        menu_size = self.menu.sizeHint()
+        
+        # Позиционировать меню сверху от курсора
+        menu_x = cursor_pos.x()
+        menu_y = cursor_pos.y() - menu_size.height()
+        
+        # Показать меню в нужной позиции
+        self.menu.popup(QCursor.pos().__class__(menu_x, menu_y))
     
     def _show_about(self) -> None:
         """Показывает информацию о программе."""
