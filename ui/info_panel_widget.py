@@ -125,7 +125,7 @@ class InfoPanelWidget(QWidget):
         # Стиль панели
         self.setStyleSheet("""
             InfoPanelWidget {
-                background-color: #1a1a1a;
+                background-color: rgba(26, 26, 26, 150);
                 border-top: 1px solid #333333;
             }
         """)

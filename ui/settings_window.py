@@ -231,12 +231,12 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             }}
             QGroupBox {{
                 color: #ffffff;
-                border: 1px solid #3d3d3d;
+                border: {StyleConstants.BORDER_WIDTH}px solid rgba(255, 255, 255, 80);
                 border-radius: 8px;
                 margin-top: 20px;
                 font-weight: bold;
                 padding-top: 20px;
-                background-color: #252525;
+                background-color: rgba(37, 37, 37, {int(self._opacity * 0.7)});
             }}
             QGroupBox::title {{
                 subcontrol-origin: margin;
@@ -277,7 +277,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                 background-color: transparent;
             }}
             QScrollBar:vertical {{
-                background-color: #1e1e1e;
+                background-color: rgba(30, 30, 30, {int(self._opacity * 0.6)});
                 width: 12px;
                 border-radius: 6px;
                 margin: 0px;

@@ -20,7 +20,7 @@ def main():
     # Применить темный стиль
     window.setStyleSheet("""
         QWidget {
-            background-color: #1e1e1e;
+            background-color: rgba(30, 30, 30, 150);
             color: #ffffff;
         }
         QLabel {

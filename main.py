@@ -856,7 +856,7 @@ class RapidWhisperApp(QObject):
         # Применить темный стиль
         msg.setStyleSheet("""
             QMessageBox {
-                background-color: #1e1e1e;
+                background-color: rgba(30, 30, 30, 150);
                 color: #ffffff;
             }
             QLabel {
