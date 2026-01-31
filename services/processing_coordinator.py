@@ -70,14 +70,23 @@ class ProcessingCoordinator:
         """
         Combine post-processing and formatting prompts into single prompt.
         
+        CRITICAL ORDER: Post-processing FIRST, then formatting.
+        1. First fix grammar, punctuation, and sentence structure
+        2. Then apply formatting based on corrected text
+        
+        This order is important because formatting depends on correct punctuation
+        to identify sentence boundaries, lists, and paragraph breaks.
+        
         Args:
-            post_prompt: Post-processing system prompt
-            format_prompt: Formatting system prompt
+            post_prompt: Post-processing system prompt (grammar/punctuation fixes)
+            format_prompt: Formatting system prompt (structure/styling)
         
         Returns:
-            str: Combined system prompt
+            str: Combined system prompt with correct order
         """
-        combined = f"{post_prompt}\n\nAdditionally, apply the following formatting:\n{format_prompt}"
+        # Step 1: Fix grammar and punctuation
+        # Step 2: Apply formatting to the corrected text
+        combined = f"{post_prompt}\n\nAfter correcting the text, apply the following formatting rules:\n\n{format_prompt}"
         logger.debug(f"Combined prompt length: {len(combined)} characters")
         return combined
     
