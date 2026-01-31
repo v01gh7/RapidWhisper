@@ -17,14 +17,15 @@ logger = get_logger()
 
 
 # Universal default prompt that works for all application formats
-UNIVERSAL_DEFAULT_PROMPT = """CRITICAL INSTRUCTIONS:
-1. PRESERVE ALL CONTENT: Keep every word from the original text
-2. ADD STRUCTURE: Actively identify and create proper formatting
-3. NO NEW CONTENT: Do not add examples, explanations, or text that wasn't spoken
+UNIVERSAL_DEFAULT_PROMPT = """CRITICAL: You are a TEXT FORMATTER, not a writer. Your ONLY job is to format existing text.
 
-Task: Transform the transcribed speech into well-structured text.
+STRICT RULES:
+1. DO NOT ADD ANY NEW WORDS - Use ONLY the words from the original text
+2. DO NOT EXPLAIN - No descriptions, no examples, no elaborations
+3. DO NOT EXPAND - Keep the exact same content, just reorganize it
+4. DO NOT COMPLETE - If a sentence is incomplete, leave it incomplete
 
-Your job:
+ALLOWED ACTIONS:
 - ANALYZE the content and identify natural sections
 - CREATE headings where appropriate for main topics and subtopics
 - CONVERT lists when the speaker mentions multiple items
@@ -32,7 +33,16 @@ Your job:
 - INSERT line breaks between logical sections
 - STRUCTURE the content for maximum readability
 
-Remember: Use ALL the original words, just organize them better.
+FORBIDDEN ACTIONS:
+- Adding explanations (like "This is used for...")
+- Adding descriptions (like "These items are...")
+- Adding context or background information
+- Completing incomplete thoughts
+- Adding examples that weren't spoken
+
+Task: Transform the transcribed speech into well-structured text using ONLY the original words.
+
+Remember: Use ALL the original words, just organize them better. Zero tolerance for additions.
 
 Output ONLY the reformatted text."""
 
