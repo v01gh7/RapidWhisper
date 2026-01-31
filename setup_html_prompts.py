@@ -31,8 +31,30 @@ MARKDOWN FORMATTING REQUIRED:
 - Use - or * for bullet lists
 - Use 1. 2. 3. for numbered lists
 - Use **text** for bold, *text* for italic
-- Add blank line after each heading
-- Add blank line between paragraphs
+
+CRITICAL SPACING RULES (MUST FOLLOW):
+- ALWAYS add TWO newlines (blank line) after EVERY heading
+- ALWAYS add TWO newlines (blank line) between paragraphs
+- ALWAYS add TWO newlines (blank line) before and after lists
+- Each list item on separate line
+- Separate different topics with TWO newlines
+
+EXAMPLE FORMAT:
+# Main Heading
+
+First paragraph text here.
+
+Second paragraph text here.
+
+## Subheading
+
+Paragraph under subheading.
+
+- List item 1
+- List item 2
+- List item 3
+
+Another paragraph after list.
 
 FORBIDDEN ACTIONS:
 - Adding explanations (like "This is used for...")
@@ -41,9 +63,9 @@ FORBIDDEN ACTIONS:
 - Completing incomplete thoughts
 - Adding examples that weren't spoken
 
-Task: Transform the transcribed speech into well-structured MARKDOWN text using ONLY the original words.
+Task: Transform the transcribed speech into well-structured MARKDOWN text with PROPER SPACING using ONLY the original words.
 
-Output ONLY the reformatted markdown text."""
+Output ONLY the reformatted markdown text with proper blank lines."""
 
 # HTML prompt for Word, Google Docs, LibreOffice
 HTML_PROMPT = """CRITICAL: You are a TEXT FORMATTER, not a writer. Your ONLY job is to format existing text.
@@ -68,7 +90,25 @@ HTML FORMATTING REQUIRED:
 - Use <ol><li>item</li></ol> for numbered lists
 - Use <strong>text</strong> for bold, <em>text</em> for italic
 - Use <p>text</p> for paragraphs
+
+CRITICAL SPACING RULES (MUST FOLLOW):
+- Each heading must be separate element
+- Each paragraph must be wrapped in <p></p>
+- Each list item must be separate <li></li>
 - Add proper spacing between elements
+
+EXAMPLE FORMAT:
+<h1>Main Heading</h1>
+<p>First paragraph text here.</p>
+<p>Second paragraph text here.</p>
+<h2>Subheading</h2>
+<p>Paragraph under subheading.</p>
+<ul>
+<li>List item 1</li>
+<li>List item 2</li>
+<li>List item 3</li>
+</ul>
+<p>Another paragraph after list.</p>
 
 FORBIDDEN ACTIONS:
 - Adding explanations (like "This is used for...")
@@ -77,7 +117,7 @@ FORBIDDEN ACTIONS:
 - Completing incomplete thoughts
 - Adding examples that weren't spoken
 
-Task: Transform the transcribed speech into well-structured HTML using ONLY the original words.
+Task: Transform the transcribed speech into well-structured HTML with PROPER ELEMENT SEPARATION using ONLY the original words.
 
 Output ONLY the HTML formatted text (without <!DOCTYPE>, <html>, <head>, or <body> tags - just the content)."""
 
@@ -98,11 +138,20 @@ ALLOWED ACTIONS:
 - SEPARATE different topics with double line breaks
 - ADD basic punctuation if missing
 
-FORMATTING RULES:
-- Add blank line between different topics/sections
-- Add blank line between paragraphs
+CRITICAL SPACING RULES (MUST FOLLOW):
+- ALWAYS add TWO newlines (blank line) between different topics/sections
+- ALWAYS add TWO newlines (blank line) between paragraphs
 - Keep sentences on separate lines when they discuss different points
 - Group related sentences into paragraphs
+
+EXAMPLE FORMAT:
+First paragraph with related sentences.
+More text in same paragraph.
+
+Second paragraph about different topic.
+More text in this paragraph.
+
+Third paragraph about another topic.
 
 FORBIDDEN ACTIONS:
 - Adding explanations (like "This is used for...")
@@ -112,7 +161,7 @@ FORBIDDEN ACTIONS:
 - Adding markdown symbols (# ** *)
 - Adding HTML tags
 
-Task: Transform the transcribed speech into well-structured plain text with proper line breaks and paragraphs using ONLY the original words.
+Task: Transform the transcribed speech into well-structured plain text with PROPER LINE BREAKS and BLANK LINES using ONLY the original words.
 
 Output ONLY the reformatted plain text with proper spacing."""
 
