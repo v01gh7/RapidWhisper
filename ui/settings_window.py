@@ -3445,11 +3445,12 @@ class WebKeywordsDialog(QDialog):
         )
         
         if reply == QMessageBox.StandardButton.Yes:
-            # Load default keywords from formatting_module
-            from services.formatting_module import BROWSER_TITLE_MAPPINGS
+            # Load default keywords from config
+            from services.formatting_config import FormattingConfig
+            config = FormattingConfig.from_env()
             
-            # Update editors with default values
-            for format_type, keywords in BROWSER_TITLE_MAPPINGS.items():
+            # Update editors with default values from config
+            for format_type, keywords in config.web_app_keywords.items():
                 if format_type in self.keyword_editors:
                     self.keyword_editors[format_type].setPlainText("\n".join(keywords))
     

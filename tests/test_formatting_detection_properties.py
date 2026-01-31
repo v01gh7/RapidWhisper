@@ -9,12 +9,10 @@ import pytest
 from hypothesis import given, strategies as st, settings, assume
 from unittest.mock import Mock, MagicMock
 from services.formatting_module import (
-    match_application_to_format,
-    get_format_prompt,
     FormattingModule,
-    FORMAT_MAPPINGS,
-    FORMAT_PROMPTS
+    match_window_to_format
 )
+from services.formatting_config import FormattingConfig
 from services.window_monitor import WindowInfo
 from PyQt6.QtGui import QPixmap
 
@@ -80,164 +78,174 @@ class TestFormatDetectionProperties:
             pytest.fail(f"Window detection failed with exception: {e}")
     
     @given(
-        app_name=app_name_strategy,
-        file_ext=file_ext_strategy
+        window_title=st.text(min_size=1, max_size=50),
+        app_name=st.text(min_size=1, max_size=50)
     )
     @settings(max_examples=20)
-    def test_application_format_matching_deterministic(self, app_name, file_ext):
+    def test_application_format_matching_deterministic(self, window_title, app_name):
         """
         Feature: transcription-formatting, Property 4: Application Format Matching
         
         **Validates: Requirements 3.4, 3.5**
         
-        For any detected application name or file extension and any format
+        For any detected window title and app name and any format
         configuration list, the matching logic should deterministically return
         the same format identifier (or None) for the same inputs.
         """
-        # Call match_application_to_format twice with same inputs
-        result1 = match_application_to_format(app_name, file_ext)
-        result2 = match_application_to_format(app_name, file_ext)
+        # Call match_window_to_format twice with same inputs
+        config = FormattingConfig.from_env()
+        result1 = match_window_to_format(window_title, app_name, config.web_app_keywords)
+        result2 = match_window_to_format(window_title, app_name, config.web_app_keywords)
         
         # Results should be identical (deterministic)
         assert result1 == result2, \
-            f"Non-deterministic matching: {result1} != {result2} for {app_name}, {file_ext}"
+            f"Non-deterministic matching: {result1} != {result2} for {window_title}, {app_name}"
         
         # Result should be None or a valid format type
         if result1 is not None:
             assert isinstance(result1, str)
-            assert result1 in FORMAT_MAPPINGS.keys(), \
+            # Load config to check valid format types
+            config = FormattingConfig.from_env()
+            assert result1 in config.applications, \
                 f"Invalid format type returned: {result1}"
     
     @given(
-        app_name=st.text(min_size=1, max_size=50),
-        file_ext=st.text(min_size=0, max_size=10)
+        window_title=st.text(min_size=1, max_size=50),
+        app_name=st.text(min_size=1, max_size=50)
     )
     @settings(max_examples=20)
-    def test_format_matching_returns_valid_or_none(self, app_name, file_ext):
+    def test_format_matching_returns_valid_or_none(self, window_title, app_name):
         """
         Test that format matching always returns either None or a valid format type.
         
-        For any application name and file extension, match_application_to_format
-        should return either None or a string that exists in FORMAT_MAPPINGS.
+        For any window title and app name, match_window_to_format
+        should return either None or a string that exists in configured applications.
         """
-        result = match_application_to_format(app_name, file_ext)
+        config = FormattingConfig.from_env()
+        result = match_window_to_format(window_title, app_name, config.web_app_keywords)
         
         # Result must be None or a valid format type
         if result is not None:
             assert isinstance(result, str), f"Result is not a string: {type(result)}"
-            assert result in FORMAT_MAPPINGS.keys(), \
-                f"Invalid format type: {result} not in {list(FORMAT_MAPPINGS.keys())}"
+            assert result in config.applications, \
+                f"Invalid format type: {result} not in {list(config.applications)}"
     
-    @given(format_type=st.sampled_from(list(FORMAT_MAPPINGS.keys())))
+    @given(format_type=st.sampled_from(["notion", "obsidian", "markdown", "word", "libreoffice", "vscode", "_fallback"]))
     @settings(max_examples=20)
     def test_format_prompt_exists_for_all_types(self, format_type):
         """
         Test that every format type has a corresponding prompt.
         
-        For any format type in FORMAT_MAPPINGS, get_format_prompt should
+        For any format type in applications, get_prompt_for_app should
         return a non-empty string.
         """
-        prompt = get_format_prompt(format_type)
+        config = FormattingConfig.from_env()
+        prompt = config.get_prompt_for_app(format_type)
         
         assert isinstance(prompt, str), f"Prompt is not a string: {type(prompt)}"
         assert len(prompt) > 0, f"Prompt is empty for format type: {format_type}"
-        assert format_type in prompt.lower() or "format" in prompt.lower(), \
+        assert "format" in prompt.lower() or "text" in prompt.lower(), \
             f"Prompt doesn't mention formatting: {prompt[:50]}"
     
     @given(
-        app_name=st.sampled_from(["notion", "Notion", "NOTION", "notion.exe"]),
-        file_ext=st.sampled_from(["", ".txt", ".md"])
+        window_title=st.sampled_from(["Notion", "My Notes - Notion", "notion.so"]),
+        app_name=st.sampled_from(["notion", "Notion", "NOTION", "notion.exe"])
     )
     @settings(max_examples=10)
-    def test_notion_detection(self, app_name, file_ext):
+    def test_notion_detection(self, window_title, app_name):
         """
         Test that Notion application is correctly detected.
         
-        For any variation of "notion" in the application name,
+        For any variation of "notion" in the window title or app name,
         the format should be matched to "notion".
         """
-        result = match_application_to_format(app_name, file_ext)
+        config = FormattingConfig.from_env()
+        result = match_window_to_format(window_title, app_name, config.web_app_keywords)
         assert result == "notion", \
-            f"Notion not detected for app={app_name}, ext={file_ext}, got={result}"
+            f"Notion not detected for title={window_title}, app={app_name}, got={result}"
     
     @given(
-        app_name=st.sampled_from(["obsidian", "Obsidian", "OBSIDIAN", "obsidian.exe"]),
-        file_ext=st.sampled_from(["", ".txt", ".md"])
+        window_title=st.sampled_from(["Obsidian", "My Vault - Obsidian", "obsidian publish"]),
+        app_name=st.sampled_from(["obsidian", "Obsidian", "OBSIDIAN", "obsidian.exe"])
     )
     @settings(max_examples=10)
-    def test_obsidian_detection(self, app_name, file_ext):
+    def test_obsidian_detection(self, window_title, app_name):
         """
         Test that Obsidian application is correctly detected.
         
-        For any variation of "obsidian" in the application name,
+        For any variation of "obsidian" in the window title or app name,
         the format should be matched to "obsidian".
         """
-        result = match_application_to_format(app_name, file_ext)
+        config = FormattingConfig.from_env()
+        result = match_window_to_format(window_title, app_name, config.web_app_keywords)
         assert result == "obsidian", \
-            f"Obsidian not detected for app={app_name}, ext={file_ext}, got={result}"
+            f"Obsidian not detected for title={window_title}, app={app_name}, got={result}"
     
     @given(
-        app_name=st.text(min_size=1, max_size=50),
-        file_ext=st.sampled_from([".md", ".markdown"])
+        window_title=st.sampled_from(["document.md", "notes.markdown", "README.md"]),
+        app_name=st.text(min_size=1, max_size=50)
     )
     @settings(max_examples=10)
-    def test_markdown_file_detection(self, app_name, file_ext):
+    def test_markdown_file_detection(self, window_title, app_name):
         """
-        Test that markdown files are correctly detected by extension.
+        Test that markdown files are correctly detected by extension in title.
         
-        For any application with a .md or .markdown file extension,
+        For any window with .md or .markdown in the title,
         the format should be matched to "markdown".
         """
-        result = match_application_to_format(app_name, file_ext)
+        config = FormattingConfig.from_env()
+        result = match_window_to_format(window_title, app_name, config.web_app_keywords)
         assert result == "markdown", \
-            f"Markdown not detected for app={app_name}, ext={file_ext}, got={result}"
+            f"Markdown not detected for title={window_title}, app={app_name}, got={result}"
     
     @given(
-        app_name=st.sampled_from(["word", "Word", "winword.exe", "Microsoft Word", "libreoffice writer", "LibreOffice Writer", "soffice", "writer.exe"]),
-        file_ext=st.sampled_from(["", ".docx", ".doc", ".odt", ".txt"])
+        window_title=st.sampled_from(["Google Docs", "Document - Google Docs", "LibreOffice Writer"]),
+        app_name=st.sampled_from(["chrome.exe", "msedge.exe", "soffice.exe", "winword.exe"])
     )
     @settings(max_examples=10)
-    def test_word_detection(self, app_name, file_ext):
+    def test_word_detection(self, window_title, app_name):
         """
-        Test that Word/LibreOffice application is correctly detected.
+        Test that Word/Google Docs/LibreOffice application is correctly detected.
         
-        For any variation of "word" or "libreoffice writer" in the application name,
-        the format should be matched to "word".
+        For any variation of "google docs" or "libreoffice" in the window title,
+        the format should be matched to "word" or "libreoffice".
         """
-        result = match_application_to_format(app_name, file_ext)
-        assert result == "word", \
-            f"Word/LibreOffice not detected for app={app_name}, ext={file_ext}, got={result}"
+        config = FormattingConfig.from_env()
+        result = match_window_to_format(window_title, app_name, config.web_app_keywords)
+        assert result in ["word", "libreoffice"], \
+            f"Word/LibreOffice not detected for title={window_title}, app={app_name}, got={result}"
     
     @given(
+        window_title=st.text(min_size=1, max_size=50, alphabet=st.characters(
+            whitelist_categories=('Lu', 'Ll', 'Nd'),
+            whitelist_characters='_- '
+        )),
         app_name=st.text(min_size=1, max_size=50, alphabet=st.characters(
             whitelist_categories=('Lu', 'Ll', 'Nd'),
-            whitelist_characters='_-'
-        )),
-        file_ext=st.sampled_from([".pdf", ".txt", ".html", ""])
+            whitelist_characters='_-.'
+        ))
     )
     @settings(max_examples=20)
-    def test_no_match_returns_none(self, app_name, file_ext):
+    def test_no_match_returns_none(self, window_title, app_name):
         """
-        Test that non-matching applications return None.
+        Test that non-matching windows return None.
         
-        For applications that don't match any known format,
-        match_application_to_format should return None.
+        For windows that don't match any known format,
+        match_window_to_format should return None.
         """
-        # Skip if app_name contains known patterns
+        # Skip if title or app contains known patterns
+        title_lower = window_title.lower()
         app_lower = app_name.lower()
-        known_patterns = ["notion", "obsidian", "word", "code", "sublime", "notepad", "libreoffice", "soffice", "writer"]
+        known_patterns = ["notion", "obsidian", "word", "google", "docs", "libreoffice", "markdown", ".md"]
         
-        if any(pattern in app_lower for pattern in known_patterns):
+        if any(pattern in title_lower or pattern in app_lower for pattern in known_patterns):
             return  # Skip this test case
         
-        # Skip if file_ext is .md or .markdown
-        if file_ext in [".md", ".markdown"]:
-            return
+        config = FormattingConfig.from_env()
+        result = match_window_to_format(window_title, app_name, config.web_app_keywords)
         
-        result = match_application_to_format(app_name, file_ext)
-        
-        # For unknown apps, result should be None
+        # For unknown windows, result should be None
         # (unless by chance it matches a pattern)
         if result is not None:
             # If it matched, it should be a valid format
-            assert result in FORMAT_MAPPINGS.keys()
+            assert result in config.applications
