@@ -93,14 +93,24 @@ em {{ font-style: italic; }}
 </body>
 </html>"""
         
-        # Вычислить смещения для формата Windows
-        html_bytes = html_doc.encode('utf-8')
-        start_html = html_doc.find('<html>')
-        end_html = html_doc.find('</html>') + 7
-        start_fragment = html_doc.find('<body>') + 6
-        end_fragment = html_doc.find('</body>')
+        # CRITICAL: Создать заголовок с временными значениями для вычисления его длины
+        temp_header = """Version:0.9
+StartHTML:0000000000
+EndHTML:0000000000
+StartFragment:0000000000
+EndFragment:0000000000
+"""
         
-        # Создать заголовок формата Windows
+        # Длина заголовка в байтах
+        header_length = len(temp_header.encode('utf-8'))
+        
+        # Вычислить смещения ПОСЛЕ заголовка
+        start_html = header_length + html_doc.find('<html>')
+        end_html = header_length + html_doc.find('</html>') + 7
+        start_fragment = header_length + html_doc.find('<body>') + 6
+        end_fragment = header_length + html_doc.find('</body>')
+        
+        # Создать правильный заголовок с вычисленными смещениями
         header = f"""Version:0.9
 StartHTML:{start_html:010d}
 EndHTML:{end_html:010d}
