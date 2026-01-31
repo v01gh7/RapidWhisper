@@ -12,20 +12,21 @@ from PyQt6.QtWidgets import (
     QScrollArea, QApplication, QCheckBox
 )
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont, QIcon, QScreen
+from PyQt6.QtGui import QFont, QIcon, QScreen, QPainter, QPainterPath, QRegion
 from core.config import Config
 from core.statistics_manager import StatisticsManager
 from utils.logger import get_logger
 from utils.i18n import t
 from ui.hotkey_input import HotkeyInput
 from ui.statistics_tab import StatisticsTab
+from design_system.styled_window_mixin import StyledWindowMixin
 from pathlib import Path
 import os
 
 logger = get_logger()
 
 
-class SettingsWindow(QDialog):
+class SettingsWindow(QDialog, StyledWindowMixin):
     """
     Окно настроек приложения.
     
@@ -47,7 +48,8 @@ class SettingsWindow(QDialog):
             tray_icon: Иконка трея для показа уведомлений
             parent: Родительский виджет
         """
-        super().__init__(parent)
+        QDialog.__init__(self, parent)
+        StyledWindowMixin.__init__(self)
         self.config = config
         self.statistics_manager = statistics_manager
         self.tray_icon = tray_icon
@@ -65,7 +67,20 @@ class SettingsWindow(QDialog):
             max_height = screen_geometry.height() - 160
             self.setMaximumHeight(max_height)
         
-        # Применить стиль
+        # Set translucent background BEFORE applying unified style
+        # This is critical for Windows to properly render the transparent window
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        
+        # IMPORTANT: Set WA_OpaquePaintEvent to False for proper transparency rendering
+        self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent, False)
+        
+        # Apply unified styling from mixin (Task 4.2)
+        from design_system.style_constants import StyleConstants
+        opacity = getattr(config, 'window_opacity', StyleConstants.OPACITY_DEFAULT)
+        self.apply_unified_style(opacity=opacity, stay_on_top=False)
+        
+        # Apply child widget styles (must be called AFTER apply_unified_style)
+        # This will merge with the mixin's stylesheet
         self._apply_style()
         
         # Создать интерфейс
@@ -73,6 +88,43 @@ class SettingsWindow(QDialog):
         
         # Загрузить текущие значения
         self._load_values()
+    
+    def showEvent(self, event):
+        """
+        Override showEvent to ensure proper rendering on Windows.
+        
+        This is critical for Windows to properly render the transparent window
+        with blur effects and rounded corners.
+        """
+        super().showEvent(event)
+        self.repaint()
+        self.update()
+    
+    def paintEvent(self, event):
+        """
+        Custom paint event to properly render rounded corners and prevent white artifacts.
+        
+        This creates a clipping region with rounded corners to ensure the window
+        background is properly masked, preventing white corner artifacts on Windows.
+        """
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        # Create rounded rectangle path
+        from design_system.style_constants import StyleConstants
+        path = QPainterPath()
+        path.addRoundedRect(
+            0, 0, 
+            self.width(), self.height(),
+            StyleConstants.BORDER_RADIUS, StyleConstants.BORDER_RADIUS
+        )
+        
+        # Set clipping region to rounded rectangle
+        region = QRegion(path.toFillPolygon().toPolygon())
+        self.setMask(region)
+        
+        # Call parent's paintEvent
+        super().paintEvent(event)
     
     def _set_window_icon(self):
         """Устанавливает иконку окна."""
@@ -92,16 +144,47 @@ class SettingsWindow(QDialog):
                 self.setWindowIcon(icon)
         except Exception:
             pass  # Игнорируем ошибки загрузки иконки
+        """Устанавливает иконку окна."""
+        import sys
+        
+        # Определить путь к иконке
+        if getattr(sys, 'frozen', False):
+            base_path = sys._MEIPASS
+        else:
+            base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        
+        icon_path = os.path.join(base_path, 'public', 'RapidWhisper.ico')
+        
+        try:
+            icon = QIcon(icon_path)
+            if not icon.isNull():
+                self.setWindowIcon(icon)
+        except Exception:
+            pass  # Игнорируем ошибки загрузки иконки
     
     def _apply_style(self):
-        """Применяет стиль к окну настроек в стиле macOS."""
+        """
+        Применяет стиль к дочерним виджетам окна настроек.
+        
+        ВАЖНО: Этот метод объединяет стили миксина (для окна) со стилями
+        дочерних виджетов. Вызывается ПОСЛЕ apply_unified_style().
+        """
         # Получить размеры шрифтов из конфигурации
         label_font_size = self.config.font_size_settings_labels if hasattr(self.config, 'font_size_settings_labels') else 12
         title_font_size = self.config.font_size_settings_titles if hasattr(self.config, 'font_size_settings_titles') else 24
         
+        # Get the mixin's background style
+        from design_system.style_constants import StyleConstants
+        bg_color = StyleConstants.get_background_color(self._opacity)
+        
+        # Combine mixin styles (window-level) with child widget styles
+        # The mixin sets the window background, we add styles for child widgets
         self.setStyleSheet(f"""
+            /* Window-level styles from mixin */
             QDialog {{
-                background-color: #1e1e1e;
+                background-color: {bg_color};
+                border: {StyleConstants.BORDER_WIDTH}px solid {StyleConstants.BORDER_COLOR};
+                border-radius: {StyleConstants.BORDER_RADIUS}px;
                 color: #ffffff;
             }}
             QLabel {{
@@ -167,24 +250,27 @@ class SettingsWindow(QDialog):
                 border: 1px solid #0078d4;
             }}
             QListWidget {{
-                background-color: #1a1a1a;
+                background-color: rgba(26, 26, 26, {int(self._opacity * 0.9)});
                 border: none;
-                border-right: 1px solid #2d2d2d;
+                border-right: 1px solid rgba(255, 255, 255, 50);
                 outline: none;
                 padding: 8px 0px;
+                color: #ffffff;
             }}
             QListWidget::item {{
                 color: #ffffff;
                 padding: 10px 16px;
                 border-radius: 6px;
                 margin: 2px 8px;
+                background-color: transparent;
             }}
             QListWidget::item:selected {{
-                background-color: #0078d4;
+                background-color: rgba(0, 120, 212, 200);
                 color: #ffffff;
             }}
             QListWidget::item:hover:!selected {{
-                background-color: #2d2d2d;
+                background-color: rgba(45, 45, 45, 150);
+                color: #ffffff;
             }}
             QScrollArea {{
                 border: none;
@@ -235,13 +321,23 @@ class SettingsWindow(QDialog):
     
     def _create_ui(self):
         """Создает интерфейс окна настроек в стиле macOS с боковой панелью."""
+        # Create outer vertical layout to hold header and main content (Task 4.3)
+        outer_layout = QVBoxLayout()
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+        outer_layout.setSpacing(0)
+        
+        # Add draggable header at the top (Task 4.3)
+        header = self._create_header()
+        outer_layout.addWidget(header)
+        
+        # Create main horizontal layout for sidebar and content
         main_layout = QHBoxLayout()
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
         
         # Левая панель навигации
         self.sidebar = QListWidget()
-        self.sidebar.setFixedWidth(200)
+        self.sidebar.setFixedWidth(210)  # Увеличена ширина с 200 до 210 для предотвращения горизонтальной прокрутки
         self.sidebar.setSpacing(0)
         self.sidebar.setCursor(Qt.CursorShape.PointingHandCursor)  # Курсор "рука" для всего списка
         self.sidebar.setFocusPolicy(Qt.FocusPolicy.NoFocus)  # Не терять выделение при потере фокуса
@@ -328,7 +424,10 @@ class SettingsWindow(QDialog):
         right_panel.setLayout(right_panel_layout)
         main_layout.addWidget(right_panel, 1)
         
-        self.setLayout(main_layout)
+        # Add main layout to outer layout (Task 4.3)
+        outer_layout.addLayout(main_layout)
+        
+        self.setLayout(outer_layout)
     
     def _on_sidebar_changed(self, index: int):
         """Обработчик переключения пунктов в боковой панели."""
@@ -353,6 +452,124 @@ class SettingsWindow(QDialog):
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         return scroll
+    
+    def _create_header(self) -> QWidget:
+        """
+        Create a draggable header for the frameless window (Task 4.3)
+        
+        Returns:
+            QWidget: Header widget with fixed height, distinct styling, and window control buttons
+        
+        Requirements: 2.3
+        """
+        header = QWidget()
+        header.setFixedHeight(35)
+        
+        # Create horizontal layout for header content
+        header_layout = QHBoxLayout(header)
+        header_layout.setContentsMargins(10, 0, 5, 0)
+        header_layout.setSpacing(0)
+        
+        # Add title label
+        title_label = QLabel("RapidWhisper - " + t("settings.title"))
+        title_font = QFont("Segoe UI", 10)
+        title_label.setFont(title_font)
+        title_label.setStyleSheet("color: #ffffff; background: transparent;")
+        header_layout.addWidget(title_label)
+        
+        # Add stretch to push buttons to the right
+        header_layout.addStretch()
+        
+        # Get icon paths
+        import sys
+        if getattr(sys, 'frozen', False):
+            base_path = sys._MEIPASS
+        else:
+            base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        
+        icons_path = os.path.join(base_path, 'public', 'icons')
+        
+        # Create window control buttons
+        # Minimize button
+        minimize_btn = QPushButton()
+        minimize_btn.setFixedSize(35, 35)
+        minimize_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        minimize_icon = QIcon(os.path.join(icons_path, 'minimize.svg'))
+        minimize_btn.setIcon(minimize_icon)
+        minimize_btn.setIconSize(minimize_btn.size() * 0.5)
+        minimize_btn.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;
+                border: none;
+            }
+            QPushButton:hover {
+                background-color: rgba(255, 255, 255, 30);
+                border-radius: 4px;
+            }
+        """)
+        minimize_btn.clicked.connect(self.showMinimized)
+        header_layout.addWidget(minimize_btn)
+        
+        # Maximize/Restore button
+        self.maximize_btn = QPushButton()
+        self.maximize_btn.setFixedSize(35, 35)
+        self.maximize_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.maximize_icon = QIcon(os.path.join(icons_path, 'maximize.svg'))
+        self.restore_icon = QIcon(os.path.join(icons_path, 'restore.svg'))
+        self.maximize_btn.setIcon(self.maximize_icon)
+        self.maximize_btn.setIconSize(self.maximize_btn.size() * 0.5)
+        self.maximize_btn.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;
+                border: none;
+            }
+            QPushButton:hover {
+                background-color: rgba(255, 255, 255, 30);
+                border-radius: 4px;
+            }
+        """)
+        self.maximize_btn.clicked.connect(self._toggle_maximize)
+        header_layout.addWidget(self.maximize_btn)
+        
+        # Close button
+        close_btn = QPushButton()
+        close_btn.setFixedSize(35, 35)
+        close_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        close_icon = QIcon(os.path.join(icons_path, 'close.svg'))
+        close_btn.setIcon(close_icon)
+        close_btn.setIconSize(close_btn.size() * 0.5)
+        close_btn.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;
+                border: none;
+            }
+            QPushButton:hover {
+                background-color: rgba(232, 17, 35, 200);
+                border-radius: 4px;
+            }
+        """)
+        close_btn.clicked.connect(self.close)
+        header_layout.addWidget(close_btn)
+        
+        # Style the header to be visually distinct
+        header.setStyleSheet("""
+            QWidget {
+                background-color: rgba(40, 40, 40, 200);
+                border: none;
+                border-top-left-radius: 5px;
+                border-top-right-radius: 5px;
+            }
+        """)
+        return header
+    
+    def _toggle_maximize(self):
+        """Toggle between maximized and normal window state."""
+        if self.isMaximized():
+            self.showNormal()
+            self.maximize_btn.setIcon(self.maximize_icon)
+        else:
+            self.showMaximized()
+            self.maximize_btn.setIcon(self.restore_icon)
     
     def _create_ai_page(self) -> QWidget:
         """Создает страницу настроек AI Provider."""
@@ -1142,12 +1359,18 @@ class SettingsWindow(QDialog):
     
     def _on_opacity_changed(self, value: int):
         """
-        Обработчик изменения прозрачности окна с live preview.
+        Обработчик изменения прозрачности окна с live preview (Task 4.4)
         
         Args:
             value: Новое значение прозрачности (50-255)
+        
+        Requirements: 4.1
         """
-        # Обновить FloatingWindow если доступно
+        # Update this Settings Window's opacity using mixin (Task 4.4)
+        # We override update_opacity to also update child widget styles
+        self.update_opacity(value)
+        
+        # Also update FloatingWindow if available for consistency
         if self.parent() and hasattr(self.parent(), 'set_opacity'):
             try:
                 self.parent().set_opacity(value)
@@ -1156,6 +1379,20 @@ class SettingsWindow(QDialog):
                 logger.warning(f"Failed to apply live opacity preview: {e}")
         else:
             logger.debug(f"Opacity changed to {value} (no live preview available)")
+    
+    def update_opacity(self, opacity: int):
+        """
+        Override mixin's update_opacity to also update child widget styles.
+        
+        Args:
+            opacity: New opacity value (50-255)
+        
+        Requirements: 4.1
+        """
+        from design_system.style_constants import StyleConstants
+        self._opacity = StyleConstants.clamp_opacity(opacity)
+        # Re-apply full stylesheet (window + child widgets)
+        self._apply_style()
     
     def _on_font_floating_main_changed(self, value: int):
         """
@@ -2392,3 +2629,17 @@ class SettingsWindow(QDialog):
             
             # Переместить окно
             self.move(x, y)
+    
+    def showEvent(self, event):
+        """
+        Override showEvent to force window update on Windows.
+        
+        This ensures the frameless transparent window is properly rendered.
+        
+        Args:
+            event: Show event
+        """
+        super().showEvent(event)
+        # Force repaint and update for proper rendering on Windows
+        self.repaint()
+        self.update()

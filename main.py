@@ -788,13 +788,13 @@ class RapidWhisperApp(QObject):
         # Создаем новое окно настроек
         from ui.settings_window import SettingsWindow
         
-        # ВАЖНО: Передаем self.floating_window как parent чтобы окно не закрывало приложение
+        # ВАЖНО: Передаем None как parent чтобы окно было независимым
         # Также передаем tray_icon для показа уведомлений и statistics_manager для статистики
         self.settings_window = SettingsWindow(
             self.config, 
             statistics_manager=self.statistics_manager,
             tray_icon=self.tray_icon, 
-            parent=self.floating_window
+            parent=None  # Changed from self.floating_window to None
         )
         
         # Подключить сигнал сохранения настроек
@@ -806,7 +806,11 @@ class RapidWhisperApp(QObject):
         # Центрировать окно настроек на экране
         self.settings_window.center_on_screen()
         
+        # Show and raise the window
         self.settings_window.show()
+        self.settings_window.raise_()
+        self.settings_window.activateWindow()
+        
         self.logger.info("Окно настроек создано и показано")
     
     def _on_settings_window_closed(self) -> None:

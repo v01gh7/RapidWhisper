@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import QSystemTrayIcon, QMenu
 from PyQt6.QtGui import QIcon, QAction
 from PyQt6.QtCore import QObject, pyqtSignal
 from utils.i18n import t
+from design_system.style_constants import StyleConstants
 
 
 class TrayIcon(QObject):
@@ -64,7 +65,7 @@ class TrayIcon(QObject):
             self.tray_icon.setIcon(icon)
         
         # Создать меню
-        self._create_menu()
+        self._create_styled_menu()
         
         # Подключить клик на иконку для открытия настроек
         self.tray_icon.activated.connect(self._on_tray_icon_activated)
@@ -95,9 +96,44 @@ class TrayIcon(QObject):
         if reason == QSystemTrayIcon.ActivationReason.Trigger:
             self.show_settings.emit()
     
-    def _create_menu(self) -> None:
-        """Создает контекстное меню трея."""
+    def _create_styled_menu(self) -> None:
+        """Создает контекстное меню трея с современным стилем."""
         menu = QMenu()
+        
+        # Apply custom stylesheet using StyleConstants
+        opacity = 200  # Slightly more opaque for readability
+        bg_color = StyleConstants.get_background_color(opacity)
+        
+        stylesheet = f"""
+            QMenu {{
+                background-color: {bg_color};
+                border: {StyleConstants.BORDER_WIDTH}px solid {StyleConstants.BORDER_COLOR};
+                border-radius: {StyleConstants.BORDER_RADIUS}px;
+                padding: 5px;
+            }}
+            
+            QMenu::item {{
+                padding: 8px 25px;
+                border-radius: 3px;
+                color: #ffffff;
+            }}
+            
+            QMenu::item:selected {{
+                background-color: rgba(70, 70, 70, 200);
+            }}
+            
+            QMenu::item:pressed {{
+                background-color: rgba(90, 90, 90, 200);
+            }}
+            
+            QMenu::separator {{
+                height: 1px;
+                background-color: rgba(255, 255, 255, 50);
+                margin: 5px 10px;
+            }}
+        """
+        
+        menu.setStyleSheet(stylesheet)
         
         # Действие: Настройки
         settings_action = QAction(t("tray.menu.settings"), menu)
