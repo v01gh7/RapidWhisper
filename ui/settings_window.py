@@ -242,12 +242,12 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                 subcontrol-origin: margin;
                 subcontrol-position: top left;
                 padding: 8px 16px;
-                background-color: rgba(45, 45, 45, {int(self._opacity * 0.8)});
-                color: #ffffff;
+                background-color: rgba(200, 200, 200, {int(self._opacity * 0.7)});
+                color: #fffff;
                 font-size: 14px;
                 font-weight: bold;
                 border-radius: 4px;
-                border: 1px solid rgba(0, 120, 212, 180);
+                border: 1px solid rgba(255, 255, 255, 100);
             }}
             QListWidget {{
                 background-color: rgba(26, 26, 26, {int(self._opacity * 0.9)});
@@ -308,9 +308,9 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                 font-size: {title_font_size}px;
                 font-weight: bold;
                 padding: 12px 20px;
-                background-color: #2d2d2d;
+                background-color: rgba(45, 45, 45, {int(self._opacity * 0.8)});
                 border-radius: 6px;
-                border: 2px solid #0078d4;
+                border: 2px solid rgba(255, 255, 255, 100);
                 margin-bottom: 8px;
             }}
             QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
