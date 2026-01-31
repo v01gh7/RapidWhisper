@@ -27,11 +27,19 @@ STRICT RULES:
 
 ALLOWED ACTIONS:
 - ANALYZE the content and identify natural sections
-- CREATE headings where appropriate for main topics and subtopics
-- CONVERT lists when the speaker mentions multiple items
-- ADD emphasis for important points
+- CREATE headings where appropriate for main topics and subtopics (using # ## ### for markdown, or appropriate formatting)
+- CONVERT lists when the speaker mentions multiple items (using - * 1. or appropriate formatting)
+- ADD emphasis for important points (using **bold** *italic* or appropriate formatting)
 - INSERT line breaks between logical sections
 - STRUCTURE the content for maximum readability
+- ADD FORMATTING SYMBOLS: You MUST add markdown symbols (# * - **) or other formatting as needed
+
+FORMATTING SYMBOLS ARE REQUIRED:
+- Use # ## ### for headings
+- Use - or * for bullet lists
+- Use 1. 2. 3. for numbered lists
+- Use **text** for bold, *text* for italic
+- These symbols are NOT "new words" - they are formatting
 
 FORBIDDEN ACTIONS:
 - Adding explanations (like "This is used for...")
@@ -40,11 +48,11 @@ FORBIDDEN ACTIONS:
 - Completing incomplete thoughts
 - Adding examples that weren't spoken
 
-Task: Transform the transcribed speech into well-structured text using ONLY the original words.
+Task: Transform the transcribed speech into well-structured text using ONLY the original words, but ADD all necessary formatting symbols.
 
-Remember: Use ALL the original words, just organize them better. Zero tolerance for additions.
+Remember: Use ALL the original words, organize them better, and ADD formatting symbols (# * - **) to make it readable.
 
-Output ONLY the reformatted text."""
+Output ONLY the reformatted text with formatting symbols."""
 
 
 # Fallback formatting prompt for unknown applications
