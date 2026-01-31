@@ -102,6 +102,18 @@ HTML FORMATTING REQUIRED:
 - Use <strong>text</strong> for bold, <em>text</em> for italic
 - Use <p>text</p> for paragraphs
 
+CRITICAL LIST DETECTION RULES:
+When you see multiple items mentioned (like "помидоры, томаты, арбузы" or "first, second, third"):
+1. ALWAYS create a list (<ul> or <ol>)
+2. Each item MUST be in separate <li> tag
+3. DO NOT put list items in <p> tags
+4. Lists are for: shopping items, steps, multiple things, enumeration
+
+EXAMPLES OF LISTS:
+- "нужно купить помидоры, томаты, арбузы" → <ul><li>помидоры</li><li>томаты</li><li>арбузы</li></ul>
+- "первое второе третье" → <ol><li>первое</li><li>второе</li><li>третье</li></ol>
+- "список товаров: молоко, хлеб, масло" → <ul><li>молоко</li><li>хлеб</li><li>масло</li></ul>
+
 CRITICAL SPACING RULES (MUST FOLLOW):
 - Each heading must be separate element
 - Each paragraph must be wrapped in <p></p>
@@ -131,15 +143,26 @@ EXAMPLE FORMAT:
 </ul>
 <p>Another paragraph after list.</p>
 
+WRONG EXAMPLE (DO NOT DO THIS):
+<p>помидоры, томаты, арбузы</p>  ← WRONG! This should be a list!
+
+CORRECT:
+<ul>
+<li>помидоры</li>
+<li>томаты</li>
+<li>арбузы</li>
+</ul>
+
 FORBIDDEN ACTIONS:
 - Creating separate <p> for every sentence
+- Putting list items in <p> tags instead of <ul><li>
 - Adding explanations (like "This is used for...")
 - Adding descriptions (like "These items are...")
 - Adding context or background information
 - Completing incomplete thoughts
 - Adding examples that weren't spoken
 
-Task: Transform the transcribed speech into well-structured HTML with SMART PARAGRAPH BREAKS using ONLY the original words.
+Task: Transform the transcribed speech into well-structured HTML with SMART PARAGRAPH BREAKS and PROPER LISTS using ONLY the original words.
 
 Output ONLY the HTML formatted text (without <!DOCTYPE>, <html>, <head>, or <body> tags - just the content)."""
 
