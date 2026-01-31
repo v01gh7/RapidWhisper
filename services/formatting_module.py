@@ -28,105 +28,6 @@ FORMAT_MAPPINGS = {
 }
 
 
-# Format-specific prompts for AI formatting
-# These prompts encourage structure while preventing content addition
-FORMAT_PROMPTS = {
-    "notion": """CRITICAL INSTRUCTIONS:
-1. PRESERVE ALL CONTENT: Keep every word from the original text
-2. ADD STRUCTURE: Actively identify and create proper formatting
-3. NO NEW CONTENT: Do not add examples, explanations, or text that wasn't spoken
-
-Task: Transform the transcribed speech into well-structured Notion markdown.
-
-Your job:
-- ANALYZE the content and identify natural sections
-- CREATE headings (# ## ###) for main topics and subtopics
-- CONVERT lists when the speaker mentions multiple items
-- ADD emphasis (**bold**, *italic*) for important points
-- INSERT line breaks between logical sections
-- STRUCTURE the content for maximum readability
-
-Remember: Use ALL the original words, just organize them better.
-
-Output ONLY the reformatted text.""",
-    
-    "obsidian": """CRITICAL INSTRUCTIONS:
-1. PRESERVE ALL CONTENT: Keep every word from the original text
-2. ADD STRUCTURE: Actively identify and create proper formatting
-3. NO NEW CONTENT: Do not add examples, explanations, or text that wasn't spoken
-
-Task: Transform the transcribed speech into well-structured Obsidian markdown.
-
-Your job:
-- ANALYZE the content and identify natural sections
-- CREATE headings (# ## ###) for main topics and subtopics
-- CONVERT lists when the speaker mentions multiple items
-- ADD [[wiki-links]] for proper nouns and key concepts
-- ADD #tags for topics mentioned
-- INSERT line breaks between logical sections
-- STRUCTURE the content for linking and organization
-
-Remember: Use ALL the original words, just organize them better.
-
-Output ONLY the reformatted text.""",
-    
-    "markdown": """CRITICAL INSTRUCTIONS:
-1. PRESERVE ALL CONTENT: Keep every word from the original text
-2. ADD STRUCTURE: Actively identify and create proper formatting
-3. NO NEW CONTENT: Do not add examples, explanations, or text that wasn't spoken
-
-Task: Transform the transcribed speech into well-structured clean markdown.
-
-Your job:
-- ANALYZE the content and identify natural sections
-- CREATE headings (# ## ###) for main topics and subtopics
-- CONVERT lists when the speaker mentions multiple items ("first", "second", "also", etc.)
-- ADD code blocks (```) if code or technical terms are mentioned
-- INSERT line breaks between logical sections
-- STRUCTURE the content for maximum readability
-
-Remember: Use ALL the original words, just organize them better.
-
-Output ONLY the reformatted text.""",
-    
-    "word": """CRITICAL INSTRUCTIONS:
-1. PRESERVE ALL CONTENT: Keep every word from the original text
-2. ADD STRUCTURE: Actively identify and create proper formatting
-3. NO NEW CONTENT: Do not add examples, explanations, or text that wasn't spoken
-
-Task: Transform the transcribed speech into well-structured text for Microsoft Word.
-
-Your job:
-- ANALYZE the content and identify natural sections
-- CREATE clear paragraph breaks for different topics
-- CONVERT lists when the speaker mentions multiple items
-- STRUCTURE the content with proper spacing
-- Keep formatting simple (Word will handle styling)
-
-Remember: Use ALL the original words, just organize them better.
-
-Output ONLY the reformatted text.""",
-    
-    "libreoffice": """CRITICAL INSTRUCTIONS:
-1. PRESERVE ALL CONTENT: Keep every word from the original text
-2. ADD STRUCTURE: Actively identify and create proper formatting
-3. NO NEW CONTENT: Do not add examples, explanations, or text that wasn't spoken
-
-Task: Transform the transcribed speech into well-structured text for LibreOffice Writer.
-
-Your job:
-- ANALYZE the content and identify natural sections
-- CREATE clear paragraph breaks for different topics
-- CONVERT lists when the speaker mentions multiple items
-- STRUCTURE the content with proper spacing
-- Keep formatting simple (Writer will handle styling)
-
-Remember: Use ALL the original words, just organize them better.
-
-Output ONLY the reformatted text.""",
-}
-
-
 def match_application_to_format(app_name: str, file_ext: str) -> Optional[str]:
     """
     Match detected application/file to a format type.
@@ -154,19 +55,6 @@ def match_application_to_format(app_name: str, file_ext: str) -> Optional[str]:
     return None
 
 
-def get_format_prompt(format_type: str) -> str:
-    """
-    Get formatting prompt for application type.
-    
-    Args:
-        format_type: Format identifier
-    
-    Returns:
-        str: Formatting instructions for AI
-    """
-    return FORMAT_PROMPTS.get(format_type, FORMAT_PROMPTS["markdown"])
-
-
 class FormattingModule:
     """
     Handles automatic formatting of transcribed text based on active application.
@@ -180,11 +68,16 @@ class FormattingModule:
         Initialize the formatting module.
         
         Args:
-            config_manager: Configuration manager for loading settings (optional)
+            config_manager: Configuration manager for loading settings, or FormattingConfig instance (optional)
             ai_client_factory: Factory for creating AI client instances (optional)
             window_monitor: Window monitoring component (optional)
         """
-        self.config = FormattingConfig.from_env()
+        # Accept either a FormattingConfig instance or load from environment
+        if isinstance(config_manager, FormattingConfig):
+            self.config = config_manager
+        else:
+            self.config = FormattingConfig.from_env()
+        
         self.window_monitor = window_monitor or WindowMonitor.create()
         self.ai_client_factory = ai_client_factory
         
@@ -274,13 +167,17 @@ class FormattingModule:
         """
         Generate application-specific formatting prompt.
         
+        DEPRECATED: This method is kept for backward compatibility.
+        Prompts are now loaded from configuration via get_prompt_for_app().
+        
         Args:
             format_type: Target format identifier
         
         Returns:
-            str: System prompt for AI formatting
+            str: System prompt for AI formatting (loaded from config)
         """
-        return get_format_prompt(format_type)
+        # Load prompt from configuration instead of hardcoded prompts
+        return self.config.get_prompt_for_app(format_type)
     
     def format_text(self, text: str, format_type: str) -> str:
         """

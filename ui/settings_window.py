@@ -2465,7 +2465,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
             btn.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             btn.customContextMenuRequested.connect(
-                lambda pos, name=app_name: self._show_app_context_menu(name, btn.mapToGlobal(pos))
+                lambda pos, name=app_name, button=btn: self._show_app_context_menu(name, button.mapToGlobal(pos))
             )
             
             # Check if app has custom prompt
