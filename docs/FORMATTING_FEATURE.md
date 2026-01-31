@@ -14,6 +14,8 @@ The Transcription Formatting feature automatically formats transcribed text base
 
 ## Supported Applications
 
+### Desktop Applications
+
 - **Notion**: Notion-style markdown with appropriate headings and bullet points
 - **Obsidian**: Standard markdown with wiki-links and tags
 - **Markdown Files** (.md, .markdown): Clean standard markdown formatting
@@ -22,6 +24,50 @@ The Transcription Formatting feature automatically formats transcribed text base
 - **VS Code**: Markdown formatting for .md files
 - **Sublime Text**: Standard text formatting
 - **Notepad++**: Standard text formatting
+
+### Web Applications (Browser Detection)
+
+The system automatically detects web applications running in browsers by analyzing the browser tab title. Supported browsers include Chrome, Firefox, Edge, Opera, Brave, Vivaldi, and Safari.
+
+#### Google Services (word format)
+- **Google Docs** / **Google Документы** - Document editing
+- **Google Sheets** / **Google Таблицы** - Spreadsheet editing
+- **Google Slides** / **Google Презентации** - Presentation editing
+- **Google Forms** / **Google Формы** - Form creation
+- **Google Keep** - Note-taking
+
+#### Microsoft Office Online (word format)
+- **Microsoft Word Online** - Online document editing
+- **Microsoft Excel Online** - Online spreadsheet editing
+- **Microsoft PowerPoint Online** - Online presentation editing
+- **Office 365** - Microsoft 365 web apps
+- **Office Online** - Legacy Office web apps
+
+#### Collaboration Tools (word format)
+- **Dropbox Paper** - Collaborative document editing
+- **Quip** - Team collaboration documents
+- **Coda.io** - All-in-one doc platform
+- **Airtable** - Spreadsheet-database hybrid
+
+#### Zoho Office Suite (word format)
+- **Zoho Writer** - Document editing
+- **Zoho Sheet** - Spreadsheet editing
+- **Zoho Show** - Presentation editing
+
+#### Note-Taking & Knowledge Management
+- **Notion** / **Notion.so** (notion format) - All-in-one workspace
+- **Obsidian Publish** (obsidian format) - Published Obsidian notes
+
+#### Markdown Editors (markdown format)
+- **HackMD** - Collaborative markdown editor
+- **StackEdit** - In-browser markdown editor
+- **Dillinger** - Online markdown editor
+- **Typora Online** - Minimalist markdown editor
+- **GitHub.dev** - GitHub web-based editor
+- **GitLab** - GitLab web IDE
+- **Gitpod** - Cloud development environment
+
+**Note:** Web application detection works by matching keywords in the browser tab title. The system checks the title in both English and Russian (where applicable) to ensure broad language support.
 
 ## Configuration
 
@@ -83,6 +129,24 @@ The system makes intelligent decisions based on your configuration:
 The system matches applications using:
 - **Application Name**: Matches process name (e.g., "notion", "obsidian", "word")
 - **File Extension**: Matches file extension (e.g., ".md", ".docx")
+- **Browser Tab Title**: Detects web applications by analyzing browser window titles
+
+#### Browser Detection
+
+When a browser is detected (Chrome, Firefox, Edge, Opera, Brave, Vivaldi, Safari), the system analyzes the tab title to identify web applications:
+
+1. **Title Pattern Matching**: Checks if the tab title contains specific keywords
+   - Example: "My Document - Google Docs" → detected as `word` format
+   - Example: "Workspace - Notion" → detected as `notion` format
+
+2. **Multi-Language Support**: Supports both English and Russian titles
+   - "Google Docs" and "Google Документы" both work
+   - "Google Sheets" and "Google Таблицы" both work
+
+3. **Format Assignment**: Maps web apps to appropriate format types
+   - Google Docs/Sheets/Slides → `word` format
+   - Notion web → `notion` format
+   - HackMD/StackEdit → `markdown` format
 
 Matching is case-insensitive and supports partial matches.
 

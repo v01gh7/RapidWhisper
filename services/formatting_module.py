@@ -27,6 +27,114 @@ FORMAT_MAPPINGS = {
     "notepad": ["notepad++", "notepad"],
 }
 
+# Browser title patterns for web applications
+# Maps format type to list of title patterns to match
+BROWSER_TITLE_MAPPINGS = {
+    "word": [
+        # Google Docs
+        "google docs",
+        "google документы",
+        "google документ",
+        # Google Sheets
+        "google sheets",
+        "google таблицы",
+        "google таблица",
+        # Google Slides
+        "google slides",
+        "google презентации",
+        "google презентация",
+        # Google Forms
+        "google forms",
+        "google формы",
+        "google форма",
+        # Google Keep
+        "google keep",
+        # Microsoft Office Online
+        "microsoft word online",
+        "microsoft excel online",
+        "microsoft powerpoint online",
+        "office online",
+        "office 365",
+        # Zoho
+        "zoho writer",
+        "zoho sheet",
+        "zoho show",
+        # Dropbox Paper
+        "dropbox paper",
+        # Quip
+        "quip",
+        # Coda
+        "coda.io",
+        # Airtable
+        "airtable",
+    ],
+    "notion": [
+        "notion",
+        "notion.so",
+    ],
+    "obsidian": [
+        "obsidian publish",
+    ],
+    "markdown": [
+        "hackmd",
+        "stackedit",
+        "dillinger",
+        "typora online",
+        "github.dev",
+        "gitlab",
+        "gitpod",
+    ],
+}
+
+# List of common browser process names
+BROWSER_PROCESSES = [
+    "chrome", "chrome.exe",
+    "firefox", "firefox.exe",
+    "msedge", "msedge.exe",
+    "opera", "opera.exe",
+    "brave", "brave.exe",
+    "vivaldi", "vivaldi.exe",
+    "safari", "safari.app",
+]
+
+
+def is_browser(app_name: str) -> bool:
+    """
+    Check if the application is a web browser.
+    
+    Args:
+        app_name: Application name (lowercase)
+    
+    Returns:
+        bool: True if application is a browser
+    """
+    app_lower = app_name.lower()
+    return any(browser in app_lower for browser in BROWSER_PROCESSES)
+
+
+def match_browser_title_to_format(window_title: str) -> Optional[str]:
+    """
+    Match browser window title to a format type.
+    
+    This function checks if the browser tab title contains keywords
+    that indicate a specific web application (e.g., "Google Docs").
+    
+    Args:
+        window_title: Browser window/tab title
+    
+    Returns:
+        Optional[str]: Format identifier or None if no match
+    """
+    title_lower = window_title.lower()
+    
+    for format_type, patterns in BROWSER_TITLE_MAPPINGS.items():
+        for pattern in patterns:
+            if pattern in title_lower:
+                logger.info(f"  🌐 Обнаружено веб-приложение: '{pattern}' → формат '{format_type}'")
+                return format_type
+    
+    return None
+
 
 def match_application_to_format(app_name: str, file_ext: str) -> Optional[str]:
     """
@@ -118,6 +226,24 @@ class FormattingModule:
             logger.info(f"  📱 Активное окно:")
             logger.info(f"    - Процесс: {app_name}")
             logger.info(f"    - Заголовок: {window_title}")
+            
+            # Check if this is a browser - if so, try to match by tab title
+            if is_browser(app_name):
+                logger.info(f"  🌐 Обнаружен браузер: {app_name}")
+                logger.info(f"  🔎 Проверка заголовка вкладки на соответствие веб-приложениям...")
+                
+                browser_format = match_browser_title_to_format(window_title)
+                if browser_format:
+                    logger.info(f"  ✅ Найдено веб-приложение: {browser_format}")
+                    
+                    # Check if this format is in the configured applications list
+                    if browser_format in self.config.applications:
+                        logger.info(f"  ✅ Формат '{browser_format}' найден в списке приложений")
+                        return browser_format
+                    
+                    logger.warning(f"  ⚠️ Формат '{browser_format}' не найден в списке настроенных приложений")
+                else:
+                    logger.info(f"  ℹ️ Заголовок вкладки не соответствует известным веб-приложениям")
             
             # Try to extract file extension from window title
             file_ext = ""

@@ -15,6 +15,8 @@ A modern speech-to-text transcription application using Zhipu GLM API, inspired 
 - 🔔 **System Tray** - Runs in background with tray notifications
 - 🚫 **Cancel Recording** - Press ESC to cancel recording without transcription
 - 🌍 **Multi-language Support** - Interface available in 15 languages with automatic detection
+- ✨ **Smart Text Formatting** - Automatically formats text based on active application
+- 🌐 **Web Apps Support** - Detects Google Docs, Notion, Office Online, and 20+ web applications in browsers
 
 ## Requirements
 
@@ -179,6 +181,38 @@ See `docs/LOCALIZATION.md` for:
 - Translation guidelines
 - RTL language support
 - Contributing translations
+
+## Text Formatting
+
+RapidWhisper can automatically format transcribed text based on the active application:
+
+### Supported Applications
+
+**Desktop Apps**: Notion, Obsidian, VS Code, Word, LibreOffice, and more
+
+**Web Apps** (detected in browsers):
+- 📝 **Google Services**: Docs, Sheets, Slides, Forms, Keep
+- 💼 **Microsoft Office Online**: Word, Excel, PowerPoint, Office 365
+- 🤝 **Collaboration Tools**: Dropbox Paper, Quip, Coda.io, Airtable
+- 📊 **Zoho Office**: Writer, Sheet, Show
+- 📔 **Note-Taking**: Notion, Obsidian Publish
+- ✍️ **Markdown Editors**: HackMD, StackEdit, GitHub.dev, GitLab, Gitpod
+
+### Configuration
+
+Enable in Settings → Processing → Formatting, or via `.env`:
+
+```env
+FORMATTING_ENABLED=true
+FORMATTING_PROVIDER=groq
+FORMATTING_APPLICATIONS=word,notion,obsidian,markdown
+```
+
+See `docs/WEB_APPS_SUPPORT.md` for:
+- Complete list of supported web applications
+- How browser detection works
+- Custom prompts for each application
+- Troubleshooting and debugging
 
 ## Development
 
