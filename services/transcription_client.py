@@ -18,6 +18,9 @@ from utils.exceptions import (
     APITimeoutError as CustomAPITimeoutError,
     InvalidAPIKeyError
 )
+from services.processing_coordinator import ProcessingCoordinator
+from services.formatting_module import FormattingModule
+from services.formatting_config import FormattingConfig
 
 
 class TranscriptionClient:
@@ -231,7 +234,7 @@ class TranscriptionClient:
         else:
             return f"Ошибка API: {error}"
     
-    def post_process_text(self, text: str, provider: str, model: str, system_prompt: str, api_key: Optional[str] = None, base_url: Optional[str] = None, use_coding_plan: bool = False) -> str:
+    def post_process_text(self, text: str, provider: str, model: str, system_prompt: str, api_key: Optional[str] = None, base_url: Optional[str] = None, use_coding_plan: bool = False, temperature: float = 0.3) -> str:
         """
         Постобработка транскрибированного текста через LLM.
         
@@ -324,7 +327,7 @@ class TranscriptionClient:
             
             # Отправить запрос на обработку
             logger.info("Отправка запроса на постобработку...")
-            logger.info(f"Параметры: temperature=0.3, max_tokens=2000")
+            logger.info(f"Параметры: temperature={temperature}, max_tokens=2000")
             logger.info(f"Отправка к {base_url} с моделью {model}...")
             logger.info("⏱️ Таймаут: 60 секунд (после этого вернется оригинальный текст)")
             
@@ -337,7 +340,7 @@ class TranscriptionClient:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": text}
                 ],
-                temperature=0.3,  # Низкая температура для более точной обработки
+                temperature=temperature,  # Use provided temperature
                 max_tokens=2000,
                 timeout=60.0  # Дополнительный таймаут на уровне запроса
             )
@@ -556,46 +559,49 @@ class TranscriptionThread(QThread):
                 # Пробросить ошибку дальше чтобы остановить обработку
                 raise
             
-            # Постобработка текста если включена
-            if config.enable_post_processing:
-                logger.info("=" * 80)
-                logger.info("ПОСТОБРАБОТКА ВКЛЮЧЕНА В НАСТРОЙКАХ")
-                logger.info(f"Провайдер постобработки: {config.post_processing_provider}")
-                
-                # Определить какую модель использовать: кастомную или из выпадающего списка
+            # Process text through formatting and/or post-processing
+            # Use ProcessingCoordinator to handle combined operations
+            from services.window_monitor import WindowMonitor
+            
+            # Load formatting configuration
+            formatting_config = FormattingConfig.from_env()
+            
+            # Create window monitor using factory method
+            window_monitor = WindowMonitor.create()
+            
+            # Create formatting module
+            formatting_module = FormattingModule(
+                config_manager=None,
+                ai_client_factory=None,
+                window_monitor=window_monitor
+            )
+            formatting_module.config = formatting_config
+            
+            # Create processing coordinator
+            coordinator = ProcessingCoordinator(
+                formatting_module=formatting_module,
+                config_manager=config
+            )
+            
+            # Process the transcribed text
+            try:
+                transcribed_text = coordinator.process_transcription(
+                    text=text,
+                    transcription_client=self.transcription_client,
+                    config=config
+                )
+            except NotFoundError as nf_error:
+                logger.error(f"❌ Модель не найдена: {nf_error}")
+                logger.info("Отправка сигнала model_not_found для уведомления пользователя")
+                # Determine which model caused the error
                 model_to_use = config.post_processing_custom_model if config.post_processing_custom_model else config.post_processing_model
-                logger.info(f"Модель постобработки: {model_to_use}")
-                if config.post_processing_custom_model:
-                    logger.info(f"  (используется кастомная модель)")
-                
-                logger.info(f"Промпт: {config.post_processing_prompt[:100]}...")
-                logger.info("Начинаем постобработку текста...")
-                try:
-                    processed_text = self.transcription_client.post_process_text(
-                        text=text,
-                        provider=config.post_processing_provider,
-                        model=model_to_use,
-                        system_prompt=config.post_processing_prompt,
-                        base_url=config.llm_base_url if config.post_processing_provider == "llm" else None,
-                        use_coding_plan=config.glm_use_coding_plan if config.post_processing_provider == "glm" else False
-                    )
-                    transcribed_text = processed_text
-                    logger.info(f"✅ Постобработка завершена успешно")
-                    logger.info(f"Результат: {processed_text[:100]}...")
-                except NotFoundError as nf_error:
-                    logger.error(f"❌ Модель не найдена: {nf_error}")
-                    logger.info("Отправка сигнала model_not_found для уведомления пользователя")
-                    # Отправить специальный сигнал для уведомления
-                    self.model_not_found.emit(model_to_use, config.post_processing_provider)
-                    logger.info("Используем оригинальный текст без постобработки")
-                    # Продолжаем с оригинальным текстом
-                except Exception as pp_error:
-                    logger.error(f"❌ Ошибка постобработки: {pp_error}")
-                    logger.info("Используем оригинальный текст без постобработки")
-                    # Продолжаем с оригинальным текстом
-                logger.info("=" * 80)
-            else:
-                logger.info("Постобработка отключена в настройках")
+                self.model_not_found.emit(model_to_use, config.post_processing_provider)
+                logger.info("Используем оригинальный текст без обработки")
+                # Continue with original text
+            except Exception as processing_error:
+                logger.error(f"❌ Ошибка обработки: {processing_error}")
+                logger.info("Используем оригинальный текст без обработки")
+                # Continue with original text
             
             # Отправить сигнал с результатом
             logger.info("Отправка сигнала transcription_complete")

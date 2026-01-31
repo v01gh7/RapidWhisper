@@ -243,7 +243,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                 subcontrol-position: top left;
                 padding: 8px 16px;
                 background-color: rgba(200, 200, 200, {int(self._opacity * 0.7)});
-                color: #fffff;
+                color: #ffffff;
                 font-size: 14px;
                 font-weight: bold;
                 border-radius: 4px;
@@ -1033,6 +1033,89 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         post_processing_group.setLayout(post_processing_layout)
         layout.addWidget(post_processing_group)
+        
+        # Группа: Форматирование транскрипции
+        formatting_group = QGroupBox("Форматирование")
+        formatting_layout = QVBoxLayout()
+        formatting_layout.setSpacing(12)
+        
+        # Чекбокс включения форматирования
+        self.enable_formatting_check = QCheckBox("Включить форматирование")
+        self.enable_formatting_check.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.enable_formatting_check.setToolTip("Автоматически форматировать текст в зависимости от активного приложения")
+        self.enable_formatting_check.toggled.connect(self._on_formatting_toggled)
+        formatting_layout.addWidget(self.enable_formatting_check)
+        
+        # Описание
+        formatting_info_label = QLabel(
+            "Автоматически форматирует транскрибированный текст в зависимости от активного приложения. "
+            "Поддерживает Notion, Obsidian, Markdown файлы, Word, LibreOffice и другие."
+        )
+        formatting_info_label.setObjectName("infoLabel")
+        formatting_info_label.setWordWrap(True)
+        formatting_layout.addWidget(formatting_info_label)
+        
+        # Форма настроек форматирования
+        formatting_form = QFormLayout()
+        formatting_form.setSpacing(12)
+        
+        # Выбор провайдера для форматирования
+        self.formatting_provider_combo = QComboBox()
+        self.formatting_provider_combo.addItems(["groq", "openai", "glm", "custom"])
+        self.formatting_provider_combo.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.formatting_provider_combo.currentTextChanged.connect(self._on_formatting_provider_changed)
+        formatting_provider_label = QLabel("AI провайдер")
+        formatting_provider_label.setToolTip("AI провайдер для операций форматирования")
+        formatting_form.addRow(formatting_provider_label, self.formatting_provider_combo)
+        
+        # Модель для форматирования
+        self.formatting_model_edit = QLineEdit()
+        self.formatting_model_edit.setPlaceholderText("например: llama-3.3-70b-versatile")
+        formatting_model_label = QLabel("Модель")
+        formatting_model_label.setToolTip("Модель для форматирования текста")
+        formatting_form.addRow(formatting_model_label, self.formatting_model_edit)
+        
+        # Список приложений
+        self.formatting_applications_edit = QLineEdit()
+        self.formatting_applications_edit.setPlaceholderText("Стандартные: notion, obsidian, markdown, word, libreoffice, vscode")
+        formatting_applications_label = QLabel("Приложения")
+        formatting_applications_label.setToolTip("Список приложений через запятую для форматирования")
+        formatting_form.addRow(formatting_applications_label, self.formatting_applications_edit)
+        
+        # Температура
+        self.formatting_temperature_spin = QDoubleSpinBox()
+        self.formatting_temperature_spin.setRange(0.0, 1.0)
+        self.formatting_temperature_spin.setSingleStep(0.1)
+        self.formatting_temperature_spin.setDecimals(1)
+        self.formatting_temperature_spin.setValue(0.3)
+        self.formatting_temperature_spin.setCursor(Qt.CursorShape.PointingHandCursor)
+        formatting_temperature_label = QLabel("Температура")
+        formatting_temperature_label.setToolTip("Температура AI модели (0.0-1.0). Меньше = более предсказуемо")
+        formatting_form.addRow(formatting_temperature_label, self.formatting_temperature_spin)
+        
+        formatting_layout.addLayout(formatting_form)
+        
+        # Системный промпт
+        formatting_prompt_label = QLabel("Системный промпт")
+        formatting_prompt_label.setToolTip("Промпт для форматирования. Показан стандартный промпт, который можно отредактировать")
+        formatting_layout.addWidget(formatting_prompt_label)
+        
+        self.formatting_system_prompt_edit = QTextEdit()
+        self.formatting_system_prompt_edit.setPlaceholderText("Загрузка стандартного промпта...")
+        self.formatting_system_prompt_edit.setMaximumHeight(200)
+        formatting_layout.addWidget(self.formatting_system_prompt_edit)
+        
+        # Подсказка
+        formatting_prompt_info = QLabel(
+            "💡 Показан стандартный промпт для Markdown. Вы можете отредактировать его и нажать 'Сохранить'. "
+            "Промпт будет применяться ко всем форматам (Notion, Obsidian, Word и т.д.)."
+        )
+        formatting_prompt_info.setObjectName("infoLabel")
+        formatting_prompt_info.setWordWrap(True)
+        formatting_layout.addWidget(formatting_prompt_info)
+        
+        formatting_group.setLayout(formatting_layout)
+        layout.addWidget(formatting_group)
         
         # Прижать контент вверх
         layout.addStretch()
@@ -2148,6 +2231,35 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         # Обновить состояние полей
         self._on_post_processing_toggled(self.config.enable_post_processing)
         
+        # Форматирование
+        from services.formatting_config import FormattingConfig
+        from services.formatting_module import FORMAT_PROMPTS
+        formatting_config = FormattingConfig.from_env()
+        self.enable_formatting_check.setChecked(formatting_config.enabled)
+        self.formatting_provider_combo.setCurrentText(formatting_config.provider)
+        self.formatting_model_edit.setText(formatting_config.model)
+        
+        # Показать приложения (если пусто, показать стандартные)
+        if formatting_config.applications:
+            self.formatting_applications_edit.setText(",".join(formatting_config.applications))
+        else:
+            # Показать стандартные приложения
+            default_apps = ["notion", "obsidian", "markdown", "word", "libreoffice", "vscode"]
+            self.formatting_applications_edit.setText(",".join(default_apps))
+        
+        self.formatting_temperature_spin.setValue(formatting_config.temperature)
+        
+        # Если системный промпт пустой, показать стандартный промпт для markdown
+        if formatting_config.system_prompt:
+            self.formatting_system_prompt_edit.setPlainText(formatting_config.system_prompt)
+        else:
+            # Показать стандартный промпт для markdown как пример
+            default_prompt = FORMAT_PROMPTS.get("markdown", "")
+            self.formatting_system_prompt_edit.setPlainText(default_prompt)
+        
+        # Обновить состояние полей форматирования
+        self._on_formatting_toggled(formatting_config.enabled)
+        
         # Обновить подсветку активного провайдера
         self._on_provider_changed(self.config.ai_provider)
         
@@ -2286,6 +2398,38 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             models = ["llama-3.3-70b-versatile"]
         
         self.post_processing_model_combo.addItems(models)
+        
+        # Показать/скрыть GLM Coding Plan чекбокс
+        if hasattr(self, 'glm_coding_plan_check'):
+            self.glm_coding_plan_check.setVisible(provider == "glm")
+        
+        # Показать/скрыть LLM Base URL и API Key
+        if hasattr(self, 'llm_base_url_edit'):
+            self.llm_base_url_edit.setVisible(provider == "llm")
+            self.llm_base_url_label.setVisible(provider == "llm")
+        if hasattr(self, 'llm_api_key_edit'):
+            self.llm_api_key_edit.setVisible(provider == "llm")
+            self.llm_api_key_label.setVisible(provider == "llm")
+    
+    def _on_formatting_toggled(self, checked: bool):
+        """Handler for enabling/disabling formatting."""
+        self.formatting_provider_combo.setEnabled(checked)
+        self.formatting_model_edit.setEnabled(checked)
+        self.formatting_applications_edit.setEnabled(checked)
+        self.formatting_temperature_spin.setEnabled(checked)
+        self.formatting_system_prompt_edit.setEnabled(checked)
+    
+    def _on_formatting_provider_changed(self, provider: str):
+        """Handler for formatting provider change."""
+        # Update placeholder text based on provider
+        if provider == "groq":
+            self.formatting_model_edit.setPlaceholderText("e.g., llama-3.3-70b-versatile")
+        elif provider == "openai":
+            self.formatting_model_edit.setPlaceholderText("e.g., gpt-4o-mini")
+        elif provider == "glm":
+            self.formatting_model_edit.setPlaceholderText("e.g., glm-4-flash")
+        elif provider == "custom":
+            self.formatting_model_edit.setPlaceholderText("e.g., custom-model-name")
         
         # Показать/скрыть дополнительные поля
         if hasattr(self, 'glm_coding_plan_check'):
@@ -2545,6 +2689,12 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                 "FONT_SIZE_FLOATING_INFO": str(int(self.font_floating_info_spin.value())),
                 "FONT_SIZE_SETTINGS_LABELS": str(int(self.font_settings_labels_spin.value())),
                 "FONT_SIZE_SETTINGS_TITLES": str(int(self.font_settings_titles_spin.value())),
+                "FORMATTING_ENABLED": "true" if self.enable_formatting_check.isChecked() else "false",
+                "FORMATTING_PROVIDER": self.formatting_provider_combo.currentText(),
+                "FORMATTING_MODEL": self.formatting_model_edit.text(),
+                "FORMATTING_APPLICATIONS": self.formatting_applications_edit.text(),
+                "FORMATTING_TEMPERATURE": str(self.formatting_temperature_spin.value()),
+                "FORMATTING_SYSTEM_PROMPT": self.formatting_system_prompt_edit.toPlainText(),
             }
             
             # Использовать правильный путь к .env (AppData для production)
