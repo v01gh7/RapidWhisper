@@ -27,6 +27,69 @@ import os
 logger = get_logger()
 
 
+class NoScrollComboBox(QComboBox):
+    """
+    QComboBox that ignores wheel events when not focused.
+    This prevents accidental value changes when scrolling the page.
+    """
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        # Set focus policy to require click to focus
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+    
+    def wheelEvent(self, event):
+        """Override wheel event to ignore when not focused."""
+        if self.hasFocus():
+            # Allow wheel scrolling when focused
+            super().wheelEvent(event)
+        else:
+            # Ignore wheel event and pass it to parent (for page scrolling)
+            event.ignore()
+
+
+class NoScrollSpinBox(QSpinBox):
+    """
+    QSpinBox that ignores wheel events when not focused.
+    This prevents accidental value changes when scrolling the page.
+    """
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        # Set focus policy to require click to focus
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+    
+    def wheelEvent(self, event):
+        """Override wheel event to ignore when not focused."""
+        if self.hasFocus():
+            # Allow wheel scrolling when focused
+            super().wheelEvent(event)
+        else:
+            # Ignore wheel event and pass it to parent (for page scrolling)
+            event.ignore()
+
+
+class NoScrollDoubleSpinBox(QDoubleSpinBox):
+    """
+    QDoubleSpinBox that ignores wheel events when not focused.
+    This prevents accidental value changes when scrolling the page.
+    """
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        # Set focus policy to require click to focus
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+    
+    def wheelEvent(self, event):
+        """Override wheel event to ignore when not focused."""
+        if self.hasFocus():
+            # Allow wheel scrolling when focused
+            super().wheelEvent(event)
+        else:
+            # Ignore wheel event and pass it to parent (for page scrolling)
+            event.ignore()
+
+
 class SettingsWindow(QDialog, StyledWindowMixin):
     """
     Окно настроек приложения.
@@ -600,7 +663,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         provider_layout = QFormLayout()
         provider_layout.setSpacing(12)
         
-        self.provider_combo = QComboBox()
+        self.provider_combo = NoScrollComboBox()
         self.provider_combo.addItems(["groq", "openai", "glm", "custom"])
         self.provider_combo.currentTextChanged.connect(self._on_provider_changed)
         self.provider_combo.setCursor(Qt.CursorShape.PointingHandCursor)  # Курсор "рука"
@@ -777,7 +840,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         ui_layout = QFormLayout()
         ui_layout.setSpacing(12)
         
-        self.auto_hide_spin = QDoubleSpinBox()
+        self.auto_hide_spin = NoScrollDoubleSpinBox()
         self.auto_hide_spin.setRange(1.0, 10.0)
         self.auto_hide_spin.setSingleStep(0.5)
         self.auto_hide_spin.setDecimals(1)
@@ -795,7 +858,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         ui_layout.addRow(remember_label, self.remember_position_check)
         
         # Выпадающий список предустановленных позиций
-        self.window_position_combo = QComboBox()
+        self.window_position_combo = NoScrollComboBox()
         self.window_position_combo.addItems([
             t("settings.app.position_center"),
             t("settings.app.position_top_left"),
@@ -834,14 +897,14 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         audio_layout = QFormLayout()
         audio_layout.setSpacing(12)
         
-        self.sample_rate_combo = QComboBox()
+        self.sample_rate_combo = NoScrollComboBox()
         self.sample_rate_combo.addItems(["16000", "44100", "48000"])
         self.sample_rate_combo.setCursor(Qt.CursorShape.PointingHandCursor)  # Курсор "рука"
         rate_label = QLabel(t("settings.audio.sample_rate"))
         rate_label.setToolTip(t("settings.audio.sample_rate_tooltip"))
         audio_layout.addRow(rate_label, self.sample_rate_combo)
         
-        self.chunk_size_combo = QComboBox()
+        self.chunk_size_combo = NoScrollComboBox()
         self.chunk_size_combo.addItems(["256", "512", "1024", "2048", "4096"])
         self.chunk_size_combo.setCursor(Qt.CursorShape.PointingHandCursor)  # Курсор "рука"
         chunk_label = QLabel(t("settings.audio.chunk_size"))
@@ -876,7 +939,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         )
         silence_layout.addRow("", manual_stop_info)
         
-        self.silence_threshold_spin = QDoubleSpinBox()
+        self.silence_threshold_spin = NoScrollDoubleSpinBox()
         self.silence_threshold_spin.setRange(0.01, 0.1)
         self.silence_threshold_spin.setSingleStep(0.01)
         self.silence_threshold_spin.setDecimals(2)
@@ -884,7 +947,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         threshold_label.setToolTip(t("settings.audio.silence_threshold_tooltip"))
         silence_layout.addRow(threshold_label, self.silence_threshold_spin)
         
-        self.silence_duration_spin = QDoubleSpinBox()
+        self.silence_duration_spin = NoScrollDoubleSpinBox()
         self.silence_duration_spin.setRange(0.5, 5.0)
         self.silence_duration_spin.setSingleStep(0.5)
         self.silence_duration_spin.setDecimals(1)
@@ -893,7 +956,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         duration_label.setToolTip(t("settings.audio.silence_duration_tooltip"))
         silence_layout.addRow(duration_label, self.silence_duration_spin)
         
-        self.silence_padding_spin = QDoubleSpinBox()
+        self.silence_padding_spin = NoScrollDoubleSpinBox()
         self.silence_padding_spin.setRange(100, 1000)
         self.silence_padding_spin.setSingleStep(50)
         self.silence_padding_spin.setDecimals(0)
@@ -957,7 +1020,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         settings_form.setSpacing(12)
         
         # Выбор провайдера
-        self.post_processing_provider_combo = QComboBox()
+        self.post_processing_provider_combo = NoScrollComboBox()
         self.post_processing_provider_combo.addItems(["groq", "openai", "glm", "llm"])
         self.post_processing_provider_combo.setCursor(Qt.CursorShape.PointingHandCursor)
         self.post_processing_provider_combo.currentTextChanged.connect(self._on_post_processing_provider_changed)
@@ -966,7 +1029,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         settings_form.addRow(provider_label, self.post_processing_provider_combo)
         
         # Выбор модели
-        self.post_processing_model_combo = QComboBox()
+        self.post_processing_model_combo = NoScrollComboBox()
         self.post_processing_model_combo.setCursor(Qt.CursorShape.PointingHandCursor)
         model_label = QLabel(t("settings.processing.model"))
         model_label.setToolTip(t("settings.processing.model_tooltip"))
@@ -1061,7 +1124,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         formatting_form.setSpacing(12)
         
         # Выбор провайдера для форматирования
-        self.formatting_provider_combo = QComboBox()
+        self.formatting_provider_combo = NoScrollComboBox()
         self.formatting_provider_combo.addItems(["groq", "openai", "glm", "custom"])
         self.formatting_provider_combo.setCursor(Qt.CursorShape.PointingHandCursor)
         self.formatting_provider_combo.currentTextChanged.connect(self._on_formatting_provider_changed)
@@ -1106,7 +1169,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         formatting_form.addRow(self.formatting_custom_key_label, formatting_custom_key_layout)
         
         # Температура
-        self.formatting_temperature_spin = QDoubleSpinBox()
+        self.formatting_temperature_spin = NoScrollDoubleSpinBox()
         self.formatting_temperature_spin.setRange(0.0, 1.0)
         self.formatting_temperature_spin.setSingleStep(0.1)
         self.formatting_temperature_spin.setDecimals(1)
@@ -1415,8 +1478,8 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         fonts_layout.setSpacing(12)
         
         # Плавающее окно - Основной текст
-        from PyQt6.QtWidgets import QSpinBox, QAbstractSpinBox
-        self.font_floating_main_spin = QSpinBox()
+        from PyQt6.QtWidgets import QAbstractSpinBox
+        self.font_floating_main_spin = NoScrollSpinBox()
         self.font_floating_main_spin.setRange(10, 24)
         self.font_floating_main_spin.setSingleStep(1)
         self.font_floating_main_spin.setSuffix(" px")
@@ -1429,7 +1492,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         fonts_layout.addRow(font_main_label, self.font_floating_main_spin)
         
         # Плавающее окно - Инфо панель
-        self.font_floating_info_spin = QSpinBox()
+        self.font_floating_info_spin = NoScrollSpinBox()
         self.font_floating_info_spin.setRange(8, 16)
         self.font_floating_info_spin.setSingleStep(1)
         self.font_floating_info_spin.setSuffix(" px")
@@ -1442,7 +1505,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         fonts_layout.addRow(font_info_label, self.font_floating_info_spin)
         
         # Окно настроек - Метки
-        self.font_settings_labels_spin = QSpinBox()
+        self.font_settings_labels_spin = NoScrollSpinBox()
         self.font_settings_labels_spin.setRange(10, 16)
         self.font_settings_labels_spin.setSingleStep(1)
         self.font_settings_labels_spin.setSuffix(" px")
@@ -1455,7 +1518,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         fonts_layout.addRow(font_labels_label, self.font_settings_labels_spin)
         
         # Окно настроек - Заголовки
-        self.font_settings_titles_spin = QSpinBox()
+        self.font_settings_titles_spin = NoScrollSpinBox()
         self.font_settings_titles_spin.setRange(16, 32)
         self.font_settings_titles_spin.setSingleStep(1)
         self.font_settings_titles_spin.setSuffix(" px")
