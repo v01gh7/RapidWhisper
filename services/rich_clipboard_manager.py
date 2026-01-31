@@ -104,11 +104,21 @@ EndFragment:0000000000
         # Длина заголовка в байтах
         header_length = len(temp_header.encode('utf-8'))
         
-        # Вычислить смещения ПОСЛЕ заголовка
-        start_html = header_length + html_doc.find('<html>')
-        end_html = header_length + html_doc.find('</html>') + 7
-        start_fragment = header_length + html_doc.find('<body>') + 6
-        end_fragment = header_length + html_doc.find('</body>')
+        # CRITICAL: Работаем ТОЛЬКО с байтами, не с символами!
+        # Конвертируем весь документ в байты один раз
+        html_doc_bytes = html_doc.encode('utf-8')
+        
+        # Ищем позиции маркеров в БАЙТАХ
+        start_html_marker = b'<html>'
+        end_html_marker = b'</html>'
+        start_fragment_marker = b'<body>'
+        end_fragment_marker = b'</body>'
+        
+        # Найти позиции в байтах
+        start_html = header_length + html_doc_bytes.find(start_html_marker)
+        end_html = header_length + html_doc_bytes.find(end_html_marker) + len(end_html_marker)
+        start_fragment = header_length + html_doc_bytes.find(start_fragment_marker) + len(start_fragment_marker)
+        end_fragment = header_length + html_doc_bytes.find(end_fragment_marker)
         
         # Создать правильный заголовок с вычисленными смещениями
         header = f"""Version:0.9
