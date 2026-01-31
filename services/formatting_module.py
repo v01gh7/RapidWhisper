@@ -48,6 +48,9 @@ def match_window_to_format(window_title: str, app_name: str, keywords_map: dict)
     This function checks both window title and application name against
     configured keywords to determine the appropriate format.
     
+    PRIORITY: Application name is checked FIRST for messengers (Telegram, WhatsApp, etc.)
+    because window title shows chat name, not app name.
+    
     Args:
         window_title: Window/tab title
         app_name: Application process name
@@ -59,6 +62,18 @@ def match_window_to_format(window_title: str, app_name: str, keywords_map: dict)
     title_lower = window_title.lower()
     app_lower = app_name.lower()
     
+    # STEP 1: Check application name FIRST (priority for messengers)
+    # This ensures Telegram/WhatsApp/Discord are detected even if chat name doesn't contain keywords
+    for format_type, patterns in keywords_map.items():
+        for pattern in patterns:
+            pattern_lower = pattern.lower()
+            
+            # Check application name
+            if pattern_lower in app_lower:
+                logger.info(f"  ✅ Найдено совпадение в имени приложения: '{pattern}' → формат '{format_type}'")
+                return format_type
+    
+    # STEP 2: Check window title (for browsers and other apps where title matters)
     for format_type, patterns in keywords_map.items():
         for pattern in patterns:
             pattern_lower = pattern.lower()
@@ -66,11 +81,6 @@ def match_window_to_format(window_title: str, app_name: str, keywords_map: dict)
             # Check window title
             if pattern_lower in title_lower:
                 logger.info(f"  ✅ Найдено совпадение в заголовке: '{pattern}' → формат '{format_type}'")
-                return format_type
-            
-            # Check application name
-            if pattern_lower in app_lower:
-                logger.info(f"  ✅ Найдено совпадение в имени приложения: '{pattern}' → формат '{format_type}'")
                 return format_type
             
             # Check file extension in window title
