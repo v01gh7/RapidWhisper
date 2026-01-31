@@ -648,11 +648,21 @@ class TranscriptionThread(QThread):
                             transcription_path.write_text(transcribed_text, encoding='utf-8')
                             logger.info(f"Транскрипция сохранена: {transcription_path}")
                     else:
-                        # Удалить временный файл
+                        # Удалить временный файл с повторными попытками
                         import time
-                        time.sleep(0.1)
-                        os.remove(self.audio_file_path)
-                        logger.info(f"Временный файл удален: {self.audio_file_path}")
+                        max_attempts = 3
+                        for attempt in range(max_attempts):
+                            try:
+                                time.sleep(0.2 * (attempt + 1))  # Увеличивающаяся задержка: 0.2, 0.4, 0.6 сек
+                                os.remove(self.audio_file_path)
+                                logger.info(f"Временный файл удален: {self.audio_file_path}")
+                                break
+                            except PermissionError as pe:
+                                if attempt < max_attempts - 1:
+                                    logger.debug(f"Попытка {attempt + 1}/{max_attempts}: файл еще используется, ждем...")
+                                    continue
+                                else:
+                                    raise pe
             except Exception as e:
                 # Игнорировать ошибки удаления/перемещения файла
-                logger.warning(f"Не удалось обработать временный файл: {e}")
+                logger.debug(f"Не удалось обработать временный файл: {e}")
