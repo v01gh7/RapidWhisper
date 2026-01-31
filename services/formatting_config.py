@@ -96,6 +96,8 @@ class FormattingConfig:
         temperature: Temperature for AI model (0.0-1.0, lower = more deterministic)
         system_prompt: System prompt for formatting (deprecated, kept for migration)
         app_prompts: Dictionary mapping application names to their custom prompts
+        custom_base_url: Base URL for custom provider (e.g., http://localhost:1234/v1/)
+        custom_api_key: API key for custom provider
     """
     
     enabled: bool = False
@@ -105,6 +107,8 @@ class FormattingConfig:
     temperature: float = 0.3  # Lower temperature for more consistent formatting
     system_prompt: str = ""  # Deprecated, kept for migration
     app_prompts: Dict[str, str] = field(default_factory=dict)  # New: per-application prompts
+    custom_base_url: str = ""  # For custom provider
+    custom_api_key: str = ""  # For custom provider
     
     def is_valid(self) -> bool:
         """
@@ -269,6 +273,10 @@ class FormattingConfig:
             if "_fallback" not in app_prompts:
                 app_prompts["_fallback"] = ""
         
+        # Load custom provider settings
+        custom_base_url = os.getenv("FORMATTING_CUSTOM_BASE_URL", "")
+        custom_api_key = os.getenv("FORMATTING_CUSTOM_API_KEY", "")
+        
         return cls(
             enabled=enabled,
             provider=provider,
@@ -276,7 +284,9 @@ class FormattingConfig:
             applications=applications,
             temperature=temperature,
             system_prompt=system_prompt,
-            app_prompts=app_prompts
+            app_prompts=app_prompts,
+            custom_base_url=custom_base_url,
+            custom_api_key=custom_api_key
         )
     
     def to_env(self) -> dict:
@@ -300,6 +310,8 @@ class FormattingConfig:
             "FORMATTING_MODEL": self.model,
             "FORMATTING_APP_PROMPTS": json.dumps(app_prompts_data, ensure_ascii=False),
             "FORMATTING_TEMPERATURE": str(self.temperature),
+            "FORMATTING_CUSTOM_BASE_URL": self.custom_base_url,
+            "FORMATTING_CUSTOM_API_KEY": self.custom_api_key,
             # Keep old format for backward compatibility (but will be removed after migration)
             "FORMATTING_APPLICATIONS": ",".join(self.applications),
             "FORMATTING_SYSTEM_PROMPT": self.system_prompt

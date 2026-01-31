@@ -1071,10 +1071,39 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         # Модель для форматирования
         self.formatting_model_edit = QLineEdit()
-        self.formatting_model_edit.setPlaceholderText("например: llama-3.3-70b-versatile")
+        self.formatting_model_edit.setPlaceholderText("опционально, по умолчанию используется стандартная модель провайдера")
         formatting_model_label = QLabel("Модель")
-        formatting_model_label.setToolTip("Модель для форматирования текста")
+        formatting_model_label.setToolTip("Модель для форматирования текста (опционально)")
         formatting_form.addRow(formatting_model_label, self.formatting_model_edit)
+        
+        # Custom Base URL (только для custom провайдера)
+        self.formatting_custom_url_edit = QLineEdit()
+        self.formatting_custom_url_edit.setPlaceholderText("например: http://localhost:1234/v1/")
+        self.formatting_custom_url_label = QLabel("Custom Base URL")
+        self.formatting_custom_url_label.setToolTip("URL для custom OpenAI-совместимого API")
+        formatting_form.addRow(self.formatting_custom_url_label, self.formatting_custom_url_edit)
+        
+        # Custom API Key (только для custom провайдера)
+        formatting_custom_key_layout = QHBoxLayout()
+        self.formatting_custom_key_edit = QLineEdit()
+        self.formatting_custom_key_edit.setEchoMode(QLineEdit.EchoMode.Password)
+        self.formatting_custom_key_edit.setPlaceholderText("API ключ для custom провайдера")
+        formatting_custom_key_layout.addWidget(self.formatting_custom_key_edit)
+        
+        self.formatting_custom_key_show_btn = QPushButton("👁")
+        self.formatting_custom_key_show_btn.setMaximumWidth(40)
+        self.formatting_custom_key_show_btn.setCheckable(True)
+        self.formatting_custom_key_show_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.formatting_custom_key_show_btn.toggled.connect(
+            lambda checked: self.formatting_custom_key_edit.setEchoMode(
+                QLineEdit.EchoMode.Normal if checked else QLineEdit.EchoMode.Password
+            )
+        )
+        formatting_custom_key_layout.addWidget(self.formatting_custom_key_show_btn)
+        
+        self.formatting_custom_key_label = QLabel("Custom API Key")
+        self.formatting_custom_key_label.setToolTip("API ключ для custom провайдера")
+        formatting_form.addRow(self.formatting_custom_key_label, formatting_custom_key_layout)
         
         # Температура
         self.formatting_temperature_spin = QDoubleSpinBox()
@@ -2249,6 +2278,8 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         self.enable_formatting_check.setChecked(formatting_config.enabled)
         self.formatting_provider_combo.setCurrentText(formatting_config.provider)
         self.formatting_model_edit.setText(formatting_config.model)
+        self.formatting_custom_url_edit.setText(formatting_config.custom_base_url)
+        self.formatting_custom_key_edit.setText(formatting_config.custom_api_key)
         
         # Загрузить приложения в визуальную сетку
         self._refresh_formatting_apps_grid()
@@ -2257,6 +2288,9 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         # Обновить состояние полей форматирования
         self._on_formatting_toggled(formatting_config.enabled)
+        
+        # Обновить видимость custom полей
+        self._on_formatting_provider_changed(formatting_config.provider)
         
         # Обновить подсветку активного провайдера
         self._on_provider_changed(self.config.ai_provider)
@@ -2422,15 +2456,23 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         """Handler for formatting provider change."""
         # Update placeholder text based on provider
         if provider == "groq":
-            self.formatting_model_edit.setPlaceholderText("e.g., llama-3.3-70b-versatile")
+            self.formatting_model_edit.setPlaceholderText("опционально, по умолчанию: llama-3.3-70b-versatile")
         elif provider == "openai":
-            self.formatting_model_edit.setPlaceholderText("e.g., gpt-4o-mini")
+            self.formatting_model_edit.setPlaceholderText("опционально, по умолчанию: gpt-4o-mini")
         elif provider == "glm":
-            self.formatting_model_edit.setPlaceholderText("e.g., glm-4-flash")
+            self.formatting_model_edit.setPlaceholderText("опционально, по умолчанию: glm-4-flash")
         elif provider == "custom":
-            self.formatting_model_edit.setPlaceholderText("e.g., custom-model-name")
+            self.formatting_model_edit.setPlaceholderText("название модели для custom провайдера")
         
-        # Показать/скрыть дополнительные поля
+        # Show/hide custom provider fields (including the eye button)
+        is_custom = provider == "custom"
+        self.formatting_custom_url_edit.setVisible(is_custom)
+        self.formatting_custom_url_label.setVisible(is_custom)
+        self.formatting_custom_key_edit.setVisible(is_custom)
+        self.formatting_custom_key_label.setVisible(is_custom)
+        self.formatting_custom_key_show_btn.setVisible(is_custom)
+        
+        # Показать/скрыть дополнительные поля для постобработки
         if hasattr(self, 'glm_coding_plan_check'):
             self.glm_coding_plan_check.setVisible(provider == "glm")
         if hasattr(self, 'llm_base_url_edit'):
@@ -2872,6 +2914,8 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             formatting_config.provider = self.formatting_provider_combo.currentText()
             formatting_config.model = self.formatting_model_edit.text()
             formatting_config.temperature = self.formatting_temperature_spin.value()
+            formatting_config.custom_base_url = self.formatting_custom_url_edit.text()
+            formatting_config.custom_api_key = self.formatting_custom_key_edit.text()
             # Applications and prompts are already managed through the grid UI
             formatting_config.save_to_env()
             
