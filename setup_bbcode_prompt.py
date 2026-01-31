@@ -76,22 +76,32 @@ ALIGNMENT:
 - [right]right aligned[/right]
 
 CRITICAL SPACING RULES (MUST FOLLOW):
-- ALWAYS add TWO newlines (blank line) after EVERY heading
-- ALWAYS add TWO newlines (blank line) between paragraphs
-- ALWAYS add TWO newlines (blank line) before and after lists
-- Each list item on separate line
-- Separate different topics with TWO newlines
+- Add ONE blank line after headings
+- Add ONE blank line between paragraphs when:
+  * Topic changes
+  * Speaker introduces new idea with "то есть", "но", "также", "кроме того"
+  * Logical break in thought flow
+  * Transition words like "however", "but", "also", "additionally"
+- Keep related sentences together in same paragraph (NO blank lines between them)
+- Add ONE blank line before and after lists
+- Each list item on separate line (no blank lines between items)
+
+PARAGRAPH DETECTION:
+- NEW paragraph when: topic shift, "то есть" (that is), "но" (but) at start, "также" (also), "кроме того" (besides)
+- SAME paragraph when: continuing same thought, elaborating on previous sentence, providing details
 
 EXAMPLE FORMAT:
 [size=200]Main Heading[/size]
 
-First paragraph text here.
+First paragraph with multiple related sentences. They stay together without blank lines between them.
 
-Second paragraph text here.
+Second paragraph starts with transition word or new topic. Also multiple sentences together.
 
 [size=150]Subheading[/size]
 
-Paragraph under subheading.
+Paragraph under subheading with related sentences together.
+
+But this is new paragraph because it starts with "but". Different thought here.
 
 [list]
 [*]List item 1
@@ -102,13 +112,14 @@ Paragraph under subheading.
 Another paragraph after list.
 
 FORBIDDEN ACTIONS:
+- Adding blank lines between every sentence
 - Adding explanations (like "This is used for...")
 - Adding descriptions (like "These items are...")
 - Adding context or background information
 - Completing incomplete thoughts
 - Adding examples that weren't spoken
 
-Task: Transform the transcribed speech into well-structured BBCODE text with PROPER SPACING using ONLY the original words.
+Task: Transform the transcribed speech into well-structured BBCODE text with SMART PARAGRAPH BREAKS using ONLY the original words.
 
 Output ONLY the reformatted BBCode text with proper blank lines."""
 

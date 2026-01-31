@@ -33,22 +33,32 @@ MARKDOWN FORMATTING REQUIRED:
 - Use **text** for bold, *text* for italic
 
 CRITICAL SPACING RULES (MUST FOLLOW):
-- ALWAYS add TWO newlines (blank line) after EVERY heading
-- ALWAYS add TWO newlines (blank line) between paragraphs
-- ALWAYS add TWO newlines (blank line) before and after lists
-- Each list item on separate line
-- Separate different topics with TWO newlines
+- Add ONE blank line after headings
+- Add ONE blank line between paragraphs when:
+  * Topic changes
+  * Speaker introduces new idea with "то есть", "но", "также", "кроме того"
+  * Logical break in thought flow
+  * Transition words like "however", "but", "also", "additionally"
+- Keep related sentences together in same paragraph (NO blank lines between them)
+- Add ONE blank line before and after lists
+- Each list item on separate line (no blank lines between items)
+
+PARAGRAPH DETECTION:
+- NEW paragraph when: topic shift, "то есть" (that is), "но" (but) at start, "также" (also), "кроме того" (besides)
+- SAME paragraph when: continuing same thought, elaborating on previous sentence, providing details
 
 EXAMPLE FORMAT:
 # Main Heading
 
-First paragraph text here.
+First paragraph with multiple related sentences. They stay together without blank lines between them.
 
-Second paragraph text here.
+Second paragraph starts with transition word or new topic. Also multiple sentences together.
 
 ## Subheading
 
-Paragraph under subheading.
+Paragraph under subheading with related sentences together.
+
+But this is new paragraph because it starts with "but". Different thought here.
 
 - List item 1
 - List item 2
@@ -57,13 +67,14 @@ Paragraph under subheading.
 Another paragraph after list.
 
 FORBIDDEN ACTIONS:
+- Adding blank lines between every sentence
 - Adding explanations (like "This is used for...")
 - Adding descriptions (like "These items are...")
 - Adding context or background information
 - Completing incomplete thoughts
 - Adding examples that weren't spoken
 
-Task: Transform the transcribed speech into well-structured MARKDOWN text with PROPER SPACING using ONLY the original words.
+Task: Transform the transcribed speech into well-structured MARKDOWN text with SMART PARAGRAPH BREAKS using ONLY the original words.
 
 Output ONLY the reformatted markdown text with proper blank lines."""
 
@@ -94,15 +105,25 @@ HTML FORMATTING REQUIRED:
 CRITICAL SPACING RULES (MUST FOLLOW):
 - Each heading must be separate element
 - Each paragraph must be wrapped in <p></p>
+- Create NEW <p> when:
+  * Topic changes
+  * Speaker introduces new idea with "то есть", "но", "также", "кроме того"
+  * Logical break in thought flow
+  * Transition words like "however", "but", "also", "additionally"
+- Keep related sentences together in SAME <p> element
 - Each list item must be separate <li></li>
-- Add proper spacing between elements
+
+PARAGRAPH DETECTION:
+- NEW <p> when: topic shift, "то есть" (that is), "но" (but) at start, "также" (also), "кроме того" (besides)
+- SAME <p> when: continuing same thought, elaborating on previous sentence, providing details
 
 EXAMPLE FORMAT:
 <h1>Main Heading</h1>
-<p>First paragraph text here.</p>
-<p>Second paragraph text here.</p>
+<p>First paragraph with multiple related sentences. They stay together in one p tag.</p>
+<p>Second paragraph starts with transition word or new topic. Also multiple sentences together.</p>
 <h2>Subheading</h2>
-<p>Paragraph under subheading.</p>
+<p>Paragraph under subheading with related sentences together.</p>
+<p>But this is new paragraph because it starts with "but". Different thought here.</p>
 <ul>
 <li>List item 1</li>
 <li>List item 2</li>
@@ -111,13 +132,14 @@ EXAMPLE FORMAT:
 <p>Another paragraph after list.</p>
 
 FORBIDDEN ACTIONS:
+- Creating separate <p> for every sentence
 - Adding explanations (like "This is used for...")
 - Adding descriptions (like "These items are...")
 - Adding context or background information
 - Completing incomplete thoughts
 - Adding examples that weren't spoken
 
-Task: Transform the transcribed speech into well-structured HTML with PROPER ELEMENT SEPARATION using ONLY the original words.
+Task: Transform the transcribed speech into well-structured HTML with SMART PARAGRAPH BREAKS using ONLY the original words.
 
 Output ONLY the HTML formatted text (without <!DOCTYPE>, <html>, <head>, or <body> tags - just the content)."""
 
@@ -132,28 +154,34 @@ STRICT RULES:
 
 ALLOWED ACTIONS:
 - ANALYZE the content and identify natural sections
-- INSERT line breaks between sentences
-- GROUP sentences into logical paragraphs
+- INSERT line breaks between sentences when needed
+- GROUP related sentences into logical paragraphs
 - ADD blank lines between paragraphs for readability
-- SEPARATE different topics with double line breaks
+- SEPARATE different topics with blank lines
 - ADD basic punctuation if missing
 
 CRITICAL SPACING RULES (MUST FOLLOW):
-- ALWAYS add TWO newlines (blank line) between different topics/sections
-- ALWAYS add TWO newlines (blank line) between paragraphs
-- Keep sentences on separate lines when they discuss different points
-- Group related sentences into paragraphs
+- Add ONE blank line between paragraphs when:
+  * Topic changes
+  * Speaker introduces new idea with "то есть", "но", "также", "кроме того"
+  * Logical break in thought flow
+  * Transition words like "however", "but", "also", "additionally"
+- Keep related sentences together in same paragraph (NO blank lines between them)
+- Group 2-4 related sentences into one paragraph
+
+PARAGRAPH DETECTION:
+- NEW paragraph when: topic shift, "то есть" (that is), "но" (but) at start, "также" (also), "кроме того" (besides)
+- SAME paragraph when: continuing same thought, elaborating on previous sentence, providing details
 
 EXAMPLE FORMAT:
-First paragraph with related sentences.
-More text in same paragraph.
+First paragraph with multiple related sentences. They stay together. More text in same paragraph.
 
-Second paragraph about different topic.
-More text in this paragraph.
+Second paragraph starts with transition word or new topic. Also multiple sentences together. More text here.
 
-Third paragraph about another topic.
+But this is new paragraph because it starts with "but". Different thought here.
 
 FORBIDDEN ACTIONS:
+- Adding blank lines between every sentence
 - Adding explanations (like "This is used for...")
 - Adding descriptions (like "These items are...")
 - Adding context or background information
@@ -161,7 +189,7 @@ FORBIDDEN ACTIONS:
 - Adding markdown symbols (# ** *)
 - Adding HTML tags
 
-Task: Transform the transcribed speech into well-structured plain text with PROPER LINE BREAKS and BLANK LINES using ONLY the original words.
+Task: Transform the transcribed speech into well-structured plain text with SMART PARAGRAPH BREAKS using ONLY the original words.
 
 Output ONLY the reformatted plain text with proper spacing."""
 
