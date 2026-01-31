@@ -110,6 +110,7 @@ class FormattingConfig:
     custom_base_url: str = ""  # For custom provider
     custom_api_key: str = ""  # For custom provider
     web_app_keywords: Dict[str, List[str]] = field(default_factory=dict)  # Keywords for browser detection
+    use_fixed_format: bool = False  # If True, always use fallback prompt regardless of active application
     
     def is_valid(self) -> bool:
         """
@@ -251,6 +252,9 @@ class FormattingConfig:
         # Get web app keywords
         web_app_keywords = config_loader.get("formatting.web_app_keywords", {})
         
+        # Get use_fixed_format setting
+        use_fixed_format = config_loader.get("formatting.use_fixed_format", False)
+        
         # Get application list from app_prompts keys
         app_prompts_paths = config_loader.get("formatting.app_prompts", {})
         applications = list(app_prompts_paths.keys())
@@ -274,7 +278,8 @@ class FormattingConfig:
             app_prompts=app_prompts,
             custom_base_url=custom_base_url,
             custom_api_key=custom_api_key,
-            web_app_keywords=web_app_keywords
+            web_app_keywords=web_app_keywords,
+            use_fixed_format=use_fixed_format
         )
     
     def save_to_config(self) -> None:
@@ -309,6 +314,9 @@ class FormattingConfig:
             
             # Update web app keywords
             config["formatting"]["web_app_keywords"] = self.web_app_keywords
+            
+            # Update use_fixed_format setting
+            config["formatting"]["use_fixed_format"] = self.use_fixed_format
             
             # Update app_prompts paths (keep existing structure)
             if "app_prompts" not in config["formatting"]:

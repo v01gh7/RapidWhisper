@@ -134,11 +134,19 @@ class FormattingModule:
         """
         Detect active application and match against configured formats.
         
+        If use_fixed_format is enabled, always returns "_fallback" to use universal prompt.
+        
         Returns:
             Optional[str]: Format identifier (e.g., "notion", "obsidian", "markdown")
+                          or "_fallback" if use_fixed_format is enabled
                           or None if no match
         """
         try:
+            # If fixed format is enabled, always use fallback prompt
+            if self.config.use_fixed_format:
+                logger.info("  🔒 Фиксированный формат включен - используется универсальный промпт")
+                return "_fallback"
+            
             logger.info("  🔍 Определение активного окна...")
             
             # Get active window information

@@ -64,6 +64,11 @@
     },
     "formatting": {
       "title": "Formatting",
+      "enable": "Enable formatting",
+      "enable_tooltip": "Automatically format text depending on active application",
+      "use_fixed_format": "Fixed formatting format",
+      "use_fixed_format_tooltip": "If enabled, always use universal prompt regardless of active application.\nUseful if you want the same formatting for all applications.",
+      "info": "Automatically formats transcribed text depending on active application. Supports Notion, Obsidian, Markdown files, Word, LibreOffice and others.",
       "edit_application": "Edit",
       "delete_application": "Delete",
       "add_application": "Add Application",

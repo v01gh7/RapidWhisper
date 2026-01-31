@@ -1134,17 +1134,20 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         formatting_layout.setSpacing(12)
         
         # Чекбокс включения форматирования
-        self.enable_formatting_check = QCheckBox("Включить форматирование")
+        self.enable_formatting_check = QCheckBox(t("settings.formatting.enable"))
         self.enable_formatting_check.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.enable_formatting_check.setToolTip("Автоматически форматировать текст в зависимости от активного приложения")
+        self.enable_formatting_check.setToolTip(t("settings.formatting.enable_tooltip"))
         self.enable_formatting_check.toggled.connect(self._on_formatting_toggled)
         formatting_layout.addWidget(self.enable_formatting_check)
         
+        # Чекбокс фиксированного формата
+        self.use_fixed_format_check = QCheckBox(t("settings.formatting.use_fixed_format"))
+        self.use_fixed_format_check.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.use_fixed_format_check.setToolTip(t("settings.formatting.use_fixed_format_tooltip"))
+        formatting_layout.addWidget(self.use_fixed_format_check)
+        
         # Описание
-        formatting_info_label = QLabel(
-            "Автоматически форматирует транскрибированный текст в зависимости от активного приложения. "
-            "Поддерживает Notion, Obsidian, Markdown файлы, Word, LibreOffice и другие."
-        )
+        formatting_info_label = QLabel(t("settings.formatting.info"))
         formatting_info_label.setObjectName("infoLabel")
         formatting_info_label.setWordWrap(True)
         formatting_layout.addWidget(formatting_info_label)
@@ -2432,6 +2435,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         from core.config_loader import get_config_loader
         formatting_config = FormattingConfig.from_config(get_config_loader())
         self.enable_formatting_check.setChecked(formatting_config.enabled)
+        self.use_fixed_format_check.setChecked(formatting_config.use_fixed_format)
         self.formatting_provider_combo.setCurrentText(formatting_config.provider)
         self.formatting_model_edit.setText(formatting_config.model)
         self.formatting_custom_url_edit.setText(formatting_config.custom_base_url)
@@ -3171,6 +3175,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             from core.config_loader import get_config_loader
             formatting_config = FormattingConfig.from_config(get_config_loader())
             formatting_config.enabled = self.enable_formatting_check.isChecked()
+            formatting_config.use_fixed_format = self.use_fixed_format_check.isChecked()
             formatting_config.provider = self.formatting_provider_combo.currentText()
             formatting_config.model = self.formatting_model_edit.text()
             formatting_config.temperature = self.formatting_temperature_spin.value()
