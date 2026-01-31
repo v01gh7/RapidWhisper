@@ -670,8 +670,33 @@ class RapidWhisperApp(QObject):
         """
         try:
             # Скопировать в буфер обмена
-            self.clipboard_manager.copy_to_clipboard(text)
-            self.logger.info(f"Текст скопирован в буфер обмена: {text[:50]}...")
+            # Проверить, содержит ли текст HTML теги
+            if '<h1>' in text or '<h2>' in text or '<h3>' in text or '<p>' in text or '<strong>' in text or '<ul>' in text or '<ol>' in text:
+                # Это HTML - использовать RichClipboardManager
+                self.logger.info("Обнаружен HTML в тексте, используем RichClipboardManager")
+                from services.rich_clipboard_manager import RichClipboardManager
+                
+                # Создать plain text версию для fallback
+                import re
+                plain_text = text
+                plain_text = re.sub(r'<h[1-6]>(.*?)</h[1-6]>', r'\1\n', plain_text)
+                plain_text = re.sub(r'<p>(.*?)</p>', r'\1\n', plain_text)
+                plain_text = re.sub(r'<strong>(.*?)</strong>', r'\1', plain_text)
+                plain_text = re.sub(r'<em>(.*?)</em>', r'\1', plain_text)
+                plain_text = re.sub(r'<li>(.*?)</li>', r'- \1\n', plain_text)
+                plain_text = re.sub(r'</?[^>]+>', '', plain_text)
+                plain_text = re.sub(r'\n\n+', '\n\n', plain_text).strip()
+                
+                success = RichClipboardManager.copy_html_to_clipboard(text, plain_text)
+                if success:
+                    self.logger.info(f"HTML скопирован в буфер обмена: {text[:50]}...")
+                else:
+                    self.logger.warning("Не удалось скопировать HTML, используем обычный текст")
+                    self.clipboard_manager.copy_to_clipboard(plain_text)
+            else:
+                # Обычный текст
+                self.clipboard_manager.copy_to_clipboard(text)
+                self.logger.info(f"Текст скопирован в буфер обмена: {text[:50]}...")
             
             # Показать уведомление в трее
             self.tray_icon.show_message(

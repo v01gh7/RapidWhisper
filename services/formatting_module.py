@@ -459,32 +459,6 @@ class FormattingModule:
         logger.info(f"Длина отформатированного текста: {len(formatted_text)} символов")
         logger.info(f"Отформатированный текст: {formatted_text[:100]}...")
         
-        # Check if we need to use HTML clipboard for Word/Google Docs/LibreOffice
-        format_output_type = self.config.get_format_type(format_type)
-        logger.info(f"Тип вывода: {format_output_type}")
-        
-        if format_output_type == "html":
-            logger.info("📋 Вставка HTML в буфер обмена для Word/Google Docs/LibreOffice")
-            try:
-                from services.rich_clipboard_manager import RichClipboardManager
-                
-                # Convert markdown-style formatting to plain text for fallback
-                import re
-                plain_text = formatted_text
-                plain_text = re.sub(r'<h[1-3]>(.*?)</h[1-3]>', r'\1', plain_text)
-                plain_text = re.sub(r'<strong>(.*?)</strong>', r'\1', plain_text)
-                plain_text = re.sub(r'<em>(.*?)</em>', r'\1', plain_text)
-                plain_text = re.sub(r'</?[^>]+>', '', plain_text)
-                
-                # Copy HTML to clipboard
-                success = RichClipboardManager.copy_html_to_clipboard(formatted_text, plain_text)
-                if success:
-                    logger.info("✅ HTML успешно скопирован в буфер обмена")
-                else:
-                    logger.warning("⚠️ Не удалось скопировать HTML, используется обычный текст")
-            except Exception as e:
-                logger.error(f"❌ Ошибка при копировании HTML: {e}")
-        
         logger.info("=" * 80)
         logger.info("*** КОНЕЦ ФОРМАТИРОВАНИЯ ТЕКСТА ***")
         logger.info("=" * 80)
