@@ -62,6 +62,24 @@
       "silence_padding_tooltip": "Padding in milliseconds before and after sound when removing silence.\nPrevents cutting off mid-word. (100-1000 ms)",
       "warning": "⚠️ Warning: Changing audio parameters may affect recording quality.\nRecommended to keep default values."
     },
+    "formatting": {
+      "title": "Formatting",
+      "edit_application": "Edit",
+      "delete_application": "Delete",
+      "add_application": "Add Application",
+      "edit_prompt_title": "Edit Prompt",
+      "add_application_title": "Add Application",
+      "application_label": "Application:",
+      "application_name_label": "Application name:",
+      "application_name_placeholder": "e.g.: vscode, sublime, notepad++",
+      "system_prompt_label": "System prompt:",
+      "save_button": "Save",
+      "add_button": "Add",
+      "cancel_button": "Cancel",
+      "error_empty_name": "Application name cannot be empty",
+      "error_duplicate_name": "Application '{name}' already exists",
+      "error_title": "Error"
+    },
     "processing": {
       "title": "Processing",
       "enable": "Enable additional text processing",

@@ -296,17 +296,11 @@ class FormattingModule:
         try:
             logger.info(f"  🎨 Форматирование текста для формата: {format_type}")
             
-            # Get format-specific prompt
-            # Always use the prompt from config (which is loaded from UI or defaults to standard prompt)
-            format_prompt = self.config.system_prompt
+            # Get application-specific prompt from config
+            format_prompt = self.config.get_prompt_for_app(format_type)
             
-            # If config prompt is empty, use default format-specific prompt
-            if not format_prompt:
-                format_prompt = self.get_format_prompt(format_type)
-                logger.info(f"  📝 Используется стандартный промпт для формата: {format_type}")
-            else:
-                logger.info("  📝 Используется пользовательский системный промпт из настроек")
-            
+            # If prompt is empty, it will use the universal default (handled in get_prompt_for_app)
+            logger.info(f"  📝 Используется промпт для приложения '{format_type}'")
             logger.info(f"  📄 Промпт (первые 100 символов): {format_prompt[:100]}...")
             
             # Create AI client for formatting

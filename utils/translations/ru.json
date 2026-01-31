@@ -62,6 +62,24 @@
       "silence_padding_tooltip": "Отступ в миллисекундах перед и после звука при удалении тишины.\nПредотвращает обрезание на полуслове. (100-1000 мс)",
       "warning": "⚠️ Внимание: Изменение параметров аудио может повлиять на качество записи.\nРекомендуется оставить значения по умолчанию."
     },
+    "formatting": {
+      "title": "Форматирование",
+      "edit_application": "Редактировать",
+      "delete_application": "Удалить",
+      "add_application": "Добавить приложение",
+      "edit_prompt_title": "Редактировать промпт",
+      "add_application_title": "Добавить приложение",
+      "application_label": "Приложение:",
+      "application_name_label": "Название приложения:",
+      "application_name_placeholder": "например: vscode, sublime, notepad++",
+      "system_prompt_label": "Системный промпт:",
+      "save_button": "Сохранить",
+      "add_button": "Добавить",
+      "cancel_button": "Отменить",
+      "error_empty_name": "Название приложения не может быть пустым",
+      "error_duplicate_name": "Приложение '{name}' уже существует",
+      "error_title": "Ошибка"
+    },
     "processing": {
       "title": "Обработка",
       "enable": "Включить дополнительную обработку текста",

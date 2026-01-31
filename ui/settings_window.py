@@ -9,9 +9,9 @@ from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout,
     QLabel, QLineEdit, QComboBox, QDoubleSpinBox, QSpinBox,
     QPushButton, QGroupBox, QMessageBox, QWidget, QListWidget, QStackedWidget, QListWidgetItem,
-    QScrollArea, QApplication, QCheckBox
+    QScrollArea, QApplication, QCheckBox, QTextEdit, QGridLayout, QMenu
 )
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal, QPoint
 from PyQt6.QtGui import QFont, QIcon, QScreen, QPainter, QPainterPath, QRegion
 from core.config import Config
 from core.statistics_manager import StatisticsManager
@@ -21,6 +21,7 @@ from ui.hotkey_input import HotkeyInput
 from ui.statistics_tab import StatisticsTab
 from design_system.styled_window_mixin import StyledWindowMixin
 from pathlib import Path
+from typing import Optional, List, Dict, Any
 import os
 
 logger = get_logger()
@@ -1075,13 +1076,6 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         formatting_model_label.setToolTip("Модель для форматирования текста")
         formatting_form.addRow(formatting_model_label, self.formatting_model_edit)
         
-        # Список приложений
-        self.formatting_applications_edit = QLineEdit()
-        self.formatting_applications_edit.setPlaceholderText("Стандартные: notion, obsidian, markdown, word, libreoffice, vscode")
-        formatting_applications_label = QLabel("Приложения")
-        formatting_applications_label.setToolTip("Список приложений через запятую для форматирования")
-        formatting_form.addRow(formatting_applications_label, self.formatting_applications_edit)
-        
         # Температура
         self.formatting_temperature_spin = QDoubleSpinBox()
         self.formatting_temperature_spin.setRange(0.0, 1.0)
@@ -1095,24 +1089,42 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         formatting_layout.addLayout(formatting_form)
         
-        # Системный промпт
-        formatting_prompt_label = QLabel("Системный промпт")
-        formatting_prompt_label.setToolTip("Промпт для форматирования. Показан стандартный промпт, который можно отредактировать")
-        formatting_layout.addWidget(formatting_prompt_label)
+        # Приложения - визуальные блоки (как в языках)
+        applications_label = QLabel("Приложения для форматирования:")
+        applications_label.setToolTip("Выберите приложения, для которых будет применяться форматирование")
+        formatting_layout.addWidget(applications_label)
         
-        self.formatting_system_prompt_edit = QTextEdit()
-        self.formatting_system_prompt_edit.setPlaceholderText("Загрузка стандартного промпта...")
-        self.formatting_system_prompt_edit.setMaximumHeight(200)
-        formatting_layout.addWidget(self.formatting_system_prompt_edit)
+        # Сетка с приложениями (4 колонки)
+        self.formatting_apps_grid = QGridLayout()
+        self.formatting_apps_grid.setSpacing(12)
+        self.formatting_apps_grid.setHorizontalSpacing(12)
         
-        # Подсказка
-        formatting_prompt_info = QLabel(
-            "💡 Показан стандартный промпт для Markdown. Вы можете отредактировать его и нажать 'Сохранить'. "
-            "Промпт будет применяться ко всем форматам (Notion, Obsidian, Word и т.д.)."
-        )
-        formatting_prompt_info.setObjectName("infoLabel")
-        formatting_prompt_info.setWordWrap(True)
-        formatting_layout.addWidget(formatting_prompt_info)
+        # Словарь для хранения кнопок приложений
+        self.formatting_app_buttons = {}
+        
+        # Контейнер для сетки
+        apps_container = QWidget()
+        apps_container.setLayout(self.formatting_apps_grid)
+        formatting_layout.addWidget(apps_container)
+        
+        # Кнопка "Добавить приложение"
+        add_app_btn = QPushButton(f"➕ {t('settings.formatting.add_application')}")
+        add_app_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        add_app_btn.clicked.connect(self._on_add_application_clicked)
+        add_app_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #2d2d2d;
+                border: 2px dashed #3d3d3d;
+                border-radius: 8px;
+                padding: 12px;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background-color: #3d3d3d;
+                border-color: #0078d4;
+            }
+        """)
+        formatting_layout.addWidget(add_app_btn)
         
         formatting_group.setLayout(formatting_layout)
         layout.addWidget(formatting_group)
@@ -2233,29 +2245,15 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         # Форматирование
         from services.formatting_config import FormattingConfig
-        from services.formatting_module import FORMAT_PROMPTS
         formatting_config = FormattingConfig.from_env()
         self.enable_formatting_check.setChecked(formatting_config.enabled)
         self.formatting_provider_combo.setCurrentText(formatting_config.provider)
         self.formatting_model_edit.setText(formatting_config.model)
         
-        # Показать приложения (если пусто, показать стандартные)
-        if formatting_config.applications:
-            self.formatting_applications_edit.setText(",".join(formatting_config.applications))
-        else:
-            # Показать стандартные приложения
-            default_apps = ["notion", "obsidian", "markdown", "word", "libreoffice", "vscode"]
-            self.formatting_applications_edit.setText(",".join(default_apps))
+        # Загрузить приложения в визуальную сетку
+        self._refresh_formatting_apps_grid()
         
         self.formatting_temperature_spin.setValue(formatting_config.temperature)
-        
-        # Если системный промпт пустой, показать стандартный промпт для markdown
-        if formatting_config.system_prompt:
-            self.formatting_system_prompt_edit.setPlainText(formatting_config.system_prompt)
-        else:
-            # Показать стандартный промпт для markdown как пример
-            default_prompt = FORMAT_PROMPTS.get("markdown", "")
-            self.formatting_system_prompt_edit.setPlainText(default_prompt)
         
         # Обновить состояние полей форматирования
         self._on_formatting_toggled(formatting_config.enabled)
@@ -2415,9 +2413,10 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         """Handler for enabling/disabling formatting."""
         self.formatting_provider_combo.setEnabled(checked)
         self.formatting_model_edit.setEnabled(checked)
-        self.formatting_applications_edit.setEnabled(checked)
         self.formatting_temperature_spin.setEnabled(checked)
-        self.formatting_system_prompt_edit.setEnabled(checked)
+        # Enable/disable application buttons
+        for btn in self.formatting_app_buttons.values():
+            btn.setEnabled(checked)
     
     def _on_formatting_provider_changed(self, provider: str):
         """Handler for formatting provider change."""
@@ -2440,6 +2439,171 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         if hasattr(self, 'llm_api_key_edit'):
             self.llm_api_key_edit.setVisible(provider == "llm")
             self.llm_api_key_label.setVisible(provider == "llm")
+    
+    def _refresh_formatting_apps_grid(self):
+        """Refresh the visual grid of formatting applications."""
+        # Clear existing buttons
+        for i in reversed(range(self.formatting_apps_grid.count())):
+            widget = self.formatting_apps_grid.itemAt(i).widget()
+            if widget:
+                widget.deleteLater()
+        
+        self.formatting_app_buttons.clear()
+        
+        # Load current config
+        from services.formatting_config import FormattingConfig
+        config = FormattingConfig.from_env()
+        
+        # Create buttons for each application
+        row = 0
+        col = 0
+        for app_name in config.applications:
+            btn = QPushButton(app_name)
+            btn.setCheckable(False)
+            btn.setMinimumHeight(80)
+            btn.setMinimumWidth(120)
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+            btn.customContextMenuRequested.connect(
+                lambda pos, name=app_name: self._show_app_context_menu(name, btn.mapToGlobal(pos))
+            )
+            
+            # Check if app has custom prompt
+            has_custom_prompt = app_name in config.app_prompts and config.app_prompts[app_name]
+            
+            # Style button
+            if has_custom_prompt:
+                # Custom prompt - show with indicator
+                btn.setStyleSheet("""
+                    QPushButton {
+                        background-color: #2d2d2d;
+                        color: #ffffff;
+                        border: 2px solid #0078d4;
+                        border-radius: 8px;
+                        padding: 8px;
+                        font-size: 12px;
+                        font-weight: bold;
+                    }
+                    QPushButton:hover {
+                        background-color: #3d3d3d;
+                        border-color: #1084d8;
+                    }
+                """)
+                btn.setText(f"✏️ {app_name}")
+            else:
+                # Default prompt
+                btn.setStyleSheet("""
+                    QPushButton {
+                        background-color: #2d2d2d;
+                        color: #ffffff;
+                        border: 2px solid #3d3d3d;
+                        border-radius: 8px;
+                        padding: 8px;
+                        font-size: 12px;
+                    }
+                    QPushButton:hover {
+                        background-color: #3d3d3d;
+                        border-color: #0078d4;
+                    }
+                """)
+            
+            self.formatting_apps_grid.addWidget(btn, row, col)
+            self.formatting_app_buttons[app_name] = btn
+            
+            col += 1
+            if col >= 4:
+                col = 0
+                row += 1
+    
+    def _show_app_context_menu(self, app_name: str, position: QPoint):
+        """Show context menu for application card."""
+        menu = QMenu(self)
+        
+        edit_action = menu.addAction(f"✏️ {t('settings.formatting.edit_application')}")
+        delete_action = menu.addAction(f"🗑️ {t('settings.formatting.delete_application')}")
+        
+        # Disable delete if only one application
+        from services.formatting_config import FormattingConfig
+        config = FormattingConfig.from_env()
+        if len(config.applications) <= 1:
+            delete_action.setEnabled(False)
+        
+        action = menu.exec(position)
+        
+        if action == edit_action:
+            self._edit_application_prompt(app_name)
+        elif action == delete_action:
+            self._delete_application(app_name)
+    
+    def _edit_application_prompt(self, app_name: str):
+        """Open dialog to edit application prompt."""
+        from services.formatting_config import FormattingConfig, UNIVERSAL_DEFAULT_PROMPT
+        
+        # Load current config
+        config = FormattingConfig.from_env()
+        current_prompt = config.get_prompt_for_app(app_name)
+        
+        # Show edit dialog
+        new_prompt = PromptEditDialog.edit_prompt(app_name, current_prompt, self)
+        
+        if new_prompt is not None:
+            # Save new prompt
+            config.set_prompt_for_app(app_name, new_prompt)
+            config.save_to_env()
+            
+            # Refresh grid
+            self._refresh_formatting_apps_grid()
+    
+    def _delete_application(self, app_name: str):
+        """Delete application from list."""
+        from services.formatting_config import FormattingConfig
+        
+        # Load current config
+        config = FormattingConfig.from_env()
+        
+        # Check if it's the last application
+        if len(config.applications) <= 1:
+            QMessageBox.warning(
+                self,
+                "Ошибка",
+                "Нельзя удалить последнее приложение. Должно остаться хотя бы одно.",
+                QMessageBox.StandardButton.Ok
+            )
+            return
+        
+        # Remove application
+        config.applications.remove(app_name)
+        if app_name in config.app_prompts:
+            del config.app_prompts[app_name]
+        
+        # Save config
+        config.save_to_env()
+        
+        # Refresh grid
+        self._refresh_formatting_apps_grid()
+    
+    def _on_add_application_clicked(self):
+        """Handle add application button click."""
+        from services.formatting_config import FormattingConfig, UNIVERSAL_DEFAULT_PROMPT
+        
+        # Load current config
+        config = FormattingConfig.from_env()
+        
+        # Show add dialog
+        result = AddApplicationDialog.add_application(config.applications, UNIVERSAL_DEFAULT_PROMPT, self)
+        
+        if result:
+            app_name, prompt = result
+            
+            # Add application
+            config.applications.append(app_name)
+            config.set_prompt_for_app(app_name, prompt)
+            
+            # Save config
+            config.save_to_env()
+            
+            # Refresh grid
+            self._refresh_formatting_apps_grid()
     
     
     def _reload_ui_texts(self):
@@ -2658,7 +2822,6 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             
             # Экранировать многострочные значения (заменить переносы строк на \n)
             post_processing_prompt = self.post_processing_prompt_edit.toPlainText().replace('\n', '\\n')
-            formatting_system_prompt = self.formatting_system_prompt_edit.toPlainText().replace('\n', '\\n')
             
             new_config = {
                 "AI_PROVIDER": self.provider_combo.currentText(),
@@ -2693,13 +2856,17 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                 "FONT_SIZE_FLOATING_INFO": str(int(self.font_floating_info_spin.value())),
                 "FONT_SIZE_SETTINGS_LABELS": str(int(self.font_settings_labels_spin.value())),
                 "FONT_SIZE_SETTINGS_TITLES": str(int(self.font_settings_titles_spin.value())),
-                "FORMATTING_ENABLED": "true" if self.enable_formatting_check.isChecked() else "false",
-                "FORMATTING_PROVIDER": self.formatting_provider_combo.currentText(),
-                "FORMATTING_MODEL": self.formatting_model_edit.text(),
-                "FORMATTING_APPLICATIONS": self.formatting_applications_edit.text(),
-                "FORMATTING_TEMPERATURE": str(self.formatting_temperature_spin.value()),
-                "FORMATTING_SYSTEM_PROMPT": formatting_system_prompt,
             }
+            
+            # Сохранить настройки форматирования через FormattingConfig
+            from services.formatting_config import FormattingConfig
+            formatting_config = FormattingConfig.from_env()
+            formatting_config.enabled = self.enable_formatting_check.isChecked()
+            formatting_config.provider = self.formatting_provider_combo.currentText()
+            formatting_config.model = self.formatting_model_edit.text()
+            formatting_config.temperature = self.formatting_temperature_spin.value()
+            # Applications and prompts are already managed through the grid UI
+            formatting_config.save_to_env()
             
             # Использовать правильный путь к .env (AppData для production)
             env_path = str(get_env_path())
@@ -2809,3 +2976,189 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         # Force repaint and update for proper rendering on Windows
         self.repaint()
         self.update()
+
+
+class PromptEditDialog(QDialog):
+    """Dialog for editing application-specific prompts."""
+    
+    def __init__(self, app_name: str, current_prompt: str, parent=None):
+        """
+        Initialize the prompt edit dialog.
+        
+        Args:
+            app_name: Name of the application
+            current_prompt: Current prompt text (or default)
+            parent: Parent widget
+        """
+        super().__init__(parent)
+        self.app_name = app_name
+        self.setWindowTitle(t("settings.formatting.edit_prompt_title"))
+        self.setMinimumWidth(600)
+        self.setMinimumHeight(400)
+        
+        # Create layout
+        layout = QVBoxLayout()
+        layout.setSpacing(16)
+        
+        # Application name label (read-only)
+        app_label = QLabel(f"{t('settings.formatting.application_label')} {app_name}")
+        app_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        layout.addWidget(app_label)
+        
+        # Prompt text edit
+        prompt_label = QLabel(t("settings.formatting.system_prompt_label"))
+        layout.addWidget(prompt_label)
+        
+        from PyQt6.QtWidgets import QTextEdit
+        self.prompt_edit = QTextEdit()
+        self.prompt_edit.setPlainText(current_prompt)
+        self.prompt_edit.setMinimumHeight(200)
+        layout.addWidget(self.prompt_edit)
+        
+        # Buttons
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+        
+        cancel_btn = QPushButton(t("settings.formatting.cancel_button"))
+        cancel_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        cancel_btn.clicked.connect(self.reject)
+        button_layout.addWidget(cancel_btn)
+        
+        save_btn = QPushButton(t("settings.formatting.save_button"))
+        save_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        save_btn.clicked.connect(self.accept)
+        button_layout.addWidget(save_btn)
+        
+        layout.addLayout(button_layout)
+        
+        self.setLayout(layout)
+    
+    def get_prompt(self) -> str:
+        """Get the edited prompt text."""
+        return self.prompt_edit.toPlainText()
+    
+    @staticmethod
+    def edit_prompt(app_name: str, current_prompt: str, parent=None) -> Optional[str]:
+        """
+        Show dialog and return edited prompt, or None if cancelled.
+        
+        Args:
+            app_name: Name of the application
+            current_prompt: Current prompt text
+            parent: Parent widget
+            
+        Returns:
+            Edited prompt text, or None if cancelled
+        """
+        dialog = PromptEditDialog(app_name, current_prompt, parent)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            return dialog.get_prompt()
+        return None
+
+
+class AddApplicationDialog(QDialog):
+    """Dialog for adding a new application."""
+    
+    def __init__(self, existing_apps: List[str], default_prompt: str, parent=None):
+        """
+        Initialize the add application dialog.
+        
+        Args:
+            existing_apps: List of existing application names
+            default_prompt: Universal default prompt
+            parent: Parent widget
+        """
+        super().__init__(parent)
+        self.existing_apps = existing_apps
+        self.setWindowTitle(t("settings.formatting.add_application_title"))
+        self.setMinimumWidth(600)
+        self.setMinimumHeight(450)
+        
+        # Create layout
+        layout = QVBoxLayout()
+        layout.setSpacing(16)
+        
+        # Application name input
+        name_label = QLabel(t("settings.formatting.application_name_label"))
+        layout.addWidget(name_label)
+        
+        self.name_edit = QLineEdit()
+        self.name_edit.setPlaceholderText(t("settings.formatting.application_name_placeholder"))
+        layout.addWidget(self.name_edit)
+        
+        # Prompt text edit
+        prompt_label = QLabel(t("settings.formatting.system_prompt_label"))
+        layout.addWidget(prompt_label)
+        
+        from PyQt6.QtWidgets import QTextEdit
+        self.prompt_edit = QTextEdit()
+        self.prompt_edit.setPlainText(default_prompt)
+        self.prompt_edit.setMinimumHeight(200)
+        layout.addWidget(self.prompt_edit)
+        
+        # Buttons
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+        
+        cancel_btn = QPushButton(t("settings.formatting.cancel_button"))
+        cancel_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        cancel_btn.clicked.connect(self.reject)
+        button_layout.addWidget(cancel_btn)
+        
+        add_btn = QPushButton(t("settings.formatting.add_button"))
+        add_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        add_btn.clicked.connect(self._on_add_clicked)
+        button_layout.addWidget(add_btn)
+        
+        layout.addLayout(button_layout)
+        
+        self.setLayout(layout)
+    
+    def _on_add_clicked(self):
+        """Handle add button click with validation."""
+        app_name = self.name_edit.text().strip()
+        
+        # Validate empty name
+        if not app_name:
+            QMessageBox.warning(
+                self,
+                t("settings.formatting.error_title"),
+                t("settings.formatting.error_empty_name"),
+                QMessageBox.StandardButton.Ok
+            )
+            return
+        
+        # Validate duplicate name
+        if app_name.lower() in [app.lower() for app in self.existing_apps]:
+            QMessageBox.warning(
+                self,
+                t("settings.formatting.error_title"),
+                t("settings.formatting.error_duplicate_name", name=app_name),
+                QMessageBox.StandardButton.Ok
+            )
+            return
+        
+        # Accept dialog
+        self.accept()
+    
+    def get_application_data(self) -> tuple[str, str]:
+        """Get the application name and prompt."""
+        return self.name_edit.text().strip(), self.prompt_edit.toPlainText()
+    
+    @staticmethod
+    def add_application(existing_apps: List[str], default_prompt: str, parent=None) -> Optional[tuple[str, str]]:
+        """
+        Show dialog and return (app_name, prompt), or None if cancelled.
+        
+        Args:
+            existing_apps: List of existing application names
+            default_prompt: Universal default prompt
+            parent: Parent widget
+            
+        Returns:
+            Tuple of (app_name, prompt), or None if cancelled
+        """
+        dialog = AddApplicationDialog(existing_apps, default_prompt, parent)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            return dialog.get_application_data()
+        return None

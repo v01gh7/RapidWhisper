@@ -6,10 +6,52 @@ formatting settings including AI provider, model, and target applications.
 """
 
 import os
+import json
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from pathlib import Path
 from dotenv import load_dotenv, set_key
+from utils.logger import get_logger
+
+logger = get_logger()
+
+
+# Universal default prompt that works for all application formats
+UNIVERSAL_DEFAULT_PROMPT = """CRITICAL INSTRUCTIONS:
+1. PRESERVE ALL CONTENT: Keep every word from the original text
+2. ADD STRUCTURE: Actively identify and create proper formatting
+3. NO NEW CONTENT: Do not add examples, explanations, or text that wasn't spoken
+
+Task: Transform the transcribed speech into well-structured text.
+
+Your job:
+- ANALYZE the content and identify natural sections
+- CREATE headings where appropriate for main topics and subtopics
+- CONVERT lists when the speaker mentions multiple items
+- ADD emphasis for important points
+- INSERT line breaks between logical sections
+- STRUCTURE the content for maximum readability
+
+Remember: Use ALL the original words, just organize them better.
+
+Output ONLY the reformatted text."""
+
+
+def migrate_from_old_format(applications_str: str) -> Dict[str, Dict[str, Any]]:
+    """
+    Migrate from old comma-separated format to new JSON format.
+    
+    Args:
+        applications_str: Comma-separated application names
+        
+    Returns:
+        Dictionary in new format with empty prompts
+    """
+    apps = [app.strip() for app in applications_str.split(",") if app.strip()]
+    return {
+        app: {"enabled": True, "prompt": ""}
+        for app in apps
+    }
 
 
 @dataclass
@@ -21,9 +63,10 @@ class FormattingConfig:
         enabled: Whether formatting is enabled
         provider: AI provider for formatting (groq, openai, glm, custom)
         model: Model name for formatting
-        applications: List of application names to format for
+        applications: List of application names to format for (kept for backward compatibility)
         temperature: Temperature for AI model (0.0-1.0, lower = more deterministic)
-        system_prompt: System prompt for formatting (optional override)
+        system_prompt: System prompt for formatting (deprecated, kept for migration)
+        app_prompts: Dictionary mapping application names to their custom prompts
     """
     
     enabled: bool = False
@@ -31,7 +74,8 @@ class FormattingConfig:
     model: str = ""
     applications: List[str] = field(default_factory=list)
     temperature: float = 0.3  # Lower temperature for more consistent formatting
-    system_prompt: str = ""  # Optional custom system prompt
+    system_prompt: str = ""  # Deprecated, kept for migration
+    app_prompts: Dict[str, str] = field(default_factory=dict)  # New: per-application prompts
     
     def is_valid(self) -> bool:
         """
@@ -66,6 +110,33 @@ class FormattingConfig:
         }
         
         return default_models.get(self.provider, "")
+    
+    def get_prompt_for_app(self, app_name: str) -> str:
+        """
+        Get the prompt for a specific application.
+        
+        Args:
+            app_name: Application name
+            
+        Returns:
+            Application-specific prompt, or universal default if not set
+        """
+        # Check if app has a custom prompt
+        if app_name in self.app_prompts and self.app_prompts[app_name]:
+            return self.app_prompts[app_name]
+        
+        # Fall back to universal default prompt
+        return UNIVERSAL_DEFAULT_PROMPT
+    
+    def set_prompt_for_app(self, app_name: str, prompt: str) -> None:
+        """
+        Set the prompt for a specific application.
+        
+        Args:
+            app_name: Application name
+            prompt: Prompt text (empty string to use default)
+        """
+        self.app_prompts[app_name] = prompt
     
     @classmethod
     def from_env(cls, env_path: Optional[str] = None) -> 'FormattingConfig':
@@ -102,23 +173,48 @@ class FormattingConfig:
         except ValueError:
             temperature = 0.3
         
-        # Load optional system prompt (decode escaped newlines)
+        # Load optional system prompt (decode escaped newlines) - deprecated
         system_prompt = os.getenv("FORMATTING_SYSTEM_PROMPT", "")
         if system_prompt:
             system_prompt = system_prompt.replace('\\n', '\n')
         
-        # Parse applications list (comma-separated)
-        applications_str = os.getenv("FORMATTING_APPLICATIONS", "")
+        # Try to load new JSON format first
+        app_prompts_json = os.getenv("FORMATTING_APP_PROMPTS", "")
+        app_prompts = {}
+        applications = []
         
-        # If no applications configured, use defaults
-        if not applications_str:
-            applications = ["notion", "obsidian", "markdown", "word", "libreoffice", "vscode"]
-        else:
-            applications = [
-                app.strip() 
-                for app in applications_str.split(",") 
-                if app.strip()
-            ]
+        if app_prompts_json:
+            # New format exists - parse JSON
+            try:
+                app_prompts_data = json.loads(app_prompts_json)
+                applications = list(app_prompts_data.keys())
+                # Extract prompts from JSON structure
+                for app_name, app_config in app_prompts_data.items():
+                    if isinstance(app_config, dict):
+                        app_prompts[app_name] = app_config.get("prompt", "")
+                    else:
+                        # Fallback for simple format
+                        app_prompts[app_name] = ""
+            except json.JSONDecodeError:
+                logger.warning("Failed to parse FORMATTING_APP_PROMPTS JSON, falling back to old format")
+                app_prompts_json = ""
+        
+        if not app_prompts_json:
+            # Fall back to old format or defaults
+            applications_str = os.getenv("FORMATTING_APPLICATIONS", "")
+            
+            if not applications_str:
+                # Use defaults
+                applications = ["notion", "obsidian", "markdown", "word", "libreoffice", "vscode"]
+            else:
+                applications = [
+                    app.strip() 
+                    for app in applications_str.split(",") 
+                    if app.strip()
+                ]
+            
+            # Initialize empty prompts for all applications
+            app_prompts = {app: "" for app in applications}
         
         return cls(
             enabled=enabled,
@@ -126,7 +222,8 @@ class FormattingConfig:
             model=model,
             applications=applications,
             temperature=temperature,
-            system_prompt=system_prompt
+            system_prompt=system_prompt,
+            app_prompts=app_prompts
         )
     
     def to_env(self) -> dict:
@@ -136,12 +233,22 @@ class FormattingConfig:
         Returns:
             dict: Dictionary of environment variable key-value pairs
         """
+        # Build JSON structure for app_prompts
+        app_prompts_data = {}
+        for app_name in self.applications:
+            app_prompts_data[app_name] = {
+                "enabled": True,
+                "prompt": self.app_prompts.get(app_name, "")
+            }
+        
         return {
             "FORMATTING_ENABLED": "true" if self.enabled else "false",
             "FORMATTING_PROVIDER": self.provider,
             "FORMATTING_MODEL": self.model,
-            "FORMATTING_APPLICATIONS": ",".join(self.applications),
+            "FORMATTING_APP_PROMPTS": json.dumps(app_prompts_data, ensure_ascii=False),
             "FORMATTING_TEMPERATURE": str(self.temperature),
+            # Keep old format for backward compatibility (but will be removed after migration)
+            "FORMATTING_APPLICATIONS": ",".join(self.applications),
             "FORMATTING_SYSTEM_PROMPT": self.system_prompt
         }
     
