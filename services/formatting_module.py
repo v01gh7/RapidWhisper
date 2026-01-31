@@ -112,7 +112,7 @@ def is_browser(app_name: str) -> bool:
     return any(browser in app_lower for browser in BROWSER_PROCESSES)
 
 
-def match_browser_title_to_format(window_title: str) -> Optional[str]:
+def match_browser_title_to_format(window_title: str, web_app_keywords: Optional[dict] = None) -> Optional[str]:
     """
     Match browser window title to a format type.
     
@@ -121,15 +121,20 @@ def match_browser_title_to_format(window_title: str) -> Optional[str]:
     
     Args:
         window_title: Browser window/tab title
+        web_app_keywords: Optional dictionary of format_type -> keywords mapping.
+                         If None, uses default BROWSER_TITLE_MAPPINGS.
     
     Returns:
         Optional[str]: Format identifier or None if no match
     """
     title_lower = window_title.lower()
     
-    for format_type, patterns in BROWSER_TITLE_MAPPINGS.items():
+    # Use provided keywords or fall back to defaults
+    keywords_map = web_app_keywords if web_app_keywords is not None else BROWSER_TITLE_MAPPINGS
+    
+    for format_type, patterns in keywords_map.items():
         for pattern in patterns:
-            if pattern in title_lower:
+            if pattern.lower() in title_lower:
                 logger.info(f"  🌐 Обнаружено веб-приложение: '{pattern}' → формат '{format_type}'")
                 return format_type
     
@@ -232,7 +237,7 @@ class FormattingModule:
                 logger.info(f"  🌐 Обнаружен браузер: {app_name}")
                 logger.info(f"  🔎 Проверка заголовка вкладки на соответствие веб-приложениям...")
                 
-                browser_format = match_browser_title_to_format(window_title)
+                browser_format = match_browser_title_to_format(window_title, self.config.web_app_keywords)
                 if browser_format:
                     logger.info(f"  ✅ Найдено веб-приложение: {browser_format}")
                     

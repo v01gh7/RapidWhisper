@@ -1155,6 +1155,26 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         """)
         formatting_layout.addWidget(add_app_btn)
         
+        # Кнопка "Настроить ключевые слова веб-приложений"
+        web_keywords_btn = QPushButton("🌐 Настроить ключевые слова веб-приложений")
+        web_keywords_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        web_keywords_btn.clicked.connect(self._on_web_keywords_clicked)
+        web_keywords_btn.setToolTip("Настройте ключевые слова для определения веб-приложений в браузерах (Google Docs, Notion, и т.д.)")
+        web_keywords_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #2d2d2d;
+                border: 2px solid #3d3d3d;
+                border-radius: 8px;
+                padding: 12px;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background-color: #3d3d3d;
+                border-color: #0078d4;
+            }
+        """)
+        formatting_layout.addWidget(web_keywords_btn)
+        
         formatting_group.setLayout(formatting_layout)
         layout.addWidget(formatting_group)
         
@@ -2654,6 +2674,33 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             # Refresh grid
             self._refresh_formatting_apps_grid()
     
+    def _on_web_keywords_clicked(self):
+        """Handle web keywords configuration button click."""
+        from services.formatting_config import FormattingConfig
+        
+        # Load current config
+        config = FormattingConfig.from_env()
+        
+        # Show web keywords dialog
+        dialog = WebKeywordsDialog(config.web_app_keywords, self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            # Get updated keywords
+            updated_keywords = dialog.get_keywords()
+            
+            # Update config
+            config.web_app_keywords = updated_keywords
+            
+            # Save config
+            config.save_to_env()
+            
+            # Show success message
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.information(
+                self,
+                "Успешно",
+                "Ключевые слова веб-приложений обновлены!"
+            )
+    
     
     def _reload_ui_texts(self):
         """Перезагружает все тексты в интерфейсе после смены языка."""
@@ -3219,3 +3266,142 @@ class AddApplicationDialog(QDialog):
         if dialog.exec() == QDialog.DialogCode.Accepted:
             return dialog.get_application_data()
         return None
+
+
+
+class WebKeywordsDialog(QDialog):
+    """Dialog for editing web application keywords for browser detection."""
+    
+    def __init__(self, keywords_dict: Dict[str, List[str]], parent=None):
+        """
+        Initialize the web keywords dialog.
+        
+        Args:
+            keywords_dict: Dictionary mapping format types to keyword lists
+            parent: Parent widget
+        """
+        super().__init__(parent)
+        self.keywords_dict = keywords_dict.copy()  # Work with a copy
+        self.setWindowTitle("Настройка ключевых слов веб-приложений")
+        self.setMinimumWidth(800)
+        self.setMinimumHeight(600)
+        
+        # Create layout
+        layout = QVBoxLayout()
+        layout.setSpacing(16)
+        
+        # Info label
+        info_label = QLabel(
+            "Настройте ключевые слова для определения веб-приложений в браузерах.\n"
+            "Система ищет эти слова в заголовке вкладки браузера."
+        )
+        info_label.setWordWrap(True)
+        info_label.setStyleSheet(
+            "color: #888888; "
+            "font-size: 11px; "
+            "padding: 8px; "
+            "background-color: #2d2d2d; "
+            "border-radius: 4px;"
+        )
+        layout.addWidget(info_label)
+        
+        # Tab widget for different format types
+        from PyQt6.QtWidgets import QTabWidget, QTextEdit
+        self.tab_widget = QTabWidget()
+        self.keyword_editors = {}
+        
+        # Create a tab for each format type
+        for format_type, keywords in sorted(self.keywords_dict.items()):
+            tab = QWidget()
+            tab_layout = QVBoxLayout()
+            tab_layout.setSpacing(12)
+            
+            # Label
+            label = QLabel(f"Ключевые слова для формата '{format_type}':")
+            label.setStyleSheet("font-weight: bold;")
+            tab_layout.addWidget(label)
+            
+            # Help text
+            help_text = QLabel(
+                "Введите ключевые слова, по одному на строку.\n"
+                "Например: google docs, google документы"
+            )
+            help_text.setStyleSheet("color: #888888; font-size: 10px;")
+            tab_layout.addWidget(help_text)
+            
+            # Text editor for keywords
+            editor = QTextEdit()
+            editor.setPlainText("\n".join(keywords))
+            editor.setMinimumHeight(300)
+            tab_layout.addWidget(editor)
+            
+            # Store editor reference
+            self.keyword_editors[format_type] = editor
+            
+            tab.setLayout(tab_layout)
+            self.tab_widget.addTab(tab, format_type)
+        
+        layout.addWidget(self.tab_widget)
+        
+        # Buttons
+        button_layout = QHBoxLayout()
+        
+        # Reset to defaults button
+        reset_btn = QPushButton("🔄 Сбросить к стандартным")
+        reset_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        reset_btn.clicked.connect(self._on_reset_clicked)
+        reset_btn.setToolTip("Восстановить стандартные ключевые слова")
+        button_layout.addWidget(reset_btn)
+        
+        button_layout.addStretch()
+        
+        cancel_btn = QPushButton("Отменить")
+        cancel_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        cancel_btn.clicked.connect(self.reject)
+        button_layout.addWidget(cancel_btn)
+        
+        save_btn = QPushButton("💾 Сохранить")
+        save_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        save_btn.clicked.connect(self.accept)
+        button_layout.addWidget(save_btn)
+        
+        layout.addLayout(button_layout)
+        
+        self.setLayout(layout)
+    
+    def _on_reset_clicked(self):
+        """Reset keywords to defaults."""
+        from PyQt6.QtWidgets import QMessageBox
+        
+        reply = QMessageBox.question(
+            self,
+            "Подтверждение",
+            "Вы уверены, что хотите сбросить все ключевые слова к стандартным значениям?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            # Load default keywords from formatting_module
+            from services.formatting_module import BROWSER_TITLE_MAPPINGS
+            
+            # Update editors with default values
+            for format_type, keywords in BROWSER_TITLE_MAPPINGS.items():
+                if format_type in self.keyword_editors:
+                    self.keyword_editors[format_type].setPlainText("\n".join(keywords))
+    
+    def get_keywords(self) -> Dict[str, List[str]]:
+        """Get the updated keywords dictionary."""
+        result = {}
+        
+        for format_type, editor in self.keyword_editors.items():
+            # Get text and split by lines
+            text = editor.toPlainText()
+            keywords = [
+                line.strip()
+                for line in text.split("\n")
+                if line.strip()  # Skip empty lines
+            ]
+            result[format_type] = keywords
+        
+        return result

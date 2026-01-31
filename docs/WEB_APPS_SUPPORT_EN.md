@@ -133,6 +133,24 @@ RapidWhisper automatically detects web applications running in browsers and appl
    - `notion` - for Notion
    - `obsidian` - for Obsidian Publish
    - `markdown` - for markdown editors
+4. Click **"🌐 Настроить ключевые слова веб-приложений"** to customize keywords
+
+### Customizing Web App Keywords
+
+You can customize which keywords trigger detection for each format:
+
+1. Open **Settings** → **Processing** → **Formatting**
+2. Click **"🌐 Настроить ключевые слова веб-приложений"**
+3. Select the format tab you want to edit (word, notion, obsidian, markdown)
+4. Add or remove keywords (one per line)
+5. Click **"💾 Сохранить"**
+
+**Example use cases:**
+- Remove "Google Forms" if you don't want formatting for forms
+- Add custom keywords for your company's internal web apps
+- Add keywords in other languages
+
+**Reset to defaults:** Click "🔄 Сбросить к стандартным" to restore default keywords.
 
 ### Example Configuration
 

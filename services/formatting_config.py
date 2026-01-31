@@ -108,6 +108,7 @@ class FormattingConfig:
         app_prompts: Dictionary mapping application names to their custom prompts
         custom_base_url: Base URL for custom provider (e.g., http://localhost:1234/v1/)
         custom_api_key: API key for custom provider
+        web_app_keywords: Dictionary mapping format types to lists of keywords for browser detection
     """
     
     enabled: bool = False
@@ -119,6 +120,7 @@ class FormattingConfig:
     app_prompts: Dict[str, str] = field(default_factory=dict)  # New: per-application prompts
     custom_base_url: str = ""  # For custom provider
     custom_api_key: str = ""  # For custom provider
+    web_app_keywords: Dict[str, List[str]] = field(default_factory=dict)  # Keywords for browser detection
     
     def is_valid(self) -> bool:
         """
@@ -287,6 +289,26 @@ class FormattingConfig:
         custom_base_url = os.getenv("FORMATTING_CUSTOM_BASE_URL", "")
         custom_api_key = os.getenv("FORMATTING_CUSTOM_API_KEY", "")
         
+        # Load web app keywords for browser detection
+        web_app_keywords_json = os.getenv("FORMATTING_WEB_APP_KEYWORDS", "")
+        web_app_keywords = {}
+        
+        if web_app_keywords_json:
+            try:
+                web_app_keywords = json.loads(web_app_keywords_json)
+            except json.JSONDecodeError:
+                logger.warning("Failed to parse FORMATTING_WEB_APP_KEYWORDS JSON, using defaults")
+                web_app_keywords = {}
+        
+        # If no keywords loaded, use defaults from formatting_module
+        if not web_app_keywords:
+            # Import default mappings
+            from services.formatting_module import BROWSER_TITLE_MAPPINGS
+            web_app_keywords = {
+                format_type: list(patterns)
+                for format_type, patterns in BROWSER_TITLE_MAPPINGS.items()
+            }
+        
         return cls(
             enabled=enabled,
             provider=provider,
@@ -296,7 +318,8 @@ class FormattingConfig:
             system_prompt=system_prompt,
             app_prompts=app_prompts,
             custom_base_url=custom_base_url,
-            custom_api_key=custom_api_key
+            custom_api_key=custom_api_key,
+            web_app_keywords=web_app_keywords
         )
     
     def to_env(self) -> dict:
@@ -322,6 +345,7 @@ class FormattingConfig:
             "FORMATTING_TEMPERATURE": str(self.temperature),
             "FORMATTING_CUSTOM_BASE_URL": self.custom_base_url,
             "FORMATTING_CUSTOM_API_KEY": self.custom_api_key,
+            "FORMATTING_WEB_APP_KEYWORDS": json.dumps(self.web_app_keywords, ensure_ascii=False),
             # Keep old format for backward compatibility (but will be removed after migration)
             "FORMATTING_APPLICATIONS": ",".join(self.applications),
             "FORMATTING_SYSTEM_PROMPT": self.system_prompt
