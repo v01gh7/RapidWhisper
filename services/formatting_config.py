@@ -40,12 +40,32 @@ class FormattingConfig:
         Returns:
             bool: True if configuration is valid and complete
         """
+        # Model is optional - if not specified, default model for provider will be used
         return (
             self.provider in ["groq", "openai", "glm", "custom"] and
-            bool(self.model) and
             bool(self.applications) and
             0.0 <= self.temperature <= 1.0
         )
+    
+    def get_model(self) -> str:
+        """
+        Get model name, using default for provider if not specified.
+        
+        Returns:
+            str: Model name to use
+        """
+        if self.model:
+            return self.model
+        
+        # Default models for each provider
+        default_models = {
+            "groq": "llama-3.3-70b-versatile",
+            "openai": "gpt-4o-mini",
+            "glm": "glm-4-flash",
+            "custom": ""
+        }
+        
+        return default_models.get(self.provider, "")
     
     @classmethod
     def from_env(cls, env_path: Optional[str] = None) -> 'FormattingConfig':

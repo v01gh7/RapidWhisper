@@ -189,7 +189,7 @@ class FormattingModule:
         self.ai_client_factory = ai_client_factory
         
         logger.info(f"FormattingModule initialized: enabled={self.config.enabled}, "
-                   f"provider={self.config.provider}, model={self.config.model}")
+                   f"provider={self.config.provider}, model={self.config.get_model()}")
     
     def should_format(self) -> bool:
         """
@@ -313,7 +313,7 @@ class FormattingModule:
             if self.ai_client_factory:
                 ai_client = self.ai_client_factory.create(
                     provider=self.config.provider,
-                    model=self.config.model
+                    model=self.config.get_model()
                 )
                 logger.info(f"  🤖 Создан AI клиент через фабрику")
             else:
@@ -351,20 +351,20 @@ class FormattingModule:
                     provider=self.config.provider,
                     api_key=api_key,
                     base_url=base_url,
-                    model=self.config.model
+                    model=self.config.get_model()
                 )
                 logger.info(f"  ✅ TranscriptionClient создан успешно")
             
             logger.info(f"  🚀 Отправка запроса на форматирование...")
             logger.info(f"    - Провайдер: {self.config.provider}")
-            logger.info(f"    - Модель: {self.config.model}")
+            logger.info(f"    - Модель: {self.config.get_model()}")
             logger.info(f"    - Температура: {self.config.temperature}")
             
             # Use post_process_text method for formatting
             formatted_text = ai_client.post_process_text(
                 text=text,
                 provider=self.config.provider,
-                model=self.config.model,
+                model=self.config.get_model(),
                 system_prompt=format_prompt,
                 temperature=self.config.temperature
             )
@@ -403,7 +403,7 @@ class FormattingModule:
         # Check if configuration is valid
         logger.info(f"Проверка конфигурации:")
         logger.info(f"  - Провайдер: {self.config.provider}")
-        logger.info(f"  - Модель: {self.config.model}")
+        logger.info(f"  - Модель: {self.config.get_model()} {'(стандартная)' if not self.config.model else '(пользовательская)'}")
         logger.info(f"  - Приложения: {self.config.applications}")
         logger.info(f"  - Температура: {self.config.temperature}")
         logger.info(f"  - Системный промпт: {'Установлен' if self.config.system_prompt else 'Не установлен (используется стандартный)'}")
@@ -411,7 +411,6 @@ class FormattingModule:
         if not self.config.is_valid():
             logger.warning("❌ Неверная конфигурация форматирования")
             logger.warning(f"  - Провайдер валиден: {self.config.provider in ['groq', 'openai', 'glm', 'custom']}")
-            logger.warning(f"  - Модель указана: {bool(self.config.model)}")
             logger.warning(f"  - Приложения указаны: {bool(self.config.applications)}")
             logger.warning(f"  - Температура валидна: {0.0 <= self.config.temperature <= 1.0}")
             logger.info("=" * 80)
