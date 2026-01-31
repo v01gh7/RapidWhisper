@@ -154,7 +154,11 @@ class TestProcessingCoordinatorIntegration:
     
     def test_post_processing_only_pipeline_no_format_match(self):
         """
-        Test post-processing-only pipeline (no format match).
+        Test combined processing with fallback formatting (no format match).
+        
+        When both post-processing and formatting are enabled, but the active
+        application doesn't match any configured format, the system should
+        use fallback formatting combined with post-processing.
         
         **Validates: Requirements 5.6**
         """
@@ -210,16 +214,18 @@ class TestProcessingCoordinatorIntegration:
             config=mock_config
         )
         
-        # Verify post-processing was applied
+        # Verify combined processing was applied
         assert result == "POST-PROCESSED TEXT"
         
         # Verify post-processing was called
         assert mock_transcription_client.post_process_text.called
         
-        # Verify the prompt does NOT contain formatting instructions
+        # Verify the prompt CONTAINS both post-processing AND fallback formatting
         call_args = mock_transcription_client.post_process_text.call_args
         used_prompt = call_args[1]['system_prompt']
-        assert used_prompt == "Post-process this text"
+        assert "Post-process this text" in used_prompt
+        assert "Additionally, apply the following formatting:" in used_prompt
+        assert "Make the transcribed text readable and well-structured" in used_prompt
     
     def test_disabled_state_no_processing(self):
         """
@@ -281,7 +287,10 @@ class TestProcessingCoordinatorIntegration:
     
     def test_formatting_only_no_match_returns_original(self):
         """
-        Test formatting-only with no format match returns original text.
+        Test formatting-only with no format match applies fallback formatting.
+        
+        When formatting is enabled but the active application doesn't match
+        any configured format, the system should apply fallback formatting.
         
         **Validates: Requirements 4.4**
         """
@@ -316,6 +325,7 @@ class TestProcessingCoordinatorIntegration:
         
         # Create mock transcription client
         mock_transcription_client = Mock()
+        mock_transcription_client.post_process_text.return_value = "FALLBACK FORMATTED TEXT"
         
         # Create coordinator
         coordinator = ProcessingCoordinator(
@@ -331,8 +341,11 @@ class TestProcessingCoordinatorIntegration:
             config=mock_config
         )
         
-        # Verify original text is returned
-        assert result == original_text
+        # Verify fallback formatting was applied
+        assert result == "FALLBACK FORMATTED TEXT"
         
-        # Verify no API calls were made
-        assert not mock_transcription_client.post_process_text.called
+        # Verify API call was made with fallback prompt
+        assert mock_transcription_client.post_process_text.called
+        call_args = mock_transcription_client.post_process_text.call_args
+        used_prompt = call_args[1]['system_prompt']
+        assert "Make the transcribed text readable and well-structured" in used_prompt

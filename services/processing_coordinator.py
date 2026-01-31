@@ -42,10 +42,9 @@ class ProcessingCoordinator:
         Determine if operations should be combined.
         
         Returns:
-            Tuple[bool, Optional[str]]: (should_combine, format_type)
+            Tuple[bool, Optional[str]]: (should_combine, format_type_or_fallback)
                 - should_combine: True if both formatting and post-processing are enabled
-                  and the active application matches a format
-                - format_type: The matched format type, or None if no match
+                - format_type_or_fallback: The matched format type, or "fallback" if no match
         """
         # Check if formatting is enabled
         if not self.formatting_module.should_format():
@@ -61,8 +60,8 @@ class ProcessingCoordinator:
         # Check if active application matches a format
         format_type = self.formatting_module.get_active_application_format()
         if format_type is None:
-            logger.debug("No format match for active application, cannot combine operations")
-            return False, None
+            logger.info("Both formatting and post-processing enabled, but no format match - using fallback")
+            return True, "fallback"
         
         logger.info(f"Both formatting and post-processing enabled with format match: {format_type}")
         return True, format_type
@@ -123,8 +122,9 @@ class ProcessingCoordinator:
                 logger.info("FORMATTING ONLY MODE: Applying formatting")
                 return self.formatting_module.process(text)
             else:
-                logger.info("No format match for formatting")
-                # Fall through to check post-processing
+                logger.info("No format match - applying fallback formatting")
+                # Apply fallback formatting for unknown applications
+                return self._process_fallback_formatting(text, transcription_client, config)
         
         # Check if post-processing is enabled (either alone or when formatting had no match)
         if config.enable_post_processing:
@@ -149,7 +149,7 @@ class ProcessingCoordinator:
         
         Args:
             text: Original text
-            format_type: Format identifier
+            format_type: Format identifier or "fallback" for unknown applications
             transcription_client: Client for making AI requests
             config: Configuration object
         
@@ -157,8 +157,13 @@ class ProcessingCoordinator:
             str: Processed text
         """
         try:
-            # Get format prompt
-            format_prompt = self.formatting_module.get_format_prompt(format_type)
+            # Get format prompt (either app-specific or fallback)
+            if format_type == "fallback":
+                format_prompt = self.formatting_module.config.get_prompt_for_app("_fallback")
+                logger.info("Using fallback formatting prompt for unknown application")
+            else:
+                format_prompt = self.formatting_module.get_format_prompt(format_type)
+                logger.info(f"Using app-specific formatting prompt for: {format_type}")
             
             # Combine prompts
             combined_prompt = self.combine_prompts(
@@ -239,5 +244,61 @@ class ProcessingCoordinator:
             
         except Exception as e:
             logger.error(f"❌ Post-processing failed: {e}")
+            logger.info("Returning original text")
+            return text
+
+    def _process_fallback_formatting(
+        self,
+        text: str,
+        transcription_client,
+        config
+    ) -> str:
+        """
+        Process text with fallback formatting for unknown applications.
+        
+        This applies basic formatting (sentence breaks, paragraphs, headings)
+        when the active application doesn't match any configured format.
+        Uses the editable _fallback prompt from configuration.
+        
+        Args:
+            text: Original text
+            transcription_client: Client for making AI requests
+            config: Configuration object
+        
+        Returns:
+            str: Formatted text
+        """
+        try:
+            logger.info("FALLBACK FORMATTING MODE: Applying universal formatting")
+            
+            # Get fallback prompt from configuration (editable by user)
+            fallback_prompt = self.formatting_module.config.get_prompt_for_app("_fallback")
+            
+            # Use formatting provider and model
+            formatting_config = self.formatting_module.config
+            provider = formatting_config.provider
+            model = formatting_config.get_model()
+            temperature = formatting_config.temperature
+            
+            logger.info(f"Using formatting provider: {provider}")
+            logger.info(f"Using model: {model}")
+            logger.info(f"Temperature: {temperature}")
+            logger.info(f"Fallback prompt length: {len(fallback_prompt)} characters")
+            
+            # Make API call with fallback prompt
+            formatted_text = transcription_client.post_process_text(
+                text=text,
+                provider=provider,
+                model=model,
+                system_prompt=fallback_prompt,
+                temperature=temperature
+            )
+            
+            logger.info("✅ Fallback formatting completed successfully")
+            logger.info(f"Result preview: {formatted_text[:100]}...")
+            return formatted_text
+            
+        except Exception as e:
+            logger.error(f"❌ Fallback formatting failed: {e}")
             logger.info("Returning original text")
             return text

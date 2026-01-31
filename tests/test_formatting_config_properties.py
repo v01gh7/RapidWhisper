@@ -28,6 +28,9 @@ def test_property_9_unique_prompt_storage(apps_with_prompts):
     """Property 9: Unique Prompt Storage - Validates: Requirements 5.1, 5.3"""
     config = FormattingConfig()
     
+    # Add all apps to applications list so they're treated as known apps
+    config.applications = [app_name for app_name, _ in apps_with_prompts]
+    
     for app_name, prompt in apps_with_prompts:
         config.set_prompt_for_app(app_name, prompt)
     
@@ -40,10 +43,14 @@ def test_property_9_unique_prompt_storage(apps_with_prompts):
             assert retrieved_prompt == UNIVERSAL_DEFAULT_PROMPT
 
 
-@given(app_name=app_names)
+@given(app_name=app_names.filter(lambda x: x != "_fallback"))
 def test_property_10_default_prompt_assignment(app_name):
     """Property 10: Default Prompt Assignment - Validates: Requirements 5.2, 6.2"""
     config = FormattingConfig()
+    
+    # Add app to applications list so it's treated as a known app
+    config.applications = [app_name]
+    
     config.set_prompt_for_app(app_name, "")
     
     retrieved_prompt = config.get_prompt_for_app(app_name)
@@ -54,6 +61,10 @@ def test_property_10_default_prompt_assignment(app_name):
 def test_property_11_correct_prompt_retrieval(app_name, custom_prompt):
     """Property 11: Correct Prompt Retrieval - Validates: Requirements 5.4"""
     config = FormattingConfig()
+    
+    # Add app to applications list so it's treated as a known app
+    config.applications = [app_name]
+    
     config.set_prompt_for_app(app_name, custom_prompt)
     
     retrieved_prompt = config.get_prompt_for_app(app_name)

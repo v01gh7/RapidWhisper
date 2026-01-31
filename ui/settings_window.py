@@ -2458,7 +2458,13 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         row = 0
         col = 0
         for app_name in config.applications:
-            btn = QPushButton(app_name)
+            # Get display name for special apps
+            if app_name == "_fallback":
+                display_name = "🌐 Универсальный"
+            else:
+                display_name = app_name
+            
+            btn = QPushButton(display_name)
             btn.setCheckable(False)
             btn.setMinimumHeight(80)
             btn.setMinimumWidth(120)
@@ -2489,7 +2495,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                         border-color: #1084d8;
                     }
                 """)
-                btn.setText(f"✏️ {app_name}")
+                btn.setText(f"✏️ {display_name}")
             else:
                 # Default prompt
                 btn.setStyleSheet("""
@@ -2506,6 +2512,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                         border-color: #0078d4;
                     }
                 """)
+                btn.setText(display_name)
             
             self.formatting_apps_grid.addWidget(btn, row, col)
             self.formatting_app_buttons[app_name] = btn
@@ -2522,10 +2529,10 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         edit_action = menu.addAction(f"✏️ {t('settings.formatting.edit_application')}")
         delete_action = menu.addAction(f"🗑️ {t('settings.formatting.delete_application')}")
         
-        # Disable delete if only one application
+        # Disable delete for system applications (_fallback) or if only one application
         from services.formatting_config import FormattingConfig
         config = FormattingConfig.from_env()
-        if len(config.applications) <= 1:
+        if len(config.applications) <= 1 or app_name == "_fallback":
             delete_action.setEnabled(False)
         
         action = menu.exec(position)
@@ -3000,8 +3007,14 @@ class PromptEditDialog(QDialog):
         layout = QVBoxLayout()
         layout.setSpacing(16)
         
+        # Get display name for special apps
+        if app_name == "_fallback":
+            display_name = "🌐 Универсальный (по умолчанию)"
+        else:
+            display_name = app_name
+        
         # Application name label (read-only)
-        app_label = QLabel(f"{t('settings.formatting.application_label')} {app_name}")
+        app_label = QLabel(f"{t('settings.formatting.application_label')} {display_name}")
         app_label.setStyleSheet("font-weight: bold; font-size: 14px;")
         layout.addWidget(app_label)
         

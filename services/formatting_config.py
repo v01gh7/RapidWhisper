@@ -37,6 +37,35 @@ Remember: Use ALL the original words, just organize them better.
 Output ONLY the reformatted text."""
 
 
+# Fallback formatting prompt for unknown applications
+# Simple, universal formatting that makes text readable
+FALLBACK_FORMATTING_PROMPT = """CRITICAL: You are a TEXT FORMATTER, not a writer. Your ONLY job is to format existing text.
+
+STRICT RULES:
+1. DO NOT ADD ANY NEW WORDS - Use ONLY the words from the original text
+2. DO NOT EXPLAIN - No descriptions, no examples, no elaborations
+3. DO NOT EXPAND - If the text says "orange sticks for manicure", output ONLY "orange sticks for manicure"
+4. DO NOT COMPLETE - If a sentence is incomplete, leave it incomplete
+
+ALLOWED ACTIONS:
+- Add line breaks between sentences
+- Group sentences into paragraphs
+- Add basic punctuation if missing
+
+FORBIDDEN ACTIONS:
+- Adding explanations (like "They are used for...")
+- Adding descriptions (like "These sticks are...")
+- Adding context or background information
+- Completing incomplete thoughts
+
+Example:
+Input: "orange sticks for manicure"
+CORRECT: "Orange sticks for manicure."
+WRONG: "Orange sticks for manicure. They are used for shaping and caring for nails."
+
+Output ONLY the original words with formatting. Nothing more."""
+
+
 def migrate_from_old_format(applications_str: str) -> Dict[str, Dict[str, Any]]:
     """
     Migrate from old comma-separated format to new JSON format.
@@ -116,17 +145,32 @@ class FormattingConfig:
         Get the prompt for a specific application.
         
         Args:
-            app_name: Application name
+            app_name: Application name or "_fallback" for unknown apps
             
         Returns:
-            Application-specific prompt, or universal default if not set
+            Application-specific prompt, fallback prompt, or universal default if not set
         """
-        # Check if app has a custom prompt
-        if app_name in self.app_prompts and self.app_prompts[app_name]:
-            return self.app_prompts[app_name]
+        # Special handling for _fallback
+        if app_name == "_fallback":
+            # Check if there's a custom fallback prompt
+            if "_fallback" in self.app_prompts and self.app_prompts["_fallback"]:
+                return self.app_prompts["_fallback"]
+            # Use hardcoded fallback if no custom fallback is set
+            return FALLBACK_FORMATTING_PROMPT
         
-        # Fall back to universal default prompt
-        return UNIVERSAL_DEFAULT_PROMPT
+        # For known applications
+        if app_name in self.applications:
+            # Check if app has a custom prompt
+            if app_name in self.app_prompts and self.app_prompts[app_name]:
+                return self.app_prompts[app_name]
+            # Use universal default for known apps without custom prompts
+            return UNIVERSAL_DEFAULT_PROMPT
+        
+        # For unknown applications (not in applications list)
+        # Use fallback prompt (check for custom fallback first)
+        if "_fallback" in self.app_prompts and self.app_prompts["_fallback"]:
+            return self.app_prompts["_fallback"]
+        return FALLBACK_FORMATTING_PROMPT
     
     def set_prompt_for_app(self, app_name: str, prompt: str) -> None:
         """
@@ -204,17 +248,26 @@ class FormattingConfig:
             applications_str = os.getenv("FORMATTING_APPLICATIONS", "")
             
             if not applications_str:
-                # Use defaults
-                applications = ["notion", "obsidian", "markdown", "word", "libreoffice", "vscode"]
+                # Use defaults (including _fallback)
+                applications = ["notion", "obsidian", "markdown", "word", "libreoffice", "vscode", "_fallback"]
             else:
                 applications = [
                     app.strip() 
                     for app in applications_str.split(",") 
                     if app.strip()
                 ]
+                # Always ensure _fallback is in the list
+                if "_fallback" not in applications:
+                    applications.append("_fallback")
             
             # Initialize empty prompts for all applications
             app_prompts = {app: "" for app in applications}
+        
+        # Ensure _fallback is always in applications list
+        if "_fallback" not in applications:
+            applications.append("_fallback")
+            if "_fallback" not in app_prompts:
+                app_prompts["_fallback"] = ""
         
         return cls(
             enabled=enabled,
