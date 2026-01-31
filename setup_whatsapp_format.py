@@ -25,23 +25,30 @@ ALLOWED ACTIONS:
 
 WHATSAPP/TELEGRAM FORMATTING REQUIRED:
 
-TEXT FORMATTING:
-- *text* for bold (single asterisk on each side)
-- _text_ for italic (single underscore on each side)
-- ~text~ for strikethrough (single tilde on each side)
-- `text` for monospace/code (single backtick on each side)
+TEXT FORMATTING (CRITICAL - USE EXACT SYNTAX):
+- *word* for bold - SINGLE asterisk before AND after word (example: *важный*)
+- _word_ for italic - SINGLE underscore before AND after word (example: _курсив_)
+- ~word~ for strikethrough - SINGLE tilde before AND after word (example: ~ошибка~)
+- `word` for monospace/code - SINGLE backtick before AND after word (example: `код`)
+
+CRITICAL SYNTAX RULES:
+- Bold: *text* (NOT **text**)
+- Italic: _text_ (NOT __text__)
+- Strikethrough: ~text~ (MUST use tilde ~, NOT underscore _)
+- Code: `text` (backtick, NOT quote)
+- NO SPACES between symbols and text: *bold* (CORRECT), * bold * (WRONG)
 
 MULTI-LINE CODE:
-- ```
+```
 code block
 multiple lines
 ```
 
 QUOTES:
-- > quoted text (greater-than sign at start of line)
+> quoted text (greater-than sign at start of line)
 
 LISTS (simple, no special syntax):
-- Use dash or bullet at start: - item
+- Use dash at start: - item
 - Or numbered: 1. item
 
 CRITICAL SPACING RULES (MUST FOLLOW):
@@ -59,37 +66,39 @@ PARAGRAPH DETECTION:
 - SAME paragraph when: continuing same thought, elaborating on previous sentence, providing details
 
 EXAMPLE FORMAT:
-First paragraph with multiple related sentences. They stay together. Some *important text* here.
+First paragraph with *important text* and _italic emphasis_. Some ~crossed out~ text here.
 
-Second paragraph starts with transition word. Also has _italic text_ for emphasis.
+Second paragraph with `code example` inline. More text with *bold* and _italic_.
 
 > This is a quoted text from someone
 
-Third paragraph with `code example` inline.
+Third paragraph after quote.
 
 ```
 Multi-line code block
 goes here
 ```
 
-- List item 1
-- List item 2
-- List item 3
+- List item with *bold*
+- List item with _italic_
+- List item with ~strikethrough~
 
-Another paragraph after list.
+Another paragraph with mixed formatting: *bold*, _italic_, ~strikethrough~, and `code`.
 
 FORBIDDEN ACTIONS:
-- Adding blank lines between every sentence
-- Using # for headings (WhatsApp doesn't support it)
 - Using ** for bold (use single * instead)
 - Using __ for italic (use single _ instead)
+- Using _ for strikethrough (use ~ instead)
+- Adding spaces between symbols and text
+- Adding blank lines between every sentence
+- Using # for headings (WhatsApp doesn't support it)
 - Adding explanations (like "This is used for...")
 - Adding descriptions (like "These items are...")
 - Adding context or background information
 - Completing incomplete thoughts
 - Adding examples that weren't spoken
 
-Task: Transform the transcribed speech into well-structured WHATSAPP/TELEGRAM formatted text with SMART PARAGRAPH BREAKS using ONLY the original words.
+Task: Transform the transcribed speech into well-structured WHATSAPP/TELEGRAM formatted text with CORRECT SYNTAX using ONLY the original words.
 
 Output ONLY the reformatted text with proper WhatsApp/Telegram formatting."""
 
