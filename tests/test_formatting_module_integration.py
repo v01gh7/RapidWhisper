@@ -23,6 +23,7 @@ def test_integration_formatting_uses_correct_prompt_for_each_app():
         f.write("FORMATTING_ENABLED=true\n")
         f.write("FORMATTING_PROVIDER=groq\n")
         f.write("GROQ_API_KEY=test_key\n")
+        f.write("FORMATTING_APPLICATIONS=notion,markdown,word\n")
         
         import json
         app_prompts_data = {
@@ -31,6 +32,14 @@ def test_integration_formatting_uses_correct_prompt_for_each_app():
             "word": {"enabled": True, "prompt": ""}  # Empty = use default
         }
         f.write(f"FORMATTING_APP_PROMPTS={json.dumps(app_prompts_data, ensure_ascii=False)}\n")
+        
+        # Add web app keywords (required for detection)
+        web_keywords = {
+            "notion": ["notion"],
+            "markdown": ["markdown"],
+            "word": ["word"]
+        }
+        f.write(f"FORMATTING_WEB_APP_KEYWORDS={json.dumps(web_keywords, ensure_ascii=False)}\n")
         temp_path = f.name
     
     try:
@@ -82,6 +91,7 @@ def test_integration_formatting_falls_back_to_default():
         f.write("FORMATTING_ENABLED=true\n")
         f.write("FORMATTING_PROVIDER=groq\n")
         f.write("GROQ_API_KEY=test_key\n")
+        f.write("FORMATTING_APPLICATIONS=app1,app2\n")
         
         import json
         app_prompts_data = {
@@ -89,6 +99,13 @@ def test_integration_formatting_falls_back_to_default():
             "app2": {"enabled": True, "prompt": ""}
         }
         f.write(f"FORMATTING_APP_PROMPTS={json.dumps(app_prompts_data, ensure_ascii=False)}\n")
+        
+        # Add web app keywords
+        web_keywords = {
+            "app1": ["app1"],
+            "app2": ["app2"]
+        }
+        f.write(f"FORMATTING_WEB_APP_KEYWORDS={json.dumps(web_keywords, ensure_ascii=False)}\n")
         temp_path = f.name
     
     try:
@@ -130,6 +147,15 @@ def test_integration_formatting_config_persistence():
     with tempfile.NamedTemporaryFile(mode='w', suffix='.env', delete=False, encoding='utf-8') as f:
         f.write("FORMATTING_ENABLED=true\n")
         f.write("FORMATTING_PROVIDER=groq\n")
+        
+        import json
+        # Add web app keywords
+        web_keywords = {
+            "app1": ["app1"],
+            "app2": ["app2"],
+            "app3": ["app3"]
+        }
+        f.write(f"FORMATTING_WEB_APP_KEYWORDS={json.dumps(web_keywords, ensure_ascii=False)}\n")
         temp_path = f.name
     
     try:
@@ -147,7 +173,10 @@ def test_integration_formatting_config_persistence():
         loaded_config = FormattingConfig.from_env(temp_path)
         
         # Verify all data persisted correctly
-        assert set(loaded_config.applications) == {"app1", "app2", "app3"}
+        # Note: _fallback is automatically added during save
+        assert "app1" in loaded_config.applications
+        assert "app2" in loaded_config.applications
+        assert "app3" in loaded_config.applications
         assert loaded_config.get_prompt_for_app("app1") == "Custom prompt 1"
         assert loaded_config.get_prompt_for_app("app2") == "Custom prompt 2"
         assert loaded_config.get_prompt_for_app("app3") == UNIVERSAL_DEFAULT_PROMPT
@@ -166,12 +195,19 @@ def test_integration_formatting_with_unknown_app():
         f.write("FORMATTING_ENABLED=true\n")
         f.write("FORMATTING_PROVIDER=groq\n")
         f.write("GROQ_API_KEY=test_key\n")
+        f.write("FORMATTING_APPLICATIONS=known_app\n")
         
         import json
         app_prompts_data = {
             "known_app": {"enabled": True, "prompt": "Custom prompt"}
         }
         f.write(f"FORMATTING_APP_PROMPTS={json.dumps(app_prompts_data, ensure_ascii=False)}\n")
+        
+        # Add web app keywords
+        web_keywords = {
+            "known_app": ["known_app"]
+        }
+        f.write(f"FORMATTING_WEB_APP_KEYWORDS={json.dumps(web_keywords, ensure_ascii=False)}\n")
         temp_path = f.name
     
     try:
@@ -210,12 +246,19 @@ def test_integration_formatting_prompt_passed_to_ai():
         f.write("FORMATTING_ENABLED=true\n")
         f.write("FORMATTING_PROVIDER=groq\n")
         f.write("GROQ_API_KEY=test_key\n")
+        f.write("FORMATTING_APPLICATIONS=test_app\n")
         
         import json
         app_prompts_data = {
             "test_app": {"enabled": True, "prompt": "Very specific custom prompt for testing"}
         }
         f.write(f"FORMATTING_APP_PROMPTS={json.dumps(app_prompts_data, ensure_ascii=False)}\n")
+        
+        # Add web app keywords
+        web_keywords = {
+            "test_app": ["test_app"]
+        }
+        f.write(f"FORMATTING_WEB_APP_KEYWORDS={json.dumps(web_keywords, ensure_ascii=False)}\n")
         temp_path = f.name
     
     try:

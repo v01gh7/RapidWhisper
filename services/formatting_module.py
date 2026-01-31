@@ -15,78 +15,6 @@ from utils.logger import get_logger
 logger = get_logger()
 
 
-# Application name patterns to format identifiers
-FORMAT_MAPPINGS = {
-    "notion": ["notion", "notion.exe", "notion.app"],
-    "obsidian": ["obsidian", "obsidian.exe", "obsidian.app"],
-    "markdown": [".md", ".markdown", "markdown"],  # Added "markdown" as app name
-    "word": ["word", "winword.exe", "microsoft word", ".docx", ".doc"],
-    "libreoffice": ["libreoffice", "soffice", "writer", ".odt"],
-    "vscode": ["code", "vscode", "visual studio code"],
-    "sublime": ["sublime", "sublime_text"],
-    "notepad": ["notepad++", "notepad"],
-    "whatsapp": ["whatsapp", "whatsapp.exe", "whatsapp.app", "slack", "slack.exe", "slack.app", "discord", "discord.exe", "discord.app"],
-}
-
-# Browser title patterns for web applications
-# Maps format type to list of title patterns to match
-BROWSER_TITLE_MAPPINGS = {
-    "word": [
-        # Google Docs
-        "google docs",
-        "google документы",
-        "google документ",
-        # Google Sheets
-        "google sheets",
-        "google таблицы",
-        "google таблица",
-        # Google Slides
-        "google slides",
-        "google презентации",
-        "google презентация",
-        # Google Forms
-        "google forms",
-        "google формы",
-        "google форма",
-        # Google Keep
-        "google keep",
-        # Microsoft Office Online
-        "microsoft word online",
-        "microsoft excel online",
-        "microsoft powerpoint online",
-        "office online",
-        "office 365",
-        # Zoho
-        "zoho writer",
-        "zoho sheet",
-        "zoho show",
-        # Dropbox Paper
-        "dropbox paper",
-        # Quip
-        "quip",
-        # Coda
-        "coda.io",
-        # Airtable
-        "airtable",
-    ],
-    "notion": [
-        "notion",
-        "notion.so",
-    ],
-    "obsidian": [
-        "obsidian publish",
-    ],
-    "markdown": [
-        "hackmd",
-        "stackedit",
-        "dillinger",
-        "typora online",
-        "github.dev",
-        "gitlab",
-        "gitpod",
-    ],
-}
-
 # List of common browser process names
 BROWSER_PROCESSES = [
     "chrome", "chrome.exe",
@@ -113,58 +41,42 @@ def is_browser(app_name: str) -> bool:
     return any(browser in app_lower for browser in BROWSER_PROCESSES)
 
 
-def match_browser_title_to_format(window_title: str, web_app_keywords: Optional[dict] = None) -> Optional[str]:
+def match_window_to_format(window_title: str, app_name: str, keywords_map: dict) -> Optional[str]:
     """
-    Match browser window title to a format type.
+    Match window title or application name to a format type using keywords.
     
-    This function checks if the browser tab title contains keywords
-    that indicate a specific web application (e.g., "Google Docs").
+    This function checks both window title and application name against
+    configured keywords to determine the appropriate format.
     
     Args:
-        window_title: Browser window/tab title
-        web_app_keywords: Optional dictionary of format_type -> keywords mapping.
-                         If None, uses default BROWSER_TITLE_MAPPINGS.
+        window_title: Window/tab title
+        app_name: Application process name
+        keywords_map: Dictionary of format_type -> keywords mapping from config
     
     Returns:
         Optional[str]: Format identifier or None if no match
     """
     title_lower = window_title.lower()
-    
-    # Use provided keywords or fall back to defaults
-    keywords_map = web_app_keywords if web_app_keywords is not None else BROWSER_TITLE_MAPPINGS
+    app_lower = app_name.lower()
     
     for format_type, patterns in keywords_map.items():
         for pattern in patterns:
-            if pattern.lower() in title_lower:
-                logger.info(f"  🌐 Обнаружено веб-приложение: '{pattern}' → формат '{format_type}'")
+            pattern_lower = pattern.lower()
+            
+            # Check window title
+            if pattern_lower in title_lower:
+                logger.info(f"  ✅ Найдено совпадение в заголовке: '{pattern}' → формат '{format_type}'")
                 return format_type
-    
-    return None
-
-
-def match_application_to_format(app_name: str, file_ext: str) -> Optional[str]:
-    """
-    Match detected application/file to a format type.
-    
-    Args:
-        app_name: Active application name (lowercase)
-        file_ext: Active file extension (with dot)
-    
-    Returns:
-        Optional[str]: Format identifier or None if no match
-    """
-    app_lower = app_name.lower()
-    
-    for format_type, patterns in FORMAT_MAPPINGS.items():
-        for pattern in patterns:
-            if pattern.startswith("."):
-                # File extension match
-                if file_ext == pattern:
-                    return format_type
-            else:
-                # Application name match
-                if pattern in app_lower:
-                    return format_type
+            
+            # Check application name
+            if pattern_lower in app_lower:
+                logger.info(f"  ✅ Найдено совпадение в имени приложения: '{pattern}' → формат '{format_type}'")
+                return format_type
+            
+            # Check file extension in window title
+            if pattern.startswith(".") and pattern_lower in title_lower:
+                logger.info(f"  ✅ Найдено совпадение расширения: '{pattern}' → формат '{format_type}'")
+                return format_type
     
     return None
 
@@ -225,7 +137,7 @@ class FormattingModule:
                 logger.warning("  ⚠️ Не удалось получить информацию об активном окне")
                 return None
             
-            # Extract application name and file extension from window title
+            # Extract application name and window title
             app_name = window_info.process_name
             window_title = window_info.title
             
@@ -233,39 +145,18 @@ class FormattingModule:
             logger.info(f"    - Процесс: {app_name}")
             logger.info(f"    - Заголовок: {window_title}")
             
-            # Check if this is a browser - if so, try to match by tab title
-            if is_browser(app_name):
-                logger.info(f"  🌐 Обнаружен браузер: {app_name}")
-                logger.info(f"  🔎 Проверка заголовка вкладки на соответствие веб-приложениям...")
-                
-                browser_format = match_browser_title_to_format(window_title, self.config.web_app_keywords)
-                if browser_format:
-                    logger.info(f"  ✅ Найдено веб-приложение: {browser_format}")
-                    
-                    # Check if this format is in the configured applications list
-                    if browser_format in self.config.applications:
-                        logger.info(f"  ✅ Формат '{browser_format}' найден в списке приложений")
-                        return browser_format
-                    
-                    logger.warning(f"  ⚠️ Формат '{browser_format}' не найден в списке настроенных приложений")
-                else:
-                    logger.info(f"  ℹ️ Заголовок вкладки не соответствует известным веб-приложениям")
+            # Check if we have keywords configured
+            if not self.config.web_app_keywords:
+                logger.warning("  ⚠️ Ключевые слова приложений не настроены")
+                return None
             
-            # Try to extract file extension from window title
-            file_ext = ""
-            if "." in window_title:
-                parts = window_title.split(".")
-                if len(parts) > 1:
-                    # Get the last part after the last dot
-                    potential_ext = parts[-1].split()[0]  # Take first word after dot
-                    if len(potential_ext) <= 5:  # Reasonable extension length
-                        file_ext = f".{potential_ext}"
-            
-            logger.info(f"    - Расширение файла: {file_ext if file_ext else 'не определено'}")
-            
-            # Match against configured applications
-            logger.info(f"  🔎 Поиск соответствия формату...")
-            format_type = match_application_to_format(app_name, file_ext)
+            # Try to match window title or app name against keywords
+            logger.info(f"  🔎 Поиск соответствия в ключевых словах...")
+            format_type = match_window_to_format(
+                window_title=window_title,
+                app_name=app_name,
+                keywords_map=self.config.web_app_keywords
+            )
             
             if format_type:
                 logger.info(f"  ✅ Найдено соответствие: {format_type}")
@@ -277,16 +168,10 @@ class FormattingModule:
                     logger.info(f"  ✅ Формат '{format_type}' найден в списке приложений")
                     return format_type
                 
-                # Check if app name matches any configured application
-                for app in self.config.applications:
-                    if app.lower() in [format_type, app_name.lower()]:
-                        logger.info(f"  ✅ Приложение '{app}' соответствует формату '{format_type}'")
-                        return format_type
-                
                 logger.warning(f"  ⚠️ Формат '{format_type}' не найден в списке настроенных приложений")
                 return None
             
-            logger.warning(f"  ⚠️ Не найдено соответствие для приложения '{app_name}' и расширения '{file_ext}'")
+            logger.warning(f"  ⚠️ Не найдено соответствие для приложения '{app_name}' и заголовка '{window_title}'")
             return None
             
         except Exception as e:

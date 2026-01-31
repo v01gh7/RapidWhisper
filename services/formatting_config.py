@@ -60,6 +60,9 @@ WRONG: "Orange sticks for manicure. They are used for shaping and caring for nai
 
 Output ONLY the original words with proper line breaks and basic formatting."""
 
+# Backward compatibility alias for tests
+UNIVERSAL_DEFAULT_PROMPT = FALLBACK_FORMATTING_PROMPT
+
 
 def migrate_from_old_format(applications_str: str) -> Dict[str, Dict[str, Any]]:
     """
@@ -149,7 +152,7 @@ class FormattingConfig:
             app_name: Application name or "_fallback" for unknown apps
             
         Returns:
-            Application-specific prompt from .env, or empty string if not set
+            Application-specific prompt from .env, or FALLBACK_FORMATTING_PROMPT if not set
         """
         # All prompts come from .env file (self.app_prompts)
         # No hardcoded defaults!
@@ -166,7 +169,11 @@ class FormattingConfig:
         
         # Decode \\n to actual newlines for display/use
         # JSON stores them as \\n, we need real newlines
-        return prompt.replace('\\n', '\n') if prompt else ""
+        if prompt:
+            return prompt.replace('\\n', '\n')
+        else:
+            # If no prompt found, return fallback
+            return FALLBACK_FORMATTING_PROMPT
     
     def get_format_type(self, app_name: str) -> str:
         """
@@ -304,17 +311,12 @@ class FormattingConfig:
             try:
                 web_app_keywords = json.loads(web_app_keywords_json)
             except json.JSONDecodeError:
-                logger.warning("Failed to parse FORMATTING_WEB_APP_KEYWORDS JSON, using defaults")
+                logger.warning("Failed to parse FORMATTING_WEB_APP_KEYWORDS JSON, using empty dict")
                 web_app_keywords = {}
         
-        # If no keywords loaded, use defaults from formatting_module
+        # If no keywords loaded, log warning (all keywords should be in .env now)
         if not web_app_keywords:
-            # Import default mappings
-            from services.formatting_module import BROWSER_TITLE_MAPPINGS
-            web_app_keywords = {
-                format_type: list(patterns)
-                for format_type, patterns in BROWSER_TITLE_MAPPINGS.items()
-            }
+            logger.warning("No FORMATTING_WEB_APP_KEYWORDS found in .env - formatting detection will not work")
         
         return cls(
             enabled=enabled,
