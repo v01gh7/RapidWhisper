@@ -257,6 +257,10 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                 padding: 8px 0px;
                 color: #ffffff;
             }}
+            QWidget#rightPanel {{
+                background-color: rgba(26, 26, 26, {int(self._opacity * 0.9)});
+                border: none;
+            }}
             QListWidget::item {{
                 color: #ffffff;
                 padding: 10px 16px;
@@ -376,6 +380,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         # Правая панель с содержимым
         right_panel = QWidget()
+        right_panel.setObjectName("rightPanel")  # Set object name for CSS targeting
         right_panel_layout = QVBoxLayout()
         right_panel_layout.setContentsMargins(32, 32, 32, 32)
         right_panel_layout.setSpacing(24)
