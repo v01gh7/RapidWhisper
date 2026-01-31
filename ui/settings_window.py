@@ -2669,7 +2669,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
     
     def _edit_application_prompt(self, app_name: str):
         """Open dialog to edit application prompt."""
-        from services.formatting_config import FormattingConfig, UNIVERSAL_DEFAULT_PROMPT
+        from services.formatting_config import FormattingConfig
         
         # Load current config
         config = FormattingConfig.from_env()
@@ -2716,13 +2716,13 @@ class SettingsWindow(QDialog, StyledWindowMixin):
     
     def _on_add_application_clicked(self):
         """Handle add application button click."""
-        from services.formatting_config import FormattingConfig, UNIVERSAL_DEFAULT_PROMPT
+        from services.formatting_config import FormattingConfig
         
         # Load current config
         config = FormattingConfig.from_env()
         
-        # Show add dialog
-        result = AddApplicationDialog.add_application(config.applications, UNIVERSAL_DEFAULT_PROMPT, self)
+        # Show add dialog (empty prompt by default)
+        result = AddApplicationDialog.add_application(config.applications, "", self)
         
         if result:
             app_name, prompt = result

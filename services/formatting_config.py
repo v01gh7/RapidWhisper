@@ -16,43 +16,7 @@ from utils.logger import get_logger
 logger = get_logger()
 
 
-# Universal default prompt that works for all application formats
-UNIVERSAL_DEFAULT_PROMPT = """CRITICAL: You are a TEXT FORMATTER, not a writer. Your ONLY job is to format existing text.
-
-STRICT RULES:
-1. DO NOT ADD ANY NEW WORDS - Use ONLY the words from the original text
-2. DO NOT EXPLAIN - No descriptions, no examples, no elaborations
-3. DO NOT EXPAND - Keep the exact same content, just reorganize it
-4. DO NOT COMPLETE - If a sentence is incomplete, leave it incomplete
-
-ALLOWED ACTIONS:
-- ANALYZE the content and identify natural sections
-- CREATE headings where appropriate for main topics and subtopics (using # ## ### for markdown, or appropriate formatting)
-- CONVERT lists when the speaker mentions multiple items (using - * 1. or appropriate formatting)
-- ADD emphasis for important points (using **bold** *italic* or appropriate formatting)
-- INSERT line breaks between logical sections
-- STRUCTURE the content for maximum readability
-- ADD FORMATTING SYMBOLS: You MUST add markdown symbols (# * - **) or other formatting as needed
-
-FORMATTING SYMBOLS ARE REQUIRED:
-- Use # ## ### for headings
-- Use - or * for bullet lists
-- Use 1. 2. 3. for numbered lists
-- Use **text** for bold, *text* for italic
-- These symbols are NOT "new words" - they are formatting
-
-FORBIDDEN ACTIONS:
-- Adding explanations (like "This is used for...")
-- Adding descriptions (like "These items are...")
-- Adding context or background information
-- Completing incomplete thoughts
-- Adding examples that weren't spoken
-
-Task: Transform the transcribed speech into well-structured text using ONLY the original words, but ADD all necessary formatting symbols.
-
-Remember: Use ALL the original words, organize them better, and ADD formatting symbols (# * - **) to make it readable.
-
-Output ONLY the reformatted text with formatting symbols."""
+# No hardcoded prompts - all prompts are stored in .env file only!
 
 
 # Fallback formatting prompt for unknown applications
@@ -62,26 +26,39 @@ FALLBACK_FORMATTING_PROMPT = """CRITICAL: You are a TEXT FORMATTER, not a writer
 STRICT RULES:
 1. DO NOT ADD ANY NEW WORDS - Use ONLY the words from the original text
 2. DO NOT EXPLAIN - No descriptions, no examples, no elaborations
-3. DO NOT EXPAND - If the text says "orange sticks for manicure", output ONLY "orange sticks for manicure"
+3. DO NOT EXPAND - Keep the exact same content, just reorganize it
 4. DO NOT COMPLETE - If a sentence is incomplete, leave it incomplete
 
 ALLOWED ACTIONS:
-- Add line breaks between sentences
-- Group sentences into paragraphs
-- Add basic punctuation if missing
+- ANALYZE the content and identify natural sentence boundaries
+- ADD line breaks between sentences (each sentence on a new line)
+- GROUP related sentences into paragraphs (add blank line between paragraphs)
+- ADD basic punctuation if missing (periods, commas)
+- FIX capitalization at the start of sentences
+
+FORMATTING RULES:
+- Put each sentence on a separate line
+- Add blank line between different topics/paragraphs
+- Preserve the original words and meaning
+- Make the text easy to read
 
 FORBIDDEN ACTIONS:
-- Adding explanations (like "They are used for...")
-- Adding descriptions (like "These sticks are...")
+- Adding explanations (like "This is used for...")
+- Adding descriptions (like "These items are...")
 - Adding context or background information
 - Completing incomplete thoughts
+- Adding examples that weren't spoken
 
 Example:
-Input: "orange sticks for manicure"
-CORRECT: "Orange sticks for manicure."
+Input: "orange sticks for manicure they are very useful I bought them yesterday"
+CORRECT:
+Orange sticks for manicure.
+They are very useful.
+I bought them yesterday.
+
 WRONG: "Orange sticks for manicure. They are used for shaping and caring for nails."
 
-Output ONLY the original words with formatting. Nothing more."""
+Output ONLY the original words with proper line breaks and basic formatting."""
 
 
 def migrate_from_old_format(applications_str: str) -> Dict[str, Dict[str, Any]]:
@@ -172,29 +149,41 @@ class FormattingConfig:
             app_name: Application name or "_fallback" for unknown apps
             
         Returns:
-            Application-specific prompt, fallback prompt, or universal default if not set
+            Application-specific prompt from .env, or empty string if not set
         """
+        # All prompts come from .env file (self.app_prompts)
+        # No hardcoded defaults!
+        
         # Special handling for _fallback
         if app_name == "_fallback":
-            # Check if there's a custom fallback prompt
-            if "_fallback" in self.app_prompts and self.app_prompts["_fallback"]:
-                return self.app_prompts["_fallback"]
-            # Use hardcoded fallback if no custom fallback is set
-            return FALLBACK_FORMATTING_PROMPT
-        
+            prompt = self.app_prompts.get("_fallback", "")
         # For known applications
-        if app_name in self.applications:
-            # Check if app has a custom prompt
-            if app_name in self.app_prompts and self.app_prompts[app_name]:
-                return self.app_prompts[app_name]
-            # Use universal default for known apps without custom prompts
-            return UNIVERSAL_DEFAULT_PROMPT
+        elif app_name in self.applications:
+            prompt = self.app_prompts.get(app_name, "")
+        # For unknown applications
+        else:
+            prompt = self.app_prompts.get("_fallback", "")
         
-        # For unknown applications (not in applications list)
-        # Use fallback prompt (check for custom fallback first)
-        if "_fallback" in self.app_prompts and self.app_prompts["_fallback"]:
-            return self.app_prompts["_fallback"]
-        return FALLBACK_FORMATTING_PROMPT
+        # Decode \\n to actual newlines for display/use
+        # JSON stores them as \\n, we need real newlines
+        return prompt.replace('\\n', '\n') if prompt else ""
+    
+    def get_format_type(self, app_name: str) -> str:
+        """
+        Get the format type for an application (markdown or html).
+        
+        Args:
+            app_name: Application name
+            
+        Returns:
+            "html" for Word/LibreOffice/Google Docs, "markdown" for others
+        """
+        # Word/LibreOffice/Google Docs use HTML
+        if app_name in ["word", "libreoffice"]:
+            return "html"
+        # Everything else uses markdown
+        else:
+            return "markdown"
     
     def set_prompt_for_app(self, app_name: str, prompt: str) -> None:
         """
@@ -204,7 +193,9 @@ class FormattingConfig:
             app_name: Application name
             prompt: Prompt text (empty string to use default)
         """
-        self.app_prompts[app_name] = prompt
+        # Encode actual newlines to \\n for storage in JSON
+        # This way they survive the .env file format
+        self.app_prompts[app_name] = prompt.replace('\n', '\\n') if prompt else ""
     
     @classmethod
     def from_env(cls, env_path: Optional[str] = None) -> 'FormattingConfig':
@@ -254,7 +245,15 @@ class FormattingConfig:
         if app_prompts_json:
             # New format exists - parse JSON
             try:
+                # CRITICAL: dotenv sometimes breaks the JSON string
+                # Always read directly from file to avoid dotenv breaking it
+                with open(env_path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        if line.startswith('FORMATTING_APP_PROMPTS='):
+                            app_prompts_json = line.split('=', 1)[1].strip()
+                            break
                 app_prompts_data = json.loads(app_prompts_json)
+                
                 applications = list(app_prompts_data.keys())
                 # Extract prompts from JSON structure
                 for app_name, app_config in app_prompts_data.items():
@@ -263,8 +262,8 @@ class FormattingConfig:
                     else:
                         # Fallback for simple format
                         app_prompts[app_name] = ""
-            except json.JSONDecodeError:
-                logger.warning("Failed to parse FORMATTING_APP_PROMPTS JSON, falling back to old format")
+            except json.JSONDecodeError as e:
+                logger.warning(f"Failed to parse FORMATTING_APP_PROMPTS JSON: {e}, falling back to old format")
                 app_prompts_json = ""
         
         if not app_prompts_json:

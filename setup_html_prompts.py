@@ -1,0 +1,249 @@
+"""
+Настройка промптов для HTML и Markdown форматирования в .env файле.
+
+Этот скрипт добавляет правильные промпты для каждого приложения:
+- Word/LibreOffice/Google Docs → HTML промпт
+- Notion/Obsidian/Markdown → Markdown промпт
+"""
+
+import json
+from pathlib import Path
+
+# Markdown prompt for Notion, Obsidian, Markdown files
+MARKDOWN_PROMPT = """CRITICAL: You are a TEXT FORMATTER, not a writer. Your ONLY job is to format existing text.
+
+STRICT RULES:
+1. DO NOT ADD ANY NEW WORDS - Use ONLY the words from the original text
+2. DO NOT EXPLAIN - No descriptions, no examples, no elaborations
+3. DO NOT EXPAND - Keep the exact same content, just reorganize it
+4. DO NOT COMPLETE - If a sentence is incomplete, leave it incomplete
+
+ALLOWED ACTIONS:
+- ANALYZE the content and identify natural sections
+- CREATE headings where appropriate for main topics and subtopics
+- CONVERT lists when the speaker mentions multiple items
+- ADD emphasis for important points
+- INSERT line breaks between logical sections
+- STRUCTURE the content for maximum readability
+
+MARKDOWN FORMATTING REQUIRED:
+- Use # for heading 1, ## for heading 2, ### for heading 3
+- Use - or * for bullet lists
+- Use 1. 2. 3. for numbered lists
+- Use **text** for bold, *text* for italic
+- Add blank line after each heading
+- Add blank line between paragraphs
+
+FORBIDDEN ACTIONS:
+- Adding explanations (like "This is used for...")
+- Adding descriptions (like "These items are...")
+- Adding context or background information
+- Completing incomplete thoughts
+- Adding examples that weren't spoken
+
+Task: Transform the transcribed speech into well-structured MARKDOWN text using ONLY the original words.
+
+Output ONLY the reformatted markdown text."""
+
+# HTML prompt for Word, Google Docs, LibreOffice
+HTML_PROMPT = """CRITICAL: You are a TEXT FORMATTER, not a writer. Your ONLY job is to format existing text.
+
+STRICT RULES:
+1. DO NOT ADD ANY NEW WORDS - Use ONLY the words from the original text
+2. DO NOT EXPLAIN - No descriptions, no examples, no elaborations
+3. DO NOT EXPAND - Keep the exact same content, just reorganize it
+4. DO NOT COMPLETE - If a sentence is incomplete, leave it incomplete
+
+ALLOWED ACTIONS:
+- ANALYZE the content and identify natural sections
+- CREATE headings where appropriate for main topics and subtopics
+- CONVERT lists when the speaker mentions multiple items
+- ADD emphasis for important points
+- INSERT line breaks between logical sections
+- STRUCTURE the content for maximum readability
+
+HTML FORMATTING REQUIRED:
+- Use <h1>text</h1> for heading 1, <h2>text</h2> for heading 2, <h3>text</h3> for heading 3
+- Use <ul><li>item</li></ul> for bullet lists
+- Use <ol><li>item</li></ol> for numbered lists
+- Use <strong>text</strong> for bold, <em>text</em> for italic
+- Use <p>text</p> for paragraphs
+- Add proper spacing between elements
+
+FORBIDDEN ACTIONS:
+- Adding explanations (like "This is used for...")
+- Adding descriptions (like "These items are...")
+- Adding context or background information
+- Completing incomplete thoughts
+- Adding examples that weren't spoken
+
+Task: Transform the transcribed speech into well-structured HTML using ONLY the original words.
+
+Output ONLY the HTML formatted text (without <!DOCTYPE>, <html>, <head>, or <body> tags - just the content)."""
+
+# Fallback prompt (full formatting like markdown, but without symbols)
+FALLBACK_PROMPT = """CRITICAL: You are a TEXT FORMATTER, not a writer. Your ONLY job is to format existing text.
+
+STRICT RULES:
+1. DO NOT ADD ANY NEW WORDS - Use ONLY the words from the original text
+2. DO NOT EXPLAIN - No descriptions, no examples, no elaborations
+3. DO NOT EXPAND - Keep the exact same content, just reorganize it
+4. DO NOT COMPLETE - If a sentence is incomplete, leave it incomplete
+
+ALLOWED ACTIONS:
+- ANALYZE the content and identify natural sections
+- INSERT line breaks between sentences
+- GROUP sentences into logical paragraphs
+- ADD blank lines between paragraphs for readability
+- SEPARATE different topics with double line breaks
+- ADD basic punctuation if missing
+
+FORMATTING RULES:
+- Add blank line between different topics/sections
+- Add blank line between paragraphs
+- Keep sentences on separate lines when they discuss different points
+- Group related sentences into paragraphs
+
+FORBIDDEN ACTIONS:
+- Adding explanations (like "This is used for...")
+- Adding descriptions (like "These items are...")
+- Adding context or background information
+- Completing incomplete thoughts
+- Adding markdown symbols (# ** *)
+- Adding HTML tags
+
+Task: Transform the transcribed speech into well-structured plain text with proper line breaks and paragraphs using ONLY the original words.
+
+Output ONLY the reformatted plain text with proper spacing."""
+
+
+def setup_prompts():
+    """Настроить промпты в .env файле."""
+    env_path = Path('.env')
+    
+    if not env_path.exists():
+        print("❌ .env файл не найден!")
+        return
+    
+    print("=" * 80)
+    print("НАСТРОЙКА ПРОМПТОВ ДЛЯ HTML И MARKDOWN")
+    print("=" * 80)
+    print()
+    
+    # Read .env file
+    with open(env_path, 'r', encoding='utf-8') as f:
+        lines = f.readlines()
+    
+    # Find and update FORMATTING_APP_PROMPTS line
+    updated = False
+    
+    for i, line in enumerate(lines):
+        if line.startswith('FORMATTING_APP_PROMPTS='):
+            try:
+                # Extract JSON - handle multiline
+                json_start = i
+                json_lines = [line.split('=', 1)[1]]
+                
+                # Check if JSON continues on next lines (broken JSON)
+                j = i + 1
+                while j < len(lines) and not lines[j].strip().startswith(('FORMATTING_', '#', '')):
+                    json_lines.append(lines[j])
+                    j += 1
+                
+                json_str = ''.join(json_lines).strip()
+                
+                # Try to parse - if fails, start fresh
+                try:
+                    data = json.loads(json_str)
+                except json.JSONDecodeError:
+                    print("⚠️  JSON сломан, создаем заново...")
+                    # Create fresh structure
+                    data = {
+                        "notion": {"enabled": True, "prompt": ""},
+                        "obsidian": {"enabled": True, "prompt": ""},
+                        "markdown": {"enabled": True, "prompt": ""},
+                        "word": {"enabled": True, "prompt": ""},
+                        "libreoffice": {"enabled": True, "prompt": ""},
+                        "vscode": {"enabled": True, "prompt": ""},
+                        "_fallback": {"enabled": True, "prompt": ""}
+                    }
+                
+                print(f"Найдено {len(data)} приложений")
+                print()
+                
+                # Set prompts for each application
+                # HTML apps
+                html_apps = ["word", "libreoffice"]
+                for app in html_apps:
+                    if app in data:
+                        data[app]['prompt'] = HTML_PROMPT
+                        print(f"   ✅ {app} → HTML промпт ({len(HTML_PROMPT)} символов)")
+                
+                # Markdown apps
+                markdown_apps = ["notion", "obsidian", "markdown", "vscode"]
+                for app in markdown_apps:
+                    if app in data:
+                        data[app]['prompt'] = MARKDOWN_PROMPT
+                        print(f"   ✅ {app} → Markdown промпт ({len(MARKDOWN_PROMPT)} символов)")
+                
+                # Fallback
+                if "_fallback" in data:
+                    data["_fallback"]['prompt'] = FALLBACK_PROMPT
+                    print(f"   ✅ _fallback → Fallback промпт ({len(FALLBACK_PROMPT)} символов)")
+                
+                print()
+                print("Результат:")
+                print("  - Word/LibreOffice/Google Docs → HTML форматирование")
+                print("  - Notion/Obsidian/Markdown → Markdown форматирование")
+                print("  - Неизвестные приложения → Базовое форматирование")
+                print()
+                
+                # Save back - SINGLE LINE with escaped newlines
+                new_json = json.dumps(data, ensure_ascii=False)
+                # CRITICAL: Double-escape newlines for .env format
+                # dotenv will decode \\n to \n, so we need \\\\n to get \\n in JSON
+                new_json = new_json.replace('\\n', '\\\\n')
+                lines[i] = f'FORMATTING_APP_PROMPTS={new_json}\n'
+                
+                # Remove any continuation lines from broken JSON
+                if j > i + 1:
+                    del lines[i+1:j]
+                
+                updated = True
+                break
+                
+            except Exception as e:
+                print(f"❌ Ошибка: {e}")
+                import traceback
+                traceback.print_exc()
+                return
+    
+    if updated:
+        # Write back to file
+        with open(env_path, 'w', encoding='utf-8') as f:
+            f.writelines(lines)
+        
+        print("✅ .env файл обновлен!")
+        print()
+        print("=" * 80)
+        print("ЧТО ДАЛЬШЕ:")
+        print("=" * 80)
+        print("1. Перезапустите приложение")
+        print("2. Попробуйте в Google Docs:")
+        print("   - Заголовки станут РЕАЛЬНЫМИ заголовками")
+        print("   - Жирный текст будет ЖИРНЫМ")
+        print("   - Списки будут СПИСКАМИ")
+        print()
+        print("3. Попробуйте в Notion/Obsidian:")
+        print("   - Появятся markdown символы (# ** *)")
+        print()
+        print("4. Все промпты хранятся ТОЛЬКО в .env!")
+        print("   - Можете редактировать в UI настроек")
+        print("   - Изменения сохраняются в .env")
+        print()
+    else:
+        print("❌ FORMATTING_APP_PROMPTS не найден в .env")
+
+
+if __name__ == "__main__":
+    setup_prompts()
