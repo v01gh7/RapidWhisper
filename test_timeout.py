@@ -22,7 +22,7 @@ def test_timeout():
     print(f"✅ Гарантия: при любой ошибке вернется оригинальный текст")
     
     # Создать клиент
-    config = Config.load_from_env()
+    config = Config.load_from_config()
     client = TranscriptionClient(provider=config.ai_provider)
     
     print(f"\n🔧 Настройки:")

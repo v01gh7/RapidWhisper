@@ -54,18 +54,10 @@ class TranscriptionClient:
         """
         self.provider = provider.lower()
         
-        # Загрузить API ключ из переменной окружения если не передан
+        # API ключ должен быть передан явно (из Config)
+        # НЕ загружаем из переменных окружения
         if api_key is None:
-            if self.provider == "openai":
-                api_key = os.getenv("OPENAI_API_KEY")
-            elif self.provider == "groq":
-                api_key = os.getenv("GROQ_API_KEY")
-            elif self.provider == "glm":
-                api_key = os.getenv("GLM_API_KEY")
-            elif self.provider == "custom":
-                api_key = os.getenv("CUSTOM_API_KEY")
-            else:
-                raise ValueError(f"Неизвестный провайдер: {provider}")
+            raise InvalidAPIKeyError(f"API ключ не передан для провайдера {provider}")
         
         if not api_key:
             raise InvalidAPIKeyError()
@@ -82,10 +74,8 @@ class TranscriptionClient:
             self.model = model if model else "glm-4-voice"  # Используем кастомную модель если указана
         elif self.provider == "custom":
             # Для кастомного провайдера требуются base_url и model
-            if base_url is None:
-                base_url = os.getenv("CUSTOM_BASE_URL")
-            if model is None:
-                model = os.getenv("CUSTOM_MODEL", "whisper-1")
+            if base_url is None or model is None:
+                raise ValueError("Для custom провайдера требуется base_url и model")
             
             if not base_url:
                 raise ValueError("Для custom провайдера требуется CUSTOM_BASE_URL")
@@ -268,21 +258,11 @@ class TranscriptionClient:
             logger.info(f"Исходный текст: {text[:200]}...")
             logger.info(f"Системный промпт: {system_prompt[:100]}...")
             
-            # Загрузить API ключ если не передан
+            # API ключ должен быть передан явно (из FormattingConfig)
+            # НЕ загружаем из переменных окружения
             if api_key is None:
-                if provider == "groq":
-                    api_key = os.getenv("GROQ_API_KEY")
-                    logger.info("Загружен GROQ_API_KEY из env")
-                elif provider == "openai":
-                    api_key = os.getenv("OPENAI_API_KEY")
-                    logger.info("Загружен OPENAI_API_KEY из env")
-                elif provider == "glm":
-                    api_key = os.getenv("GLM_API_KEY")
-                    logger.info("Загружен GLM_API_KEY из env")
-                elif provider == "llm":
-                    # LLM - локальные модели, ключ может быть любым или пустым
-                    api_key = os.getenv("LLM_API_KEY", "local")
-                    logger.info("Загружен LLM_API_KEY из env (или используется 'local')")
+                logger.error(f"API ключ для {provider} не передан!")
+                raise InvalidAPIKeyError(f"API ключ для {provider} не передан")
             
             if not api_key and provider != "llm":
                 logger.error(f"API ключ для {provider} не найден!")
@@ -308,7 +288,8 @@ class TranscriptionClient:
             elif provider == "llm":
                 # LLM - локальные модели, base_url должен быть передан
                 if not base_url:
-                    base_url = os.getenv("LLM_BASE_URL", "http://localhost:1234/v1/")
+                    logger.error("LLM base_url не передан!")
+                    raise ValueError("Для LLM провайдера требуется base_url")
                 logger.info(f"Используется локальный LLM endpoint: {base_url}")
             else:
                 logger.error(f"Неизвестный провайдер: {provider}")
@@ -516,7 +497,7 @@ class TranscriptionThread(QThread):
             
             # Проверить настройку manual_stop и обрезать тишину если нужно
             from core.config import Config
-            config = Config.load_from_env()
+            config = Config.load_from_config()
             
             removed_silence_duration = 0.0
             if config.manual_stop:
@@ -562,9 +543,10 @@ class TranscriptionThread(QThread):
             # Process text through formatting and/or post-processing
             # Use ProcessingCoordinator to handle combined operations
             from services.window_monitor import WindowMonitor
+            from core.config_loader import get_config_loader
             
             # Load formatting configuration
-            formatting_config = FormattingConfig.from_env()
+            formatting_config = FormattingConfig.from_config(get_config_loader())
             
             # Create window monitor using factory method
             window_monitor = WindowMonitor.create()
@@ -622,7 +604,7 @@ class TranscriptionThread(QThread):
                     from core.config import Config, get_audio_recordings_dir, get_transcriptions_dir
                     from datetime import datetime
                     
-                    config = Config.load_from_env()
+                    config = Config.load_from_config()
                     
                     if config.keep_recordings:
                         # Создать имя файла с timestamp

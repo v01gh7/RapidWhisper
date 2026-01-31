@@ -12,8 +12,8 @@ def test_custom_model_usage():
     print("ТЕСТ: Использование кастомной модели в TranscriptionClient")
     print("=" * 80)
     
-    # Загрузить конфигурацию
-    config = Config.load_from_env()
+    # Загрузить конфигурацию из config.jsonc
+    config = Config.load_from_config()
     
     test_cases = [
         # (provider, custom_model, expected_model)

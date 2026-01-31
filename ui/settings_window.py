@@ -781,6 +781,36 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         keys_group.setLayout(keys_layout)
         layout.addWidget(keys_group)
         
+        # Группа: Модель транскрипции
+        transcription_group = QGroupBox("Transcription Model")
+        transcription_layout = QFormLayout()
+        transcription_layout.setSpacing(12)
+        
+        # Выбор модели транскрипции
+        self.transcription_model_combo = NoScrollComboBox()
+        self.transcription_model_combo.addItems([
+            "whisper-large-v3 (Groq default)",
+            "whisper-large-v3-turbo",
+            "distil-whisper-large-v3-en",
+            "whisper-1 (OpenAI default)",
+            "glm-4-voice (GLM default)"
+        ])
+        self.transcription_model_combo.setEditable(True)  # Позволяет вводить кастомную модель
+        self.transcription_model_combo.setCursor(Qt.CursorShape.PointingHandCursor)
+        
+        transcription_model_label = QLabel("Transcription Model")
+        transcription_model_label.setToolTip(
+            "Select transcription model or enter custom model name.\n"
+            "Leave empty to use provider default:\n"
+            "• Groq: whisper-large-v3\n"
+            "• OpenAI: whisper-1\n"
+            "• GLM: glm-4-voice"
+        )
+        transcription_layout.addRow(transcription_model_label, self.transcription_model_combo)
+        
+        transcription_group.setLayout(transcription_layout)
+        layout.addWidget(transcription_group)
+        
         # Информация с кликабельными ссылками
         info_label = QLabel(t("settings.ai_provider.info"))
         info_label.setWordWrap(True)
@@ -1556,6 +1586,8 @@ class SettingsWindow(QDialog, StyledWindowMixin):
     
     def _reset_ui_defaults(self):
         """Сбрасывает все настройки интерфейса на значения по умолчанию."""
+        from core.config_saver import get_config_saver
+        
         # Установить значения по умолчанию в UI контролы
         self.opacity_slider.setValue(150)
         self.font_floating_main_spin.setValue(14)
@@ -1563,12 +1595,22 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         self.font_settings_labels_spin.setValue(12)
         self.font_settings_titles_spin.setValue(24)
         
-        # Записать значения в .env
-        self.config.set_env_value("WINDOW_OPACITY", "150")
-        self.config.set_env_value("FONT_SIZE_FLOATING_MAIN", "14")
-        self.config.set_env_value("FONT_SIZE_FLOATING_INFO", "11")
-        self.config.set_env_value("FONT_SIZE_SETTINGS_LABELS", "12")
-        self.config.set_env_value("FONT_SIZE_SETTINGS_TITLES", "24")
+        # Записать значения в config.jsonc
+        config_saver = get_config_saver()
+        config_saver.update_multiple_values({
+            "window.opacity": 150,
+            "window.font_sizes.floating_main": 14,
+            "window.font_sizes.floating_info": 11,
+            "window.font_sizes.settings_labels": 12,
+            "window.font_sizes.settings_titles": 24
+        })
+        
+        # Обновить конфиг в памяти
+        self.config.window_opacity = 150
+        self.config.font_size_floating_main = 14
+        self.config.font_size_floating_info = 11
+        self.config.font_size_settings_labels = 12
+        self.config.font_size_settings_titles = 24
         
         # Обновить FloatingWindow если доступно (для live preview opacity)
         if self.parent() and hasattr(self.parent(), 'set_opacity'):
@@ -1620,8 +1662,12 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         Args:
             value: Новый размер шрифта (10-24)
         """
-        # Сохранить значение в .env
-        self.config.set_env_value('FONT_SIZE_FLOATING_MAIN', str(value))
+        from core.config_saver import get_config_saver
+        
+        # Сохранить значение в config.jsonc
+        config_saver = get_config_saver()
+        config_saver.update_value("window.font_sizes.floating_main", value)
+        
         # Обновить конфиг в памяти
         self.config.font_size_floating_main = value
         
@@ -1643,8 +1689,12 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         Args:
             value: Новый размер шрифта (8-16)
         """
-        # Сохранить значение в .env
-        self.config.set_env_value('FONT_SIZE_FLOATING_INFO', str(value))
+        from core.config_saver import get_config_saver
+        
+        # Сохранить значение в config.jsonc
+        config_saver = get_config_saver()
+        config_saver.update_value("window.font_sizes.floating_info", value)
+        
         # Обновить конфиг в памяти
         self.config.font_size_floating_info = value
         
@@ -1666,8 +1716,12 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         Args:
             value: Новый размер шрифта (10-16)
         """
-        # Сохранить значение в .env
-        self.config.set_env_value('FONT_SIZE_SETTINGS_LABELS', str(value))
+        from core.config_saver import get_config_saver
+        
+        # Сохранить значение в config.jsonc
+        config_saver = get_config_saver()
+        config_saver.update_value("window.font_sizes.settings_labels", value)
+        
         # Обновить конфиг в памяти
         self.config.font_size_settings_labels = value
         # Обновить стиль окна настроек
@@ -1681,8 +1735,12 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         Args:
             value: Новый размер шрифта (16-32)
         """
-        # Сохранить значение в .env
-        self.config.set_env_value('FONT_SIZE_SETTINGS_TITLES', str(value))
+        from core.config_saver import get_config_saver
+        
+        # Сохранить значение в config.jsonc
+        config_saver = get_config_saver()
+        config_saver.update_value("window.font_sizes.settings_titles", value)
+        
         # Обновить конфиг в памяти
         self.config.font_size_settings_titles = value
         # Обновить стиль окна настроек
@@ -2112,8 +2170,6 @@ class SettingsWindow(QDialog, StyledWindowMixin):
     def _change_recordings_folder(self):
         """Изменяет папку для сохранения записей."""
         from PyQt6.QtWidgets import QFileDialog
-        from core.config import get_env_path
-        from dotenv import set_key
         
         # Получить текущую папку
         from core.config import get_recordings_dir
@@ -2129,9 +2185,10 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         if new_folder:
             try:
-                # Сохранить в .env
-                env_path = str(get_env_path())
-                set_key(env_path, "RECORDINGS_PATH", new_folder)
+                # Сохранить в config.jsonc
+                from core.config_saver import get_config_saver
+                config_saver = get_config_saver()
+                config_saver.update_value("recording.recordings_path", new_folder)
                 
                 # Обновить label
                 self.recordings_path_label.setText(f"📁 <a href='file:///{new_folder}'>{new_folder}</a>")
@@ -2158,8 +2215,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
     
     def _reset_recordings_folder(self):
         """Сбрасывает папку записей на значение по умолчанию."""
-        from core.config import get_env_path, get_config_dir
-        from dotenv import set_key
+        from core.config import get_config_dir
         
         # Подтверждение
         reply = QMessageBox.question(
@@ -2172,9 +2228,10 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         if reply == QMessageBox.StandardButton.Yes:
             try:
-                # Удалить RECORDINGS_PATH из .env (установить пустое значение)
-                env_path = str(get_env_path())
-                set_key(env_path, "RECORDINGS_PATH", "")
+                # Удалить RECORDINGS_PATH из config.jsonc (установить пустое значение)
+                from core.config_saver import get_config_saver
+                config_saver = get_config_saver()
+                config_saver.update_value("recording.recordings_path", "")
                 
                 # Получить папку по умолчанию
                 default_dir = get_config_dir() / 'recordings'
@@ -2295,6 +2352,21 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         self.custom_url_edit.setText(self.config.custom_base_url)
         self.custom_model_edit.setText(self.config.custom_model)
         
+        # Transcription Model
+        transcription_model = getattr(self.config, 'transcription_model', '')
+        if transcription_model:
+            self.transcription_model_combo.setCurrentText(transcription_model)
+        else:
+            # Установить дефолтное значение в зависимости от провайдера
+            if self.config.ai_provider == "groq":
+                self.transcription_model_combo.setCurrentText("whisper-large-v3 (Groq default)")
+            elif self.config.ai_provider == "openai":
+                self.transcription_model_combo.setCurrentText("whisper-1 (OpenAI default)")
+            elif self.config.ai_provider == "glm":
+                self.transcription_model_combo.setCurrentText("glm-4-voice (GLM default)")
+            else:
+                self.transcription_model_combo.setCurrentText("")
+        
         # Приложение
         self.hotkey_edit.setText(self.config.hotkey)
         self.silence_threshold_spin.setValue(self.config.silence_threshold)
@@ -2357,7 +2429,8 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         # Форматирование
         from services.formatting_config import FormattingConfig
-        formatting_config = FormattingConfig.from_env()
+        from core.config_loader import get_config_loader
+        formatting_config = FormattingConfig.from_config(get_config_loader())
         self.enable_formatting_check.setChecked(formatting_config.enabled)
         self.formatting_provider_combo.setCurrentText(formatting_config.provider)
         self.formatting_model_edit.setText(formatting_config.model)
@@ -2577,7 +2650,8 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         # Load current config
         from services.formatting_config import FormattingConfig
-        config = FormattingConfig.from_env()
+        from core.config_loader import get_config_loader
+        config = FormattingConfig.from_config(get_config_loader())
         
         # Create buttons for each application
         row = 0
@@ -2656,7 +2730,8 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         # Disable delete for system applications (_fallback) or if only one application
         from services.formatting_config import FormattingConfig
-        config = FormattingConfig.from_env()
+        from core.config_loader import get_config_loader
+        config = FormattingConfig.from_config(get_config_loader())
         if len(config.applications) <= 1 or app_name == "_fallback":
             delete_action.setEnabled(False)
         
@@ -2670,18 +2745,50 @@ class SettingsWindow(QDialog, StyledWindowMixin):
     def _edit_application_prompt(self, app_name: str):
         """Open dialog to edit application prompt."""
         from services.formatting_config import FormattingConfig
+        from core.config_loader import get_config_loader
+        from core.config_saver import get_config_saver
         
         # Load current config
-        config = FormattingConfig.from_env()
+        config = FormattingConfig.from_config(get_config_loader())
         current_prompt = config.get_prompt_for_app(app_name)
         
         # Show edit dialog
         new_prompt = PromptEditDialog.edit_prompt(app_name, current_prompt, self)
         
         if new_prompt is not None:
-            # Save new prompt
-            config.set_prompt_for_app(app_name, new_prompt)
-            config.save_to_env()
+            # Save new prompt to file immediately
+            config_saver = get_config_saver()
+            config_saver.save_prompt(app_name, new_prompt)
+            
+            # Clear the prompts cache to force reload
+            config_loader = get_config_loader()
+            config_loader.prompts_cache.clear()
+            
+            # Also update the config structure to ensure prompt file path exists
+            config_loader.load()
+            
+            if "formatting" not in config_loader.config:
+                config_loader.config["formatting"] = {}
+            if "app_prompts" not in config_loader.config["formatting"]:
+                config_loader.config["formatting"]["app_prompts"] = {}
+            
+            # Ensure prompt file path is registered
+            if app_name not in config_loader.config["formatting"]["app_prompts"]:
+                config_loader.config["formatting"]["app_prompts"][app_name] = f"config/prompts/{app_name}.txt"
+                config_saver.save_config(config_loader.config)
+            
+            logger.info(f"✓ Prompt for '{app_name}' saved and applied without restart")
+            
+            # Emit settings_saved signal to trigger hot reload in main app
+            self.settings_saved.emit()
+            
+            # Show notification
+            if self.tray_icon:
+                self.tray_icon.show_message(
+                    t("tray.notification.prompt_saved"),
+                    t("tray.notification.prompt_saved_message", app=app_name),
+                    duration=3000
+                )
             
             # Refresh grid
             self._refresh_formatting_apps_grid()
@@ -2689,9 +2796,11 @@ class SettingsWindow(QDialog, StyledWindowMixin):
     def _delete_application(self, app_name: str):
         """Delete application from list."""
         from services.formatting_config import FormattingConfig
+        from core.config_loader import get_config_loader
+        from core.config_saver import get_config_saver
         
         # Load current config
-        config = FormattingConfig.from_env()
+        config = FormattingConfig.from_config(get_config_loader())
         
         # Check if it's the last application
         if len(config.applications) <= 1:
@@ -2709,7 +2818,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             del config.app_prompts[app_name]
         
         # Save config
-        config.save_to_env()
+        config.save_to_config()
         
         # Refresh grid
         self._refresh_formatting_apps_grid()
@@ -2717,9 +2826,11 @@ class SettingsWindow(QDialog, StyledWindowMixin):
     def _on_add_application_clicked(self):
         """Handle add application button click."""
         from services.formatting_config import FormattingConfig
+        from core.config_loader import get_config_loader
+        from core.config_saver import get_config_saver
         
         # Load current config
-        config = FormattingConfig.from_env()
+        config = FormattingConfig.from_config(get_config_loader())
         
         # Show add dialog (empty prompt by default)
         result = AddApplicationDialog.add_application(config.applications, "", self)
@@ -2732,7 +2843,11 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             config.set_prompt_for_app(app_name, prompt)
             
             # Save config
-            config.save_to_env()
+            config.save_to_config()
+            
+            # Save prompt to file
+            config_saver = get_config_saver()
+            config_saver.save_prompt(app_name, prompt)
             
             # Refresh grid
             self._refresh_formatting_apps_grid()
@@ -2740,9 +2855,10 @@ class SettingsWindow(QDialog, StyledWindowMixin):
     def _on_web_keywords_clicked(self):
         """Handle web keywords configuration button click."""
         from services.formatting_config import FormattingConfig
+        from core.config_loader import get_config_loader
         
         # Load current config
-        config = FormattingConfig.from_env()
+        config = FormattingConfig.from_config(get_config_loader())
         
         # Show web keywords dialog
         dialog = WebKeywordsDialog(config.web_app_keywords, self)
@@ -2754,7 +2870,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             config.web_app_keywords = updated_keywords
             
             # Save config
-            config.save_to_env()
+            config.save_to_config()
             
             # Show success message
             from PyQt6.QtWidgets import QMessageBox
@@ -2957,10 +3073,37 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         prompt_stripped = prompt.strip()
         return any(prompt_stripped == default.strip() for default in default_prompts)
     
+    def _get_transcription_model_value(self) -> str:
+        """
+        Получает значение модели транскрипции из комбобокса.
+        Убирает суффиксы типа " (Groq default)" и возвращает чистое имя модели.
+        Если выбрано дефолтное значение, возвращает пустую строку.
+        """
+        text = self.transcription_model_combo.currentText().strip()
+        
+        # Убрать суффиксы
+        if " (Groq default)" in text:
+            text = text.replace(" (Groq default)", "")
+        elif " (OpenAI default)" in text:
+            text = text.replace(" (OpenAI default)", "")
+        elif " (GLM default)" in text:
+            text = text.replace(" (GLM default)", "")
+        
+        # Если это дефолтная модель для провайдера, вернуть пустую строку
+        provider = self.provider_combo.currentText()
+        if provider == "groq" and text == "whisper-large-v3":
+            return ""
+        elif provider == "openai" and text == "whisper-1":
+            return ""
+        elif provider == "glm" and text == "glm-4-voice":
+            return ""
+        
+        return text
+    
     def _save_settings(self):
-        """Сохраняет настройки в .env файл."""
+        """Сохраняет настройки в config.jsonc и secrets.json."""
         try:
-            from core.config import get_env_path
+            from core.config_saver import get_config_saver
             from utils.i18n import set_language
             
             # Получить новые значения
@@ -2982,44 +3125,51 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             # Экранировать многострочные значения (заменить переносы строк на \n)
             post_processing_prompt = self.post_processing_prompt_edit.toPlainText().replace('\n', '\\n')
             
-            new_config = {
-                "AI_PROVIDER": self.provider_combo.currentText(),
-                "GROQ_API_KEY": self.groq_key_edit.text(),
-                "OPENAI_API_KEY": self.openai_key_edit.text(),
-                "GLM_API_KEY": self.glm_key_edit.text(),
-                "CUSTOM_API_KEY": self.custom_key_edit.text(),
-                "CUSTOM_BASE_URL": self.custom_url_edit.text(),
-                "CUSTOM_MODEL": self.custom_model_edit.text(),
-                "HOTKEY": self.hotkey_edit.text(),
-                "SILENCE_THRESHOLD": str(self.silence_threshold_spin.value()),
-                "SILENCE_DURATION": str(self.silence_duration_spin.value()),
-                "MANUAL_STOP": "true" if self.manual_stop_check.isChecked() else "false",
-                "AUTO_HIDE_DELAY": str(self.auto_hide_spin.value()),
-                "SAMPLE_RATE": self.sample_rate_combo.currentText(),
-                "CHUNK_SIZE": self.chunk_size_combo.currentText(),
-                "SILENCE_PADDING": str(int(self.silence_padding_spin.value())),
-                "REMEMBER_WINDOW_POSITION": "true" if self.remember_position_check.isChecked() else "false",
-                "WINDOW_POSITION_PRESET": position_presets[position_index],
-                "KEEP_RECORDINGS": "true" if self.keep_recordings_check.isChecked() else "false",
-                "ENABLE_POST_PROCESSING": "true" if self.enable_post_processing_check.isChecked() else "false",
-                "POST_PROCESSING_PROVIDER": self.post_processing_provider_combo.currentText(),
-                "POST_PROCESSING_MODEL": self.post_processing_model_combo.currentText(),
-                "POST_PROCESSING_CUSTOM_MODEL": self.post_processing_custom_model_edit.text(),
-                "POST_PROCESSING_PROMPT": post_processing_prompt,
-                "GLM_USE_CODING_PLAN": "true" if self.glm_coding_plan_check.isChecked() else "false",
-                "LLM_BASE_URL": self.llm_base_url_edit.text(),
-                "LLM_API_KEY": self.llm_api_key_edit.text(),
-                "INTERFACE_LANGUAGE": selected_language,
-                "WINDOW_OPACITY": str(int(self.opacity_slider.value())),
-                "FONT_SIZE_FLOATING_MAIN": str(int(self.font_floating_main_spin.value())),
-                "FONT_SIZE_FLOATING_INFO": str(int(self.font_floating_info_spin.value())),
-                "FONT_SIZE_SETTINGS_LABELS": str(int(self.font_settings_labels_spin.value())),
-                "FONT_SIZE_SETTINGS_TITLES": str(int(self.font_settings_titles_spin.value())),
+            # Подготовить обновления для config.jsonc
+            config_updates = {
+                "ai_provider.provider": self.provider_combo.currentText(),
+                "ai_provider.custom.base_url": self.custom_url_edit.text(),
+                "ai_provider.custom.model": self.custom_model_edit.text(),
+                "ai_provider.transcription_model": self._get_transcription_model_value(),
+                "application.hotkey": self.hotkey_edit.text(),
+                "audio.silence_threshold": self.silence_threshold_spin.value(),
+                "audio.silence_duration": self.silence_duration_spin.value(),
+                "audio.manual_stop": self.manual_stop_check.isChecked(),
+                "audio.sample_rate": int(self.sample_rate_combo.currentText()),
+                "audio.chunk_size": int(self.chunk_size_combo.currentText()),
+                "audio.silence_padding": int(self.silence_padding_spin.value()),
+                "window.auto_hide_delay": self.auto_hide_spin.value(),
+                "window.remember_position": self.remember_position_check.isChecked(),
+                "window.position_preset": position_presets[position_index],
+                "window.opacity": int(self.opacity_slider.value()),
+                "window.font_sizes.floating_main": int(self.font_floating_main_spin.value()),
+                "window.font_sizes.floating_info": int(self.font_floating_info_spin.value()),
+                "window.font_sizes.settings_labels": int(self.font_settings_labels_spin.value()),
+                "window.font_sizes.settings_titles": int(self.font_settings_titles_spin.value()),
+                "recording.keep_recordings": self.keep_recordings_check.isChecked(),
+                "post_processing.enabled": self.enable_post_processing_check.isChecked(),
+                "post_processing.provider": self.post_processing_provider_combo.currentText(),
+                "post_processing.model": self.post_processing_model_combo.currentText(),
+                "post_processing.custom_model": self.post_processing_custom_model_edit.text(),
+                "post_processing.prompt": post_processing_prompt,
+                "post_processing.glm_use_coding_plan": self.glm_coding_plan_check.isChecked(),
+                "post_processing.llm.base_url": self.llm_base_url_edit.text(),
+                "post_processing.llm.api_key": self.llm_api_key_edit.text(),
+                "localization.language": selected_language,
+            }
+            
+            # Подготовить обновления для secrets.json (API ключи)
+            secret_updates = {
+                "ai_provider.api_keys.groq": self.groq_key_edit.text(),
+                "ai_provider.api_keys.openai": self.openai_key_edit.text(),
+                "ai_provider.api_keys.glm": self.glm_key_edit.text(),
+                "ai_provider.custom.api_key": self.custom_key_edit.text(),
             }
             
             # Сохранить настройки форматирования через FormattingConfig
             from services.formatting_config import FormattingConfig
-            formatting_config = FormattingConfig.from_env()
+            from core.config_loader import get_config_loader
+            formatting_config = FormattingConfig.from_config(get_config_loader())
             formatting_config.enabled = self.enable_formatting_check.isChecked()
             formatting_config.provider = self.formatting_provider_combo.currentText()
             formatting_config.model = self.formatting_model_edit.text()
@@ -3027,36 +3177,18 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             formatting_config.custom_base_url = self.formatting_custom_url_edit.text()
             formatting_config.custom_api_key = self.formatting_custom_key_edit.text()
             # Applications and prompts are already managed through the grid UI
-            formatting_config.save_to_env()
+            formatting_config.save_to_config()
             
-            # Использовать правильный путь к .env (AppData для production)
-            env_path = str(get_env_path())
-            env_lines = []
+            # Сохранить все обновления config.jsonc
+            config_saver = get_config_saver()
+            config_saver.update_multiple_values(config_updates)
             
-            if os.path.exists(env_path):
-                with open(env_path, 'r', encoding='utf-8') as f:
-                    env_lines = f.readlines()
+            # Сохранить все API ключи в secrets.json
+            for key_path, value in secret_updates.items():
+                if value:  # Сохранять только непустые ключи
+                    config_saver.update_secret(key_path, value)
             
-            # Обновить значения
-            updated_keys = set()
-            for i, line in enumerate(env_lines):
-                line_stripped = line.strip()
-                if line_stripped and not line_stripped.startswith('#'):
-                    key = line_stripped.split('=')[0].strip()
-                    if key in new_config:
-                        env_lines[i] = f"{key}={new_config[key]}\n"
-                        updated_keys.add(key)
-            
-            # Добавить новые ключи если их не было
-            for key, value in new_config.items():
-                if key not in updated_keys:
-                    env_lines.append(f"{key}={value}\n")
-            
-            # Сохранить обратно в файл
-            with open(env_path, 'w', encoding='utf-8') as f:
-                f.writelines(env_lines)
-            
-            logger.info(f"Настройки сохранены в {env_path}")
+            logger.info("Настройки сохранены в config.jsonc и secrets.json")
             
             # Если язык изменился, обновить интерфейс ПЕРЕД показом сообщения
             if language_changed:
@@ -3447,7 +3579,8 @@ class WebKeywordsDialog(QDialog):
         if reply == QMessageBox.StandardButton.Yes:
             # Load default keywords from config
             from services.formatting_config import FormattingConfig
-            config = FormattingConfig.from_env()
+            from core.config_loader import get_config_loader
+            config = FormattingConfig.from_config(get_config_loader())
             
             # Update editors with default values from config
             for format_type, keywords in config.web_app_keywords.items():

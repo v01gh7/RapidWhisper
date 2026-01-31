@@ -36,9 +36,16 @@ class RapidWhisperLogger:
     
     def _setup_logger(self):
         """Configure the logging system."""
-        # Get configuration from environment or use defaults
-        log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
-        log_file = os.getenv('LOG_FILE', 'rapidwhisper.log')
+        # Get configuration from config.jsonc or use defaults
+        try:
+            from core.config_loader import get_config_loader
+            config_loader = get_config_loader()
+            log_level = config_loader.get('logging.level', 'INFO').upper()
+            log_file = config_loader.get('logging.file', 'rapidwhisper.log')
+        except:
+            # Fallback to defaults if config not available
+            log_level = 'INFO'
+            log_file = 'rapidwhisper.log'
         
         # Create logger
         self.logger = logging.getLogger('RapidWhisper')

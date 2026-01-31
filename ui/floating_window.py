@@ -266,13 +266,7 @@ class FloatingWindow(QWidget):
         Requirements: 2.2, 2.7
         """
         from PyQt6.QtWidgets import QApplication
-        from dotenv import load_dotenv
-        from core.config import get_env_path
-        import os
-        
-        # ВАЖНО: Перезагрузить переменные окружения перед чтением
-        env_path = str(get_env_path())
-        load_dotenv(env_path, override=True)
+        from core.config_loader import get_config_loader
         
         # Получаем геометрию экрана
         app = QApplication.instance()
@@ -288,13 +282,15 @@ class FloatingWindow(QWidget):
         x, y = None, None
         
         if use_saved_position:
-            # Проверить предустановленную позицию
-            preset = os.getenv('WINDOW_POSITION_PRESET', 'center')
+            # Проверить предустановленную позицию из config.jsonc
+            config_loader = get_config_loader()
+            preset = config_loader.get('window.position_preset', 'center')
             
             # Логирование для отладки
             from utils.logger import get_logger
             logger = get_logger()
-            logger.info(f"Показ окна: preset={preset}, remember={os.getenv('REMEMBER_WINDOW_POSITION', 'true')}")
+            remember = config_loader.get('window.remember_position', True)
+            logger.info(f"Показ окна: preset={preset}, remember={remember}")
             
             if preset == 'custom':
                 # Использовать пользовательскую позицию
@@ -733,14 +729,15 @@ class FloatingWindow(QWidget):
         При перетаскивании автоматически устанавливает preset в "custom".
         """
         try:
-            from core.config import get_env_path
+            from core.config_saver import get_config_saver
+            from core.config_loader import get_config_loader
             import os
             
-            env_path = str(get_env_path())
-            
             # Проверить, включена ли настройка запоминания позиции
-            remember = os.getenv('REMEMBER_WINDOW_POSITION', 'true').lower()
-            if remember not in ('true', '1', 'yes'):
+            config_loader = get_config_loader()
+            remember = config_loader.get('window.remember_position', True)
+            
+            if not remember:
                 # Настройка выключена - не сохранять позицию
                 return
             
@@ -748,39 +745,13 @@ class FloatingWindow(QWidget):
             pos = self.pos()
             x, y = pos.x(), pos.y()
             
-            # Прочитать существующий .env
-            env_lines = []
-            if os.path.exists(env_path):
-                with open(env_path, 'r', encoding='utf-8') as f:
-                    env_lines = f.readlines()
-            
-            # Обновить или добавить позицию
-            position_x_found = False
-            position_y_found = False
-            preset_found = False
-            
-            for i, line in enumerate(env_lines):
-                if line.strip().startswith('WINDOW_POSITION_X='):
-                    env_lines[i] = f'WINDOW_POSITION_X={x}\n'
-                    position_x_found = True
-                elif line.strip().startswith('WINDOW_POSITION_Y='):
-                    env_lines[i] = f'WINDOW_POSITION_Y={y}\n'
-                    position_y_found = True
-                elif line.strip().startswith('WINDOW_POSITION_PRESET='):
-                    env_lines[i] = f'WINDOW_POSITION_PRESET=custom\n'
-                    preset_found = True
-            
-            # Добавить если не найдено
-            if not position_x_found:
-                env_lines.append(f'WINDOW_POSITION_X={x}\n')
-            if not position_y_found:
-                env_lines.append(f'WINDOW_POSITION_Y={y}\n')
-            if not preset_found:
-                env_lines.append(f'WINDOW_POSITION_PRESET=custom\n')
-            
-            # Сохранить обратно
-            with open(env_path, 'w', encoding='utf-8') as f:
-                f.writelines(env_lines)
+            # Сохранить позицию и preset
+            config_saver = get_config_saver()
+            config_saver.update_multiple_values({
+                'window.position_x': x,
+                'window.position_y': y,
+                'window.position_preset': 'custom'
+            })
                 
         except Exception as e:
             # Игнорируем ошибки сохранения позиции
@@ -794,10 +765,11 @@ class FloatingWindow(QWidget):
             Кортеж (x, y) с позицией или None если позиция не сохранена
         """
         try:
-            import os
+            from core.config_loader import get_config_loader
             
-            x = os.getenv('WINDOW_POSITION_X')
-            y = os.getenv('WINDOW_POSITION_Y')
+            config_loader = get_config_loader()
+            x = config_loader.get('window.position_x')
+            y = config_loader.get('window.position_y')
             
             if x is not None and y is not None:
                 return (int(x), int(y))

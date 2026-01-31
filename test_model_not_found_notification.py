@@ -25,7 +25,7 @@ def test_model_not_found_notification():
     print("=" * 80)
     
     # Создать клиент с валидным API ключом
-    config = Config.load_from_env()
+    config = Config.load_from_config()
     
     # Проверить что постобработка включена
     if not config.enable_post_processing:

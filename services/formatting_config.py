@@ -10,6 +10,7 @@ import json
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any
 from pathlib import Path
+# DEPRECATED: dotenv imports kept for backward compatibility with tests only
 from dotenv import load_dotenv, set_key
 from utils.logger import get_logger
 
@@ -207,141 +208,21 @@ class FormattingConfig:
     @classmethod
     def from_env(cls, env_path: Optional[str] = None) -> 'FormattingConfig':
         """
-        Load formatting configuration from environment variables or config.jsonc.
+        Load formatting configuration from config.jsonc.
         
-        DEPRECATED: This method is kept for backward compatibility.
-        New code should use from_config() instead.
+        DEPRECATED: This method name is kept for backward compatibility.
+        It now loads from config.jsonc, not .env files.
         
         Args:
-            env_path: Path to .env file. If None, uses default path.
+            env_path: DEPRECATED - ignored, kept for backward compatibility with tests
         
         Returns:
-            FormattingConfig: Configuration loaded from environment
+            FormattingConfig: Configuration loaded from config.jsonc
         """
-        # Try to load from config.jsonc first
-        try:
-            from core.config_loader import get_config_loader
-            config_loader = get_config_loader()
-            return cls.from_config(config_loader)
-        except Exception as e:
-            logger.warning(f"Failed to load from config.jsonc: {e}, falling back to .env")
-        
-        # Fallback to .env
-        from core.config import get_env_path
-        
-        if env_path is None:
-            env_path = str(get_env_path())
-        
-        # Load environment variables
-        load_dotenv(env_path, override=True)
-        
-        # Parse enabled flag
-        enabled_str = os.getenv("FORMATTING_ENABLED", "false").lower()
-        enabled = enabled_str in ("true", "1", "yes")
-        
-        # Load provider and model
-        provider = os.getenv("FORMATTING_PROVIDER", "groq").lower()
-        model = os.getenv("FORMATTING_MODEL", "")
-        
-        # Load temperature (default 0.3 for consistent formatting)
-        temperature_str = os.getenv("FORMATTING_TEMPERATURE", "0.3")
-        try:
-            temperature = float(temperature_str)
-            temperature = max(0.0, min(1.0, temperature))  # Clamp to [0.0, 1.0]
-        except ValueError:
-            temperature = 0.3
-        
-        # Load optional system prompt (decode escaped newlines) - deprecated
-        system_prompt = os.getenv("FORMATTING_SYSTEM_PROMPT", "")
-        if system_prompt:
-            system_prompt = system_prompt.replace('\\n', '\n')
-        
-        # Try to load new JSON format first
-        app_prompts_json = os.getenv("FORMATTING_APP_PROMPTS", "")
-        app_prompts = {}
-        applications = []
-        
-        if app_prompts_json:
-            # New format exists - parse JSON
-            try:
-                # CRITICAL: dotenv sometimes breaks the JSON string
-                # Always read directly from file to avoid dotenv breaking it
-                with open(env_path, 'r', encoding='utf-8') as f:
-                    for line in f:
-                        if line.startswith('FORMATTING_APP_PROMPTS='):
-                            app_prompts_json = line.split('=', 1)[1].strip()
-                            break
-                app_prompts_data = json.loads(app_prompts_json)
-                
-                applications = list(app_prompts_data.keys())
-                # Extract prompts from JSON structure
-                for app_name, app_config in app_prompts_data.items():
-                    if isinstance(app_config, dict):
-                        app_prompts[app_name] = app_config.get("prompt", "")
-                    else:
-                        # Fallback for simple format
-                        app_prompts[app_name] = ""
-            except json.JSONDecodeError as e:
-                logger.warning(f"Failed to parse FORMATTING_APP_PROMPTS JSON: {e}, falling back to old format")
-                app_prompts_json = ""
-        
-        if not app_prompts_json:
-            # Fall back to old format or defaults
-            applications_str = os.getenv("FORMATTING_APPLICATIONS", "")
-            
-            if not applications_str:
-                # Use defaults (including _fallback)
-                applications = ["notion", "obsidian", "markdown", "word", "libreoffice", "vscode", "_fallback"]
-            else:
-                applications = [
-                    app.strip() 
-                    for app in applications_str.split(",") 
-                    if app.strip()
-                ]
-                # Always ensure _fallback is in the list
-                if "_fallback" not in applications:
-                    applications.append("_fallback")
-            
-            # Initialize empty prompts for all applications
-            app_prompts = {app: "" for app in applications}
-        
-        # Ensure _fallback is always in applications list
-        if "_fallback" not in applications:
-            applications.append("_fallback")
-            if "_fallback" not in app_prompts:
-                app_prompts["_fallback"] = ""
-        
-        # Load custom provider settings
-        custom_base_url = os.getenv("FORMATTING_CUSTOM_BASE_URL", "")
-        custom_api_key = os.getenv("FORMATTING_CUSTOM_API_KEY", "")
-        
-        # Load web app keywords for browser detection
-        web_app_keywords_json = os.getenv("FORMATTING_WEB_APP_KEYWORDS", "")
-        web_app_keywords = {}
-        
-        if web_app_keywords_json:
-            try:
-                web_app_keywords = json.loads(web_app_keywords_json)
-            except json.JSONDecodeError:
-                logger.warning("Failed to parse FORMATTING_WEB_APP_KEYWORDS JSON, using empty dict")
-                web_app_keywords = {}
-        
-        # If no keywords loaded, log warning (all keywords should be in .env now)
-        if not web_app_keywords:
-            logger.warning("No FORMATTING_WEB_APP_KEYWORDS found in .env - formatting detection will not work")
-        
-        return cls(
-            enabled=enabled,
-            provider=provider,
-            model=model,
-            applications=applications,
-            temperature=temperature,
-            system_prompt=system_prompt,
-            app_prompts=app_prompts,
-            custom_base_url=custom_base_url,
-            custom_api_key=custom_api_key,
-            web_app_keywords=web_app_keywords
-        )
+        # Always load from config.jsonc (new format)
+        from core.config_loader import get_config_loader
+        config_loader = get_config_loader()
+        return cls.from_config(config_loader)
     
     @classmethod
     def from_config(cls, config_loader) -> 'FormattingConfig':
@@ -364,6 +245,7 @@ class FormattingConfig:
         
         # Get custom provider settings
         custom_base_url = config_loader.get("formatting.custom.base_url", "")
+        # API key is stored in secrets.json and merged into config by ConfigLoader
         custom_api_key = config_loader.get("formatting.custom.api_key", "")
         
         # Get web app keywords
@@ -395,77 +277,78 @@ class FormattingConfig:
             web_app_keywords=web_app_keywords
         )
     
-    def to_env(self) -> dict:
+    def save_to_config(self) -> None:
         """
-        Convert configuration to environment variable format.
+        Save configuration to config.jsonc and secrets.json.
         
-        Returns:
-            dict: Dictionary of environment variable key-value pairs
+        This is the NEW method that saves to JSONC format.
         """
-        # Build JSON structure for app_prompts
-        app_prompts_data = {}
-        for app_name in self.applications:
-            app_prompts_data[app_name] = {
-                "enabled": True,
-                "prompt": self.app_prompts.get(app_name, "")
-            }
+        from core.config_saver import get_config_saver
+        from core.config_loader import get_config_loader
         
-        return {
-            "FORMATTING_ENABLED": "true" if self.enabled else "false",
-            "FORMATTING_PROVIDER": self.provider,
-            "FORMATTING_MODEL": self.model,
-            "FORMATTING_APP_PROMPTS": json.dumps(app_prompts_data, ensure_ascii=False),
-            "FORMATTING_TEMPERATURE": str(self.temperature),
-            "FORMATTING_CUSTOM_BASE_URL": self.custom_base_url,
-            "FORMATTING_CUSTOM_API_KEY": self.custom_api_key,
-            "FORMATTING_WEB_APP_KEYWORDS": json.dumps(self.web_app_keywords, ensure_ascii=False),
-            # Keep old format for backward compatibility (but will be removed after migration)
-            "FORMATTING_APPLICATIONS": ",".join(self.applications),
-            "FORMATTING_SYSTEM_PROMPT": self.system_prompt
-        }
+        try:
+            # Load current config
+            config_loader = get_config_loader()
+            config_loader.load()
+            config = config_loader.config
+            
+            # Update formatting section
+            if "formatting" not in config:
+                config["formatting"] = {}
+            
+            config["formatting"]["enabled"] = self.enabled
+            config["formatting"]["provider"] = self.provider
+            config["formatting"]["model"] = self.model
+            config["formatting"]["temperature"] = self.temperature
+            
+            # Update custom provider settings (base_url in config, API key in secrets)
+            if "custom" not in config["formatting"]:
+                config["formatting"]["custom"] = {}
+            config["formatting"]["custom"]["base_url"] = self.custom_base_url
+            # Note: api_key is NOT saved here - it goes to secrets.json below
+            
+            # Update web app keywords
+            config["formatting"]["web_app_keywords"] = self.web_app_keywords
+            
+            # Update app_prompts paths (keep existing structure)
+            if "app_prompts" not in config["formatting"]:
+                config["formatting"]["app_prompts"] = {}
+            
+            # Ensure all applications have prompt file paths
+            for app_name in self.applications:
+                if app_name not in config["formatting"]["app_prompts"]:
+                    config["formatting"]["app_prompts"][app_name] = f"config/prompts/{app_name}.txt"
+            
+            # Save config
+            config_saver = get_config_saver()
+            config_saver.save_config(config)
+            
+            # Save prompts to files
+            for app_name in self.applications:
+                prompt = self.app_prompts.get(app_name, "")
+                # Decode \\n to actual newlines for file storage
+                prompt = prompt.replace('\\n', '\n')
+                config_saver.save_prompt(app_name, prompt)
+            
+            # Save API key to secrets.json
+            if self.custom_api_key:
+                config_saver.update_secret("formatting.custom.api_key", self.custom_api_key)
+            
+            logger.info("✓ Saved formatting configuration to config.jsonc")
+            
+        except Exception as e:
+            logger.error(f"Failed to save formatting configuration: {e}")
+            raise
     
     def save_to_env(self, env_path: Optional[str] = None) -> None:
         """
-        Save configuration to .env file.
+        Save configuration to config.jsonc and secrets.json.
+        
+        DEPRECATED: This method name is kept for backward compatibility.
+        It now saves to config.jsonc, not .env files.
         
         Args:
-            env_path: Path to .env file. If None, uses default path.
+            env_path: DEPRECATED - ignored, kept for backward compatibility with tests
         """
-        from core.config import get_env_path
-        
-        if env_path is None:
-            env_path = str(get_env_path())
-        
-        # Convert to environment variables
-        env_vars = self.to_env()
-        
-        # Read existing .env file
-        env_lines = []
-        if Path(env_path).exists():
-            with open(env_path, 'r', encoding='utf-8') as f:
-                env_lines = f.readlines()
-        
-        # Update or add each key
-        for key, value in env_vars.items():
-            key_found = False
-            for i, line in enumerate(env_lines):
-                line_stripped = line.strip()
-                # Skip comments and empty lines
-                if line_stripped and not line_stripped.startswith('#'):
-                    if '=' in line_stripped:
-                        existing_key = line_stripped.split('=')[0].strip()
-                        if existing_key == key:
-                            env_lines[i] = f"{key}={value}\n"
-                            key_found = True
-                            break
-            
-            # If key not found, add to end
-            if not key_found:
-                # Add empty line before new key if file not empty
-                if env_lines and not env_lines[-1].endswith('\n'):
-                    env_lines.append('\n')
-                env_lines.append(f"{key}={value}\n")
-        
-        # Write back to file
-        with open(env_path, 'w', encoding='utf-8') as f:
-            f.writelines(env_lines)
+        # Always save to config.jsonc (new format)
+        self.save_to_config()

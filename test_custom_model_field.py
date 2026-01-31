@@ -11,8 +11,8 @@ def test_custom_model_field():
     """Тест проверяет что поле кастомной модели отображается и работает."""
     app = QApplication(sys.argv)
     
-    # Загрузить конфигурацию
-    config = Config.load_from_env()
+    # Загрузить конфигурацию из config.jsonc
+    config = Config.load_from_config()
     
     # Создать окно настроек
     settings_window = SettingsWindow(config)

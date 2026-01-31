@@ -10,7 +10,7 @@ from core.config import Config
 def test_providers():
     """Тестирует настройку всех провайдеров."""
     
-    config = Config.load_from_env()
+    config = Config.load_from_config()
     
     print("=" * 80)
     print("ТЕСТ ПРОВАЙДЕРОВ ПОСТОБРАБОТКИ")

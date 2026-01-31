@@ -146,7 +146,7 @@ class APIAuthenticationError(APIError):
     def __init__(self, message: str = "Ошибка аутентификации"):
         super().__init__(
             message=message,
-            user_message="Проверьте GLM_API_KEY в .env файле"
+            user_message="Проверьте GLM_API_KEY в secrets.json"
         )
 
 
@@ -235,7 +235,7 @@ class InvalidAPIKeyError(ConfigurationError):
     def __init__(self):
         super().__init__(
             message="API ключ GLM_API_KEY не найден или пустой",
-            user_message="Проверьте GLM_API_KEY в .env файле"
+            user_message="Проверьте GLM_API_KEY в secrets.json"
         )
 
 

@@ -7,8 +7,8 @@ from ui.settings_window import SettingsWindow
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     
-    # Загрузить конфигурацию
-    config = Config.load_from_env()
+    # Загрузить конфигурацию из config.jsonc
+    config = Config.load_from_config()
     
     print("=== Проверка конфигурации ===")
     print(f"GitHub URL: {config.github_url}")

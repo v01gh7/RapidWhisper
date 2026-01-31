@@ -112,7 +112,8 @@ class FormattingModule:
         if isinstance(config_manager, FormattingConfig):
             self.config = config_manager
         else:
-            self.config = FormattingConfig.from_env()
+            from core.config_loader import get_config_loader
+            self.config = FormattingConfig.from_config(get_config_loader())
         
         self.window_monitor = window_monitor or WindowMonitor.create()
         self.ai_client_factory = ai_client_factory
@@ -237,26 +238,32 @@ class FormattingModule:
             else:
                 # Use transcription client for formatting
                 from services.transcription_client import TranscriptionClient
-                import os
                 
                 logger.info(f"  🤖 Создание TranscriptionClient для провайдера: {self.config.provider}")
                 
-                # Get API key for the configured provider
+                # Get API key from config (already loaded from secrets.json)
                 api_key = None
                 base_url = None
                 
                 if self.config.provider == "groq":
-                    api_key = os.getenv("GROQ_API_KEY")
+                    from core.config_loader import get_config_loader
+                    config_loader = get_config_loader()
+                    api_key = config_loader.get("ai_provider.api_keys.groq")
                     logger.info(f"  🔑 Загружен GROQ_API_KEY: {api_key[:10] if api_key else 'НЕ НАЙДЕН'}...")
                 elif self.config.provider == "openai":
-                    api_key = os.getenv("OPENAI_API_KEY")
+                    from core.config_loader import get_config_loader
+                    config_loader = get_config_loader()
+                    api_key = config_loader.get("ai_provider.api_keys.openai")
                     logger.info(f"  🔑 Загружен OPENAI_API_KEY: {api_key[:10] if api_key else 'НЕ НАЙДЕН'}...")
                 elif self.config.provider == "glm":
-                    api_key = os.getenv("GLM_API_KEY")
+                    from core.config_loader import get_config_loader
+                    config_loader = get_config_loader()
+                    api_key = config_loader.get("ai_provider.api_keys.glm")
                     logger.info(f"  🔑 Загружен GLM_API_KEY: {api_key[:10] if api_key else 'НЕ НАЙДЕН'}...")
                 elif self.config.provider == "custom":
-                    api_key = os.getenv("CUSTOM_API_KEY")
-                    base_url = os.getenv("CUSTOM_BASE_URL")
+                    # Custom API key is in self.config.custom_api_key (loaded from secrets.json)
+                    api_key = self.config.custom_api_key
+                    base_url = self.config.custom_base_url
                     logger.info(f"  🔑 Загружен CUSTOM_API_KEY: {api_key[:10] if api_key else 'НЕ НАЙДЕН'}...")
                     logger.info(f"  🌐 CUSTOM_BASE_URL: {base_url}")
                 

@@ -101,8 +101,8 @@ class RapidWhisperApp(QObject):
         Requirements: 12.1
         """
         try:
-            # Загрузить конфигурацию
-            self.config = Config.load_from_env()
+            # Загрузить конфигурацию из config.jsonc
+            self.config = Config.load_from_config()
             
             # Проверить наличие API ключа
             if not self.config.has_api_key():
@@ -390,11 +390,7 @@ class RapidWhisperApp(QObject):
             
             # ВАЖНО: Перезагрузить конфигурацию перед записью
             # чтобы применить последние изменения настроек
-            from dotenv import load_dotenv
-            from core.config import get_env_path
-            env_path = str(get_env_path())
-            load_dotenv(env_path, override=True)
-            self.config = Config.load_from_env()
+            self.config = Config.load_from_config()
             self.logger.info(f"Конфигурация перезагружена: manual_stop={self.config.manual_stop}")
             
             # Показать info panel при начале записи
@@ -543,7 +539,17 @@ class RapidWhisperApp(QObject):
             
             # Получить модель для транскрипции
             transcription_model = self._get_transcription_model_for_provider()
-            self.logger.info(f"Модель для транскрипции: {transcription_model if transcription_model else 'дефолтная для провайдера'}")
+            if transcription_model:
+                self.logger.info(f"🎙️ Модель транскрипции: {transcription_model}")
+            else:
+                # Показать дефолтную модель для провайдера
+                default_models = {
+                    "groq": "whisper-large-v3",
+                    "openai": "whisper-1",
+                    "glm": "glm-4-voice"
+                }
+                default_model = default_models.get(self.config.ai_provider, "unknown")
+                self.logger.info(f"🎙️ Модель транскрипции: {default_model} (default для {self.config.ai_provider})")
             self.logger.info(f"custom_model из конфига: '{self.config.custom_model}'")
             
             # Создать и запустить поток транскрипции
@@ -784,15 +790,24 @@ class RapidWhisperApp(QObject):
         """
         Получает модель транскрипции для текущего провайдера.
         
-        Если указана кастомная модель (custom_model), использует её для всех провайдеров.
-        Иначе возвращает None чтобы использовать дефолтную модель провайдера.
+        Приоритет:
+        1. transcription_model из config (если указана)
+        2. custom_model из config (для обратной совместимости)
+        3. None (использовать дефолтную модель провайдера)
         
         Returns:
             Название модели или None для дефолтной
         """
-        # Если custom_model указана, используем её для всех провайдеров
+        # Приоритет 1: transcription_model (новое поле)
+        transcription_model = getattr(self.config, 'transcription_model', '')
+        if transcription_model:
+            return transcription_model
+        
+        # Приоритет 2: custom_model (старое поле для обратной совместимости)
         if self.config.custom_model:
             return self.config.custom_model
+        
+        # Приоритет 3: дефолтная модель провайдера
         return None
     
     def _show_settings(self) -> None:
@@ -915,15 +930,8 @@ class RapidWhisperApp(QObject):
         try:
             self.logger.info("Перезагрузка настроек...")
             
-            # ВАЖНО: Перезагрузить переменные окружения из .env файла
-            from dotenv import load_dotenv
-            from core.config import get_env_path
-            env_path = str(get_env_path())
-            load_dotenv(env_path, override=True)
-            self.logger.info(f"Переменные окружения перезагружены из {env_path}")
-            
-            # Загрузить новую конфигурацию
-            new_config = Config.load_from_env()
+            # Загрузить новую конфигурацию из config.jsonc
+            new_config = Config.load_from_config()
             errors = new_config.validate()
             
             if errors:
@@ -1134,12 +1142,9 @@ def main():
     # Это нужно сделать ДО создания QApplication
     try:
         import ctypes
-        # Загрузить конфиг чтобы получить APP_USER_MODEL_ID
-        from core.config import Config, get_env_path
-        from dotenv import load_dotenv
-        env_path = str(get_env_path())
-        load_dotenv(env_path, override=True)
-        temp_config = Config.load_from_env()
+        # Загрузить конфигурацию из config.jsonc для AppUserModelID
+        from core.config import Config
+        temp_config = Config.load_from_config()
         
         # Установить AppUserModelID для правильного отображения в Windows уведомлениях
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(temp_config.app_user_model_id)

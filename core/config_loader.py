@@ -226,13 +226,41 @@ class ConfigLoader:
         if not self.secrets:
             return
         
-        # Merge API keys into ai_provider
+        # NEW STRUCTURE: secrets.json mirrors config.jsonc structure
+        # Merge ai_provider section
+        if "ai_provider" in self.secrets:
+            if "ai_provider" not in self.config:
+                self.config["ai_provider"] = {}
+            
+            # Merge API keys
+            if "api_keys" in self.secrets["ai_provider"]:
+                self.config["ai_provider"]["api_keys"] = self.secrets["ai_provider"]["api_keys"]
+            
+            # Merge custom API key
+            if "custom" in self.secrets["ai_provider"]:
+                if "custom" not in self.config["ai_provider"]:
+                    self.config["ai_provider"]["custom"] = {}
+                if "api_key" in self.secrets["ai_provider"]["custom"]:
+                    self.config["ai_provider"]["custom"]["api_key"] = self.secrets["ai_provider"]["custom"]["api_key"]
+        
+        # Merge formatting section
+        if "formatting" in self.secrets:
+            if "formatting" not in self.config:
+                self.config["formatting"] = {}
+            
+            # Merge custom formatting API key
+            if "custom" in self.secrets["formatting"]:
+                if "custom" not in self.config["formatting"]:
+                    self.config["formatting"]["custom"] = {}
+                if "api_key" in self.secrets["formatting"]["custom"]:
+                    self.config["formatting"]["custom"]["api_key"] = self.secrets["formatting"]["custom"]["api_key"]
+        
+        # LEGACY SUPPORT: Old structure for backward compatibility
         if "api_keys" in self.secrets:
             if "ai_provider" not in self.config:
                 self.config["ai_provider"] = {}
             self.config["ai_provider"]["api_keys"] = self.secrets["api_keys"]
         
-        # Merge custom provider keys
         if "custom_providers" in self.secrets:
             # Custom transcription API key
             if "api_key" in self.secrets["custom_providers"]:
@@ -259,6 +287,8 @@ class ConfigLoader:
         """
         from dotenv import load_dotenv
         
+        # DEPRECATED: Этот метод оставлен только для обратной совместимости с тестами
+        # В основном коде используйте ConfigLoader напрямую
         load_dotenv(".env", override=True)
         
         # This is a simplified version - full implementation would mirror migrate_to_jsonc.py

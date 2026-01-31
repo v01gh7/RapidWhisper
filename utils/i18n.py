@@ -184,11 +184,10 @@ def set_language(lang_code: str) -> None:
     
     # Save to config file
     try:
-        from core.config import get_env_path
-        from dotenv import set_key
+        from core.config_saver import get_config_saver
         
-        env_path = str(get_env_path())
-        set_key(env_path, "INTERFACE_LANGUAGE", lang_code)
+        config_saver = get_config_saver()
+        config_saver.update_value("localization.language", lang_code)
         
         from utils.logger import get_logger
         logger = get_logger()
@@ -318,7 +317,7 @@ def _initialize_language():
     
     try:
         from core.config import Config
-        config = Config.load_from_env()
+        config = Config.load_from_config()
         _current_language = config.interface_language
     except Exception:
         # If config loading fails, use system language

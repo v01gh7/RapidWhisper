@@ -240,6 +240,8 @@
       "hotkey_error_message": "Failed to register hotkey {new_hotkey}. Using old one: {old_hotkey}",
       "settings_updated": "✅ Settings Updated",
       "settings_updated_message": "New settings applied successfully!",
+      "prompt_saved": "✅ Prompt Saved",
+      "prompt_saved_message": "Prompt for '{app}' saved and applied without restart!",
       "settings_apply_error": "❌ Error",
       "settings_apply_error_message": "Failed to apply settings: {error}",
       "model_not_found": "🔍 Model Not Found",

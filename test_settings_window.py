@@ -12,8 +12,8 @@ def main():
     """Запускает окно настроек для тестирования."""
     app = QApplication(sys.argv)
     
-    # Загрузить текущую конфигурацию
-    config = Config.load_from_env()
+    # Загрузить текущую конфигурацию из config.jsonc
+    config = Config.load_from_config()
     
     # Создать и показать окно настроек
     settings_window = SettingsWindow(config)

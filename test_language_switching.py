@@ -19,8 +19,8 @@ def test_language_switching():
     """Тест динамического переключения языка."""
     app = QApplication(sys.argv)
     
-    # Загрузить конфигурацию
-    config = Config.load_from_env()
+    # Загрузить конфигурацию из config.jsonc
+    config = Config.load_from_config()
     
     print(f"Текущий язык: {config.interface_language}")
     print(f"Язык в i18n модуле: {get_language()}")

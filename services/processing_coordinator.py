@@ -205,22 +205,43 @@ IMPORTANT: Both steps are required. Output must be both corrected AND formatted.
             logger.info(f"Using model: {model_to_use}")
             
             # Make single API call with combined prompt
+            # Get API key for post-processing provider
+            from core.config_loader import get_config_loader
+            config_loader = get_config_loader()
+            
+            api_key = None
+            if config.post_processing_provider == "groq":
+                api_key = config_loader.get("ai_provider.api_keys.groq")
+            elif config.post_processing_provider == "openai":
+                api_key = config_loader.get("ai_provider.api_keys.openai")
+            elif config.post_processing_provider == "glm":
+                api_key = config_loader.get("ai_provider.api_keys.glm")
+            elif config.post_processing_provider == "llm":
+                api_key = config.llm_api_key
+            
             processed_text = transcription_client.post_process_text(
                 text=text,
                 provider=config.post_processing_provider,
                 model=model_to_use,
                 system_prompt=combined_prompt,
+                api_key=api_key,
                 base_url=config.llm_base_url if config.post_processing_provider == "llm" else None,
                 use_coding_plan=config.glm_use_coding_plan if config.post_processing_provider == "glm" else False
             )
             
-            logger.info("✅ Combined processing completed successfully")
-            logger.info(f"Result preview: {processed_text[:100]}...")
-            return processed_text
+            # Check if processing actually worked (not just returned original text)
+            if processed_text != text:
+                logger.info("✅ Combined processing completed successfully")
+                logger.info(f"Result preview: {processed_text[:100]}...")
+                return processed_text
+            else:
+                logger.warning("⚠️ API returned original text (likely due to error)")
+                logger.info("Returning original text without formatting")
+                return text
             
         except Exception as e:
             logger.error(f"❌ Combined processing failed: {e}")
-            logger.info("Returning original text")
+            logger.warning("⚠️ Returning original text without formatting")
             return text
     
     def _process_post_processing_only(
@@ -251,21 +272,42 @@ IMPORTANT: Both steps are required. Output must be both corrected AND formatted.
             logger.info(f"Using provider: {config.post_processing_provider}")
             logger.info(f"Using model: {model_to_use}")
             
+            # Get API key for post-processing provider
+            from core.config_loader import get_config_loader
+            config_loader = get_config_loader()
+            
+            api_key = None
+            if config.post_processing_provider == "groq":
+                api_key = config_loader.get("ai_provider.api_keys.groq")
+            elif config.post_processing_provider == "openai":
+                api_key = config_loader.get("ai_provider.api_keys.openai")
+            elif config.post_processing_provider == "glm":
+                api_key = config_loader.get("ai_provider.api_keys.glm")
+            elif config.post_processing_provider == "llm":
+                api_key = config.llm_api_key
+            
             processed_text = transcription_client.post_process_text(
                 text=text,
                 provider=config.post_processing_provider,
                 model=model_to_use,
                 system_prompt=config.post_processing_prompt,
+                api_key=api_key,
                 base_url=config.llm_base_url if config.post_processing_provider == "llm" else None,
                 use_coding_plan=config.glm_use_coding_plan if config.post_processing_provider == "glm" else False
             )
             
-            logger.info("✅ Post-processing completed successfully")
-            return processed_text
+            # Check if processing actually worked
+            if processed_text != text:
+                logger.info("✅ Post-processing completed successfully")
+                return processed_text
+            else:
+                logger.warning("⚠️ API returned original text (likely due to error)")
+                logger.info("Returning original text without post-processing")
+                return text
             
         except Exception as e:
             logger.error(f"❌ Post-processing failed: {e}")
-            logger.info("Returning original text")
+            logger.warning("⚠️ Returning original text without post-processing")
             return text
 
     def _process_fallback_formatting(
@@ -306,20 +348,41 @@ IMPORTANT: Both steps are required. Output must be both corrected AND formatted.
             logger.info(f"Temperature: {temperature}")
             logger.info(f"Fallback prompt length: {len(fallback_prompt)} characters")
             
+            # Get API key for formatting provider
+            from core.config_loader import get_config_loader
+            config_loader = get_config_loader()
+            
+            api_key = None
+            if provider == "groq":
+                api_key = config_loader.get("ai_provider.api_keys.groq")
+            elif provider == "openai":
+                api_key = config_loader.get("ai_provider.api_keys.openai")
+            elif provider == "glm":
+                api_key = config_loader.get("ai_provider.api_keys.glm")
+            elif provider == "custom":
+                api_key = formatting_config.custom_api_key
+            
             # Make API call with fallback prompt
             formatted_text = transcription_client.post_process_text(
                 text=text,
                 provider=provider,
                 model=model,
                 system_prompt=fallback_prompt,
+                api_key=api_key,
                 temperature=temperature
             )
             
-            logger.info("✅ Fallback formatting completed successfully")
-            logger.info(f"Result preview: {formatted_text[:100]}...")
-            return formatted_text
+            # Check if formatting actually worked
+            if formatted_text != text:
+                logger.info("✅ Fallback formatting completed successfully")
+                logger.info(f"Result preview: {formatted_text[:100]}...")
+                return formatted_text
+            else:
+                logger.warning("⚠️ API returned original text (likely due to error)")
+                logger.info("Returning original text without formatting")
+                return text
             
         except Exception as e:
             logger.error(f"❌ Fallback formatting failed: {e}")
-            logger.info("Returning original text")
+            logger.warning("⚠️ Returning original text without formatting")
             return text

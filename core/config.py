@@ -105,14 +105,17 @@ def get_recordings_dir() -> Path:
     """
     Возвращает путь к директории с сохраненными записями.
     
-    Проверяет настройку RECORDINGS_PATH в .env файле.
+    Проверяет настройку recording.recordings_path в config.jsonc.
     Если не указана, использует путь по умолчанию.
     
     Returns:
         Path: Путь к директории recordings
     """
-    # Проверить пользовательский путь в .env
-    custom_path = os.getenv('RECORDINGS_PATH')
+    from core.config_loader import get_config_loader
+    
+    # Проверить пользовательский путь в config.jsonc
+    config_loader = get_config_loader()
+    custom_path = config_loader.get('recording.recordings_path', '')
     
     if custom_path and custom_path.strip():
         recordings_dir = Path(custom_path).expanduser()
@@ -311,6 +314,7 @@ class Config:
         self.custom_api_key: str = ""
         self.custom_base_url: str = ""
         self.custom_model: str = "whisper-1"  # Используется для всех провайдеров если указано
+        self.transcription_model: str = ""  # Модель для транскрипции (если пусто - используется дефолтная для провайдера)
         
         # Параметры приложения
         self.app_user_model_id: str = "RapidWhisper.VoiceTranscription.App.1.0"  # Windows App User Model ID
@@ -405,6 +409,8 @@ class Config:
             env_path = str(get_env_path())
         
         # Загрузить переменные окружения из .env файла
+        # DEPRECATED: Этот метод оставлен только для обратной совместимости с тестами
+        # В основном коде используйте Config.load_from_config()
         load_dotenv(env_path, override=True)
         
         # Если env_path указан явно (для тестов), очистить ключи которых нет в файле
@@ -612,6 +618,80 @@ class Config:
             config.font_size_settings_titles = max(16, min(32, value))
         except (ValueError, TypeError):
             pass
+        
+        return config
+    
+    @staticmethod
+    def load_from_config() -> 'Config':
+        """
+        Загружает конфигурацию из config.jsonc и secrets.json.
+        
+        Это НОВЫЙ метод для загрузки из JSONC формата.
+        Метод load_from_env() оставлен для обратной совместимости с тестами.
+        
+        Returns:
+            Config: Объект конфигурации с загруженными параметрами.
+        """
+        from core.config_loader import get_config_loader
+        
+        config_loader = get_config_loader()
+        config_loader.load()
+        
+        config = Config()
+        
+        # AI Provider параметры (API ключи из secrets.json автоматически мержатся ConfigLoader)
+        config.ai_provider = config_loader.get("ai_provider.provider", "groq")
+        config.groq_api_key = config_loader.get("ai_provider.api_keys.groq", "")
+        config.openai_api_key = config_loader.get("ai_provider.api_keys.openai", "")
+        config.glm_api_key = config_loader.get("ai_provider.api_keys.glm", "")
+        config.custom_api_key = config_loader.get("ai_provider.custom.api_key", "")
+        config.custom_base_url = config_loader.get("ai_provider.custom.base_url", "")
+        config.custom_model = config_loader.get("ai_provider.custom.model", "whisper-1")
+        config.transcription_model = config_loader.get("ai_provider.transcription_model", "")
+        
+        # Параметры приложения
+        config.hotkey = config_loader.get("application.hotkey", "ctrl+space")
+        
+        # Параметры аудио
+        config.silence_threshold = config_loader.get("audio.silence_threshold", 0.02)
+        config.silence_duration = config_loader.get("audio.silence_duration", 1.5)
+        config.sample_rate = config_loader.get("audio.sample_rate", 16000)
+        config.chunk_size = config_loader.get("audio.chunk_size", 1024)
+        config.silence_padding = config_loader.get("audio.silence_padding", 650)
+        config.manual_stop = config_loader.get("audio.manual_stop", False)
+        
+        # Параметры окна
+        config.auto_hide_delay = config_loader.get("window.auto_hide_delay", 2.5)
+        config.remember_window_position = config_loader.get("window.remember_position", True)
+        config.window_position_preset = config_loader.get("window.position_preset", "center")
+        config.window_position_x = config_loader.get("window.position_x", None)
+        config.window_position_y = config_loader.get("window.position_y", None)
+        config.window_opacity = config_loader.get("window.opacity", 150)
+        config.font_size_floating_main = config_loader.get("window.font_sizes.floating_main", 14)
+        config.font_size_floating_info = config_loader.get("window.font_sizes.floating_info", 11)
+        config.font_size_settings_labels = config_loader.get("window.font_sizes.settings_labels", 12)
+        config.font_size_settings_titles = config_loader.get("window.font_sizes.settings_titles", 24)
+        
+        # Параметры записи
+        config.keep_recordings = config_loader.get("recording.keep_recordings", False)
+        config.recordings_path = config_loader.get("recording.recordings_path", "")
+        
+        # Постобработка
+        config.enable_post_processing = config_loader.get("post_processing.enabled", False)
+        config.post_processing_provider = config_loader.get("post_processing.provider", "groq")
+        config.post_processing_model = config_loader.get("post_processing.model", "llama-3.3-70b-versatile")
+        config.post_processing_custom_model = config_loader.get("post_processing.custom_model", "")
+        config.post_processing_prompt = config_loader.get("post_processing.prompt", config.post_processing_prompt)
+        config.glm_use_coding_plan = config_loader.get("post_processing.glm_use_coding_plan", False)
+        config.llm_base_url = config_loader.get("post_processing.llm.base_url", "http://localhost:1234/v1/")
+        config.llm_api_key = config_loader.get("post_processing.llm.api_key", "local")
+        
+        # Локализация
+        config.interface_language = config_loader.get("localization.language", get_system_language())
+        
+        # Ссылки
+        config.github_url = config_loader.get("about.github_url", "https://github.com/yourusername/rapidwhisper")
+        config.docs_url = config_loader.get("about.docs_url", "https://github.com/yourusername/rapidwhisper/tree/main/docs")
         
         return config
     
