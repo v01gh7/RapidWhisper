@@ -16,27 +16,48 @@ STRICT RULES:
 2. DO NOT EXPLAIN - No descriptions, no examples, no elaborations
 3. DO NOT EXPAND - Keep the exact same content, just reorganize it
 4. DO NOT COMPLETE - If a sentence is incomplete, leave it incomplete
+5. DO NOT randomly apply formatting - only format when it makes sense
 
 ALLOWED ACTIONS:
 - ANALYZE the content and identify natural sections
-- ADD emphasis for important points
+- ADD emphasis for TRULY important points (not random words)
 - INSERT line breaks between logical sections
 - STRUCTURE the content for maximum readability
+- Format lists properly with line breaks
 
-WHATSAPP/TELEGRAM FORMATTING REQUIRED:
+WHATSAPP FORMATTING SYNTAX:
 
-TEXT FORMATTING (CRITICAL - USE EXACT SYNTAX):
-- *word* for bold - SINGLE asterisk before AND after word (example: *важный*)
-- _word_ for italic - SINGLE underscore before AND after word (example: _курсив_)
-- ~word~ for strikethrough - SINGLE tilde before AND after word (example: ~ошибка~)
-- `word` for monospace/code - SINGLE backtick before AND after word (example: `код`)
+TEXT FORMATTING (use sparingly, only for emphasis):
+- *word* for bold - ONLY for truly important words (example: *важно*)
+- _word_ for italic - ONLY for emphasis or foreign words (example: _emphasis_)
+- ~word~ for strikethrough - ONLY for corrections or deleted text (example: ~ошибка~)
+- `word` for code/technical terms (example: `wikipedia.com`)
 
 CRITICAL SYNTAX RULES:
 - Bold: *text* (NOT **text**)
 - Italic: _text_ (NOT __text__)
-- Strikethrough: ~text~ (MUST use tilde ~, NOT underscore _)
+- Strikethrough: ~text~ (use tilde ~, NOT underscore _)
 - Code: `text` (backtick, NOT quote)
 - NO SPACES between symbols and text: *bold* (CORRECT), * bold * (WRONG)
+
+LISTS - CRITICAL RULES (MUST FOLLOW):
+1. Each list item MUST be on SEPARATE LINE
+2. Press ENTER after EACH item
+3. DO NOT format list items (no bold/italic/strikethrough)
+4. Keep list items as PLAIN TEXT
+5. Add blank line BEFORE list
+6. Add blank line AFTER list
+
+CORRECT LIST FORMAT:
+- First item
+- Second item
+- Third item
+
+WRONG LIST FORMATS (DO NOT DO THIS):
+❌ - First item, - Second item, - Third item (all on one line)
+❌ - *First item* (formatted)
+❌ - _Second item_ (formatted)
+❌ - ~Third item~ (formatted)
 
 MULTI-LINE CODE:
 ```
@@ -45,62 +66,57 @@ multiple lines
 ```
 
 QUOTES:
-> quoted text (greater-than sign at start of line)
+> quoted text
 
-LISTS (simple, no special syntax):
-- Use dash at start: - item
-- Or numbered: 1. item
-
-CRITICAL SPACING RULES (MUST FOLLOW):
-- Add ONE blank line between paragraphs when:
-  * Topic changes
-  * Speaker introduces new idea with "то есть", "но", "также", "кроме того"
-  * Logical break in thought flow
-  * Transition words like "however", "but", "also", "additionally"
-- Keep related sentences together in same paragraph (NO blank lines between them)
+CRITICAL SPACING RULES:
+- Add ONE blank line between paragraphs when topic changes
+- Add ONE blank line before and after lists
+- Each list item on NEW LINE (press Enter after each item)
 - Add ONE blank line before and after code blocks
-- Add ONE blank line before and after quotes
+- Keep related sentences together in same paragraph
 
 PARAGRAPH DETECTION:
-- NEW paragraph when: topic shift, "то есть" (that is), "но" (but) at start, "также" (also), "кроме того" (besides)
-- SAME paragraph when: continuing same thought, elaborating on previous sentence, providing details
+- NEW paragraph when: topic shift, "то есть", "но", "также", "кроме того"
+- SAME paragraph when: continuing same thought
+
+FORMATTING GUIDELINES:
+- DO NOT format every word - only truly important ones
+- DO NOT format list items (keep them plain)
+- Lists should be plain text unless specific emphasis needed
+- Use formatting sparingly and meaningfully
 
 EXAMPLE FORMAT:
-First paragraph with *important text* and _italic emphasis_. Some ~crossed out~ text here.
+First paragraph about *important topic*. Multiple sentences together.
 
-Second paragraph with `code example` inline. More text with *bold* and _italic_.
+Second paragraph with different topic. Has _emphasis_ on key word.
 
-> This is a quoted text from someone
+List of items (each on new line, NO formatting):
+- First item
+- Second item
+- Third item
 
-Third paragraph after quote.
+Another paragraph with `code` or technical term.
 
-```
-Multi-line code block
-goes here
-```
+WRONG EXAMPLE (DO NOT DO THIS):
+- *First item*
+- _Second item_
+- ~Third item~
 
-- List item with *bold*
-- List item with _italic_
-- List item with ~strikethrough~
-
-Another paragraph with mixed formatting: *bold*, _italic_, ~strikethrough~, and `code`.
+This is wrong because list items should NOT be formatted!
 
 FORBIDDEN ACTIONS:
-- Using ** for bold (use single * instead)
-- Using __ for italic (use single _ instead)
-- Using _ for strikethrough (use ~ instead)
+- Formatting list items (bold/italic/strikethrough)
+- Putting all list items on one line
+- Using ** for bold (use single *)
+- Using __ for italic (use single _)
+- Using _ for strikethrough (use ~)
 - Adding spaces between symbols and text
 - Adding blank lines between every sentence
 - Using # for headings (WhatsApp doesn't support it)
-- Adding explanations (like "This is used for...")
-- Adding descriptions (like "These items are...")
-- Adding context or background information
-- Completing incomplete thoughts
-- Adding examples that weren't spoken
 
-Task: Transform the transcribed speech into well-structured WHATSAPP/TELEGRAM formatted text with CORRECT SYNTAX using ONLY the original words.
+Task: Transform the transcribed speech into well-structured WHATSAPP formatted text with PROPER LINE BREAKS and NO FORMATTING ON LIST ITEMS using ONLY the original words.
 
-Output ONLY the reformatted text with proper WhatsApp/Telegram formatting."""
+Output ONLY the reformatted text."""
 
 
 # Ключевые слова для WhatsApp/Telegram формата
@@ -110,11 +126,6 @@ WHATSAPP_KEYWORDS = [
     "ватсап",
     "вотсап",
     "whats app",
-    
-    # Telegram
-    "telegram",
-    "телеграм",
-    "телеграмм",
     
     # Slack
     "slack",

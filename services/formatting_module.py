@@ -25,7 +25,7 @@ FORMAT_MAPPINGS = {
     "vscode": ["code", "vscode", "visual studio code"],
     "sublime": ["sublime", "sublime_text"],
     "notepad": ["notepad++", "notepad"],
-    "whatsapp": ["whatsapp", "whatsapp.exe", "whatsapp.app", "telegram", "telegram.exe", "telegram.app", "slack", "slack.exe", "slack.app", "discord", "discord.exe", "discord.app"],
+    "whatsapp": ["whatsapp", "whatsapp.exe", "whatsapp.app", "slack", "slack.exe", "slack.app", "discord", "discord.exe", "discord.app"],
 }
 
 # Browser title patterns for web applications
