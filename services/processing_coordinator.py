@@ -242,7 +242,8 @@ IMPORTANT: Both steps are required. Output must be both corrected AND formatted.
         except Exception as e:
             logger.error(f"❌ Combined processing failed: {e}")
             logger.warning("⚠️ Returning original text without formatting")
-            return text
+            # Пробросить исключение для уведомления пользователя
+            raise
     
     def _process_post_processing_only(
         self,
@@ -308,7 +309,8 @@ IMPORTANT: Both steps are required. Output must be both corrected AND formatted.
         except Exception as e:
             logger.error(f"❌ Post-processing failed: {e}")
             logger.warning("⚠️ Returning original text without post-processing")
-            return text
+            # Пробросить исключение для уведомления пользователя
+            raise
 
     def _process_fallback_formatting(
         self,
@@ -385,4 +387,5 @@ IMPORTANT: Both steps are required. Output must be both corrected AND formatted.
         except Exception as e:
             logger.error(f"❌ Fallback formatting failed: {e}")
             logger.warning("⚠️ Returning original text without formatting")
-            return text
+            # Пробросить исключение для уведомления пользователя
+            raise

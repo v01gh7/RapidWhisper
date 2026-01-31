@@ -9,7 +9,7 @@ import os
 import shutil
 from typing import BinaryIO, Optional
 from pathlib import Path
-from openai import OpenAI, AuthenticationError, APIConnectionError, APITimeoutError, Timeout, NotFoundError, BadRequestError
+from openai import OpenAI, AuthenticationError, APIConnectionError, APITimeoutError, Timeout, NotFoundError, BadRequestError, RateLimitError
 
 from utils.exceptions import (
     APIError,
@@ -362,13 +362,23 @@ class TranscriptionClient:
                 logger.info("=" * 80)
                 return text
         
+        except RateLimitError as e:
+            logger.error("=" * 80)
+            logger.error(f"⚠️ RATE LIMIT EXCEEDED: {e}")
+            logger.error("Превышен лимит запросов к API")
+            logger.warning("⚠️ Возвращаем оригинальный текст без обработки")
+            logger.error("=" * 80)
+            # Пробросить исключение для уведомления пользователя
+            raise
+        
         except APITimeoutError as e:
             logger.error("=" * 80)
             logger.error(f"⏱️ ТАЙМАУТ ПОСТОБРАБОТКИ: {e}")
             logger.error("Запрос превысил 60 секунд")
             logger.warning("⚠️ Возвращаем оригинальный текст без обработки")
             logger.error("=" * 80)
-            return text
+            # Пробросить исключение для уведомления пользователя
+            raise
         
         except AuthenticationError as e:
             logger.error("=" * 80)
@@ -376,7 +386,8 @@ class TranscriptionClient:
             logger.error("Проверьте API ключ в настройках")
             logger.warning("⚠️ Возвращаем оригинальный текст без обработки")
             logger.error("=" * 80)
-            return text
+            # Пробросить исключение для уведомления пользователя
+            raise
         
         except APIConnectionError as e:
             logger.error("=" * 80)
@@ -385,7 +396,8 @@ class TranscriptionClient:
             logger.error("Проверьте интернет-соединение и доступность API")
             logger.warning("⚠️ Возвращаем оригинальный текст без обработки")
             logger.error("=" * 80)
-            return text
+            # Пробросить исключение для уведомления пользователя
+            raise
         
         except NotFoundError as e:
             logger.error("=" * 80)
@@ -581,6 +593,34 @@ class TranscriptionThread(QThread):
                 self.model_not_found.emit(model_to_use, config.post_processing_provider)
                 logger.info("Используем оригинальный текст без обработки")
                 # Continue with original text
+            except RateLimitError as rl_error:
+                logger.error(f"❌ Rate Limit Error: {rl_error}")
+                logger.info("Отправка сигнала api_error для уведомления пользователя")
+                provider = config.post_processing_provider if config.enable_post_processing else formatting_config.provider
+                self.api_error.emit("RateLimitError", str(rl_error), provider)
+                logger.info("Используем оригинальный текст без обработки")
+                # Continue with original text
+            except AuthenticationError as auth_error:
+                logger.error(f"❌ Authentication Error: {auth_error}")
+                logger.info("Отправка сигнала api_error для уведомления пользователя")
+                provider = config.post_processing_provider if config.enable_post_processing else formatting_config.provider
+                self.api_error.emit("AuthenticationError", str(auth_error), provider)
+                logger.info("Используем оригинальный текст без обработки")
+                # Continue with original text
+            except APIConnectionError as conn_error:
+                logger.error(f"❌ Connection Error: {conn_error}")
+                logger.info("Отправка сигнала api_error для уведомления пользователя")
+                provider = config.post_processing_provider if config.enable_post_processing else formatting_config.provider
+                self.api_error.emit("APIConnectionError", str(conn_error), provider)
+                logger.info("Используем оригинальный текст без обработки")
+                # Continue with original text
+            except APITimeoutError as timeout_error:
+                logger.error(f"❌ Timeout Error: {timeout_error}")
+                logger.info("Отправка сигнала api_error для уведомления пользователя")
+                provider = config.post_processing_provider if config.enable_post_processing else formatting_config.provider
+                self.api_error.emit("APITimeoutError", str(timeout_error), provider)
+                logger.info("Используем оригинальный текст без обработки")
+                # Continue with original text
             except Exception as processing_error:
                 # Проверить тип ошибки и отправить соответствующий сигнал
                 error_type = type(processing_error).__name__
@@ -589,27 +629,10 @@ class TranscriptionThread(QThread):
                 # Извлечь информацию о провайдере
                 provider = config.post_processing_provider if config.enable_post_processing else formatting_config.provider
                 
-                # Отправить сигнал api_error для всех ошибок API
-                if "RateLimitError" in error_type or "rate limit" in error_message.lower():
-                    logger.error(f"❌ Rate Limit Error: {processing_error}")
-                    logger.info("Отправка сигнала api_error для уведомления пользователя")
-                    self.api_error.emit("RateLimitError", error_message, provider)
-                elif "AuthenticationError" in error_type or "authentication" in error_message.lower():
-                    logger.error(f"❌ Authentication Error: {processing_error}")
-                    logger.info("Отправка сигнала api_error для уведомления пользователя")
-                    self.api_error.emit("AuthenticationError", error_message, provider)
-                elif "APIConnectionError" in error_type or "connection" in error_message.lower():
-                    logger.error(f"❌ Connection Error: {processing_error}")
-                    logger.info("Отправка сигнала api_error для уведомления пользователя")
-                    self.api_error.emit("APIConnectionError", error_message, provider)
-                elif "APITimeoutError" in error_type or "timeout" in error_message.lower():
-                    logger.error(f"❌ Timeout Error: {processing_error}")
-                    logger.info("Отправка сигнала api_error для уведомления пользователя")
-                    self.api_error.emit("APITimeoutError", error_message, provider)
-                else:
-                    logger.error(f"❌ Ошибка обработки: {processing_error}")
-                    logger.info("Отправка сигнала api_error для уведомления пользователя")
-                    self.api_error.emit("APIError", error_message, provider)
+                # Отправить сигнал api_error для всех остальных ошибок
+                logger.error(f"❌ Ошибка обработки: {processing_error}")
+                logger.info("Отправка сигнала api_error для уведомления пользователя")
+                self.api_error.emit("APIError", error_message, provider)
                 
                 logger.info("Используем оригинальный текст без обработки")
                 # Continue with original text
