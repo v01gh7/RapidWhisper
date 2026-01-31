@@ -242,12 +242,12 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                 subcontrol-origin: margin;
                 subcontrol-position: top left;
                 padding: 8px 16px;
-                background-color: #2d2d2d;
+                background-color: rgba(45, 45, 45, {int(self._opacity * 0.8)});
                 color: #ffffff;
                 font-size: 14px;
                 font-weight: bold;
                 border-radius: 4px;
-                border: 1px solid #0078d4;
+                border: 1px solid rgba(0, 120, 212, 180);
             }}
             QListWidget {{
                 background-color: rgba(26, 26, 26, {int(self._opacity * 0.9)});
@@ -265,15 +265,21 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                 background-color: transparent;
             }}
             QListWidget::item:selected {{
-                background-color: rgba(0, 120, 212, 200);
+                background-color: rgba(0, 120, 212, {int(self._opacity * 0.8)});
                 color: #ffffff;
             }}
             QListWidget::item:hover:!selected {{
-                background-color: rgba(45, 45, 45, 150);
+                background-color: rgba(45, 45, 45, {int(self._opacity * 0.6)});
                 color: #ffffff;
             }}
             QScrollArea {{
                 border: none;
+                background-color: transparent;
+            }}
+            QScrollArea > QWidget {{
+                background-color: transparent;
+            }}
+            QScrollArea > QWidget > QWidget {{
                 background-color: transparent;
             }}
             QScrollBar:vertical {{
@@ -554,7 +560,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         # Style the header to be visually distinct
         header.setStyleSheet("""
             QWidget {
-                background-color: rgba(40, 40, 40, 200);
+                background-color: rgba(40, 40, 40, {int(self._opacity * 0.8)});
                 border: none;
                 border-top-left-radius: 5px;
                 border-top-right-radius: 5px;
