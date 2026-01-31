@@ -82,8 +82,10 @@ class FormattingConfig:
         except ValueError:
             temperature = 0.3
         
-        # Load optional system prompt
+        # Load optional system prompt (decode escaped newlines)
         system_prompt = os.getenv("FORMATTING_SYSTEM_PROMPT", "")
+        if system_prompt:
+            system_prompt = system_prompt.replace('\\n', '\n')
         
         # Parse applications list (comma-separated)
         applications_str = os.getenv("FORMATTING_APPLICATIONS", "")

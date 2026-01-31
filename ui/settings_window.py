@@ -2656,6 +2656,10 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             old_language = self.config.interface_language
             language_changed = (selected_language != old_language)
             
+            # Экранировать многострочные значения (заменить переносы строк на \n)
+            post_processing_prompt = self.post_processing_prompt_edit.toPlainText().replace('\n', '\\n')
+            formatting_system_prompt = self.formatting_system_prompt_edit.toPlainText().replace('\n', '\\n')
+            
             new_config = {
                 "AI_PROVIDER": self.provider_combo.currentText(),
                 "GROQ_API_KEY": self.groq_key_edit.text(),
@@ -2679,7 +2683,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                 "POST_PROCESSING_PROVIDER": self.post_processing_provider_combo.currentText(),
                 "POST_PROCESSING_MODEL": self.post_processing_model_combo.currentText(),
                 "POST_PROCESSING_CUSTOM_MODEL": self.post_processing_custom_model_edit.text(),
-                "POST_PROCESSING_PROMPT": self.post_processing_prompt_edit.toPlainText(),
+                "POST_PROCESSING_PROMPT": post_processing_prompt,
                 "GLM_USE_CODING_PLAN": "true" if self.glm_coding_plan_check.isChecked() else "false",
                 "LLM_BASE_URL": self.llm_base_url_edit.text(),
                 "LLM_API_KEY": self.llm_api_key_edit.text(),
@@ -2694,7 +2698,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                 "FORMATTING_MODEL": self.formatting_model_edit.text(),
                 "FORMATTING_APPLICATIONS": self.formatting_applications_edit.text(),
                 "FORMATTING_TEMPERATURE": str(self.formatting_temperature_spin.value()),
-                "FORMATTING_SYSTEM_PROMPT": self.formatting_system_prompt_edit.toPlainText(),
+                "FORMATTING_SYSTEM_PROMPT": formatting_system_prompt,
             }
             
             # Использовать правильный путь к .env (AppData для production)

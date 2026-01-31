@@ -29,88 +29,101 @@ FORMAT_MAPPINGS = {
 
 
 # Format-specific prompts for AI formatting
-# These prompts are strict to prevent AI from adding extra content
+# These prompts encourage structure while preventing content addition
 FORMAT_PROMPTS = {
-    "notion": """CRITICAL: Only reformat the provided text. Do NOT add any new content, examples, or explanations.
+    "notion": """CRITICAL INSTRUCTIONS:
+1. PRESERVE ALL CONTENT: Keep every word from the original text
+2. ADD STRUCTURE: Actively identify and create proper formatting
+3. NO NEW CONTENT: Do not add examples, explanations, or text that wasn't spoken
 
-Task: Reformat the transcribed text for Notion using markdown syntax.
+Task: Transform the transcribed speech into well-structured Notion markdown.
 
-Rules:
-- Keep ALL original content exactly as spoken
-- Only apply formatting (headings, lists, emphasis)
-- Do NOT add examples, explanations, or extra text
-- Do NOT add content that wasn't in the original
-- Use # for headings only where natural breaks occur
-- Use - or • for lists only if the speech indicates a list
-- Use **bold** and *italic* only for emphasis
-- Add line breaks for readability
+Your job:
+- ANALYZE the content and identify natural sections
+- CREATE headings (# ## ###) for main topics and subtopics
+- CONVERT lists when the speaker mentions multiple items
+- ADD emphasis (**bold**, *italic*) for important points
+- INSERT line breaks between logical sections
+- STRUCTURE the content for maximum readability
 
-Output ONLY the reformatted text, nothing else.""",
+Remember: Use ALL the original words, just organize them better.
+
+Output ONLY the reformatted text.""",
     
-    "obsidian": """CRITICAL: Only reformat the provided text. Do NOT add any new content, examples, or explanations.
+    "obsidian": """CRITICAL INSTRUCTIONS:
+1. PRESERVE ALL CONTENT: Keep every word from the original text
+2. ADD STRUCTURE: Actively identify and create proper formatting
+3. NO NEW CONTENT: Do not add examples, explanations, or text that wasn't spoken
 
-Task: Reformat the transcribed text for Obsidian using markdown syntax.
+Task: Transform the transcribed speech into well-structured Obsidian markdown.
 
-Rules:
-- Keep ALL original content exactly as spoken
-- Only apply formatting (headings, lists, links)
-- Do NOT add examples, explanations, or extra text
-- Do NOT add content that wasn't in the original
-- Use # for headings only where natural breaks occur
-- Use - for lists only if the speech indicates a list
-- Add [[wiki-links]] only for existing proper nouns or concepts
-- Use #tags only if the speech mentions tags
-- Keep structure clean and minimal
+Your job:
+- ANALYZE the content and identify natural sections
+- CREATE headings (# ## ###) for main topics and subtopics
+- CONVERT lists when the speaker mentions multiple items
+- ADD [[wiki-links]] for proper nouns and key concepts
+- ADD #tags for topics mentioned
+- INSERT line breaks between logical sections
+- STRUCTURE the content for linking and organization
 
-Output ONLY the reformatted text, nothing else.""",
+Remember: Use ALL the original words, just organize them better.
+
+Output ONLY the reformatted text.""",
     
-    "markdown": """CRITICAL: Only reformat the provided text. Do NOT add any new content, examples, or explanations.
+    "markdown": """CRITICAL INSTRUCTIONS:
+1. PRESERVE ALL CONTENT: Keep every word from the original text
+2. ADD STRUCTURE: Actively identify and create proper formatting
+3. NO NEW CONTENT: Do not add examples, explanations, or text that wasn't spoken
 
-Task: Reformat the transcribed text using clean markdown syntax.
+Task: Transform the transcribed speech into well-structured clean markdown.
 
-Rules:
-- Keep ALL original content exactly as spoken
-- Only apply formatting (headings, lists, code blocks)
-- Do NOT add examples, explanations, or extra text
-- Do NOT add content that wasn't in the original
-- Use # for headings only where natural breaks occur
-- Use - for lists only if the speech indicates a list
-- Use ``` for code blocks only if code is mentioned
-- Keep formatting minimal and readable
+Your job:
+- ANALYZE the content and identify natural sections
+- CREATE headings (# ## ###) for main topics and subtopics
+- CONVERT lists when the speaker mentions multiple items ("first", "second", "also", etc.)
+- ADD code blocks (```) if code or technical terms are mentioned
+- INSERT line breaks between logical sections
+- STRUCTURE the content for maximum readability
 
-Output ONLY the reformatted text, nothing else.""",
+Remember: Use ALL the original words, just organize them better.
+
+Output ONLY the reformatted text.""",
     
-    "word": """CRITICAL: Only reformat the provided text. Do NOT add any new content, examples, or explanations.
+    "word": """CRITICAL INSTRUCTIONS:
+1. PRESERVE ALL CONTENT: Keep every word from the original text
+2. ADD STRUCTURE: Actively identify and create proper formatting
+3. NO NEW CONTENT: Do not add examples, explanations, or text that wasn't spoken
 
-Task: Reformat the transcribed text for Microsoft Word.
+Task: Transform the transcribed speech into well-structured text for Microsoft Word.
 
-Rules:
-- Keep ALL original content exactly as spoken
-- Only apply simple formatting (paragraphs, lists)
-- Do NOT add examples, explanations, or extra text
-- Do NOT add content that wasn't in the original
-- Use clear paragraph breaks for readability
-- Use bullet points only if the speech indicates a list
-- Avoid markdown syntax (Word handles styling)
-- Keep formatting simple and clean
+Your job:
+- ANALYZE the content and identify natural sections
+- CREATE clear paragraph breaks for different topics
+- CONVERT lists when the speaker mentions multiple items
+- STRUCTURE the content with proper spacing
+- Keep formatting simple (Word will handle styling)
 
-Output ONLY the reformatted text, nothing else.""",
+Remember: Use ALL the original words, just organize them better.
+
+Output ONLY the reformatted text.""",
     
-    "libreoffice": """CRITICAL: Only reformat the provided text. Do NOT add any new content, examples, or explanations.
+    "libreoffice": """CRITICAL INSTRUCTIONS:
+1. PRESERVE ALL CONTENT: Keep every word from the original text
+2. ADD STRUCTURE: Actively identify and create proper formatting
+3. NO NEW CONTENT: Do not add examples, explanations, or text that wasn't spoken
 
-Task: Reformat the transcribed text for LibreOffice Writer.
+Task: Transform the transcribed speech into well-structured text for LibreOffice Writer.
 
-Rules:
-- Keep ALL original content exactly as spoken
-- Only apply simple formatting (paragraphs, lists)
-- Do NOT add examples, explanations, or extra text
-- Do NOT add content that wasn't in the original
-- Use clear paragraph breaks for readability
-- Use bullet points only if the speech indicates a list
-- Avoid markdown syntax (Writer handles styling)
-- Keep formatting simple and clean
+Your job:
+- ANALYZE the content and identify natural sections
+- CREATE clear paragraph breaks for different topics
+- CONVERT lists when the speaker mentions multiple items
+- STRUCTURE the content with proper spacing
+- Keep formatting simple (Writer will handle styling)
 
-Output ONLY the reformatted text, nothing else.""",
+Remember: Use ALL the original words, just organize them better.
+
+Output ONLY the reformatted text.""",
 }
 
 
