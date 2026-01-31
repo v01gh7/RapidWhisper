@@ -1,0 +1,9 @@
+Test prompt for WhatsApp formatting.
+
+This is a simple test prompt used in unit tests.
+It should format text with WhatsApp symbols.
+
+Rules:
+- Use *bold* for emphasis
+- Use _italic_ for italic
+- Use ~strikethrough~ for strikethrough

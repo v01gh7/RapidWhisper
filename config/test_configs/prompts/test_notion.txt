@@ -1,0 +1,9 @@
+Test prompt for Notion formatting.
+
+This is a simple test prompt used in unit tests.
+It should format text as markdown.
+
+Rules:
+- Use # for headings
+- Use - for lists
+- Use **bold** for emphasis

@@ -1,0 +1,9 @@
+Test prompt for generic application.
+
+This is a simple test prompt used in unit tests.
+It should format text in a basic way.
+
+Rules:
+- Add line breaks
+- Group sentences into paragraphs
+- Keep original words

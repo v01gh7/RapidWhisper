@@ -1,0 +1,228 @@
+// ============================================
+// RapidWhisper Configuration File
+// ============================================
+// This file contains all application settings
+// 
+// Format: JSONC (JSON with Comments)
+// - You can add comments using // or /* */
+// - Trailing commas are allowed
+//
+// Formatting prompts are stored in separate files:
+// - config/prompts/*.txt
+//
+// ============================================
+
+{
+  "ai_provider": {
+    "provider": "groq",
+    // API keys are stored in secrets.json (not in git)
+    "custom": {
+      "base_url": "http://localhost:1234/v1/",
+      "model": "whisper-1"
+    }
+  },
+  "application": {
+    "app_user_model_id": "RapidWhisper",
+    "hotkey": "ctrl+space"
+  },
+  "audio": {
+    "silence_threshold": 0.02,
+    "silence_duration": 2.5,
+    "silence_padding": 650,
+    "sample_rate": 16000,
+    "chunk_size": 1024,
+    "manual_stop": true
+  },
+  "window": {
+    "width": 400,
+    "height": 120,
+    "opacity": 76,
+    "auto_hide_delay": 1.0,
+    "remember_position": false,
+    "position_preset": "top_right",
+    "position_x": 1493,
+    "position_y": 39,
+    "font_sizes": {
+      "floating_main": 15,
+      "floating_info": 16,
+      "settings_labels": 13,
+      "settings_titles": 25
+    }
+  },
+  "recording": {
+    "keep_recordings": false,
+    "recordings_path": ""
+  },
+  "post_processing": {
+    "enabled": true,
+    "provider": "groq",
+    "model": "llama-3.3-70b-versatile",
+    "custom_model": "",
+    "prompt": "You are a text editor. Your task: fix grammatical errors, add punctuation and improve text readability. Preserve the original meaning and style. Don't add anything extra. Return only the corrected text without comments.",
+    "glm_use_coding_plan": true,
+    "llm": {
+      "base_url": "http://localhost:1234/v1/",
+      "api_key": "local"
+    }
+  },
+  "localization": {
+    "language": "ru"
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "rapidwhisper.log"
+  },
+  "about": {
+    "github_url": "https://github.com/yourusername/rapidwhisper",
+    "docs_url": "https://github.com/yourusername/rapidwhisper/tree/main/docs"
+  },
+  "formatting": {
+    "enabled": true,
+    "provider": "groq",
+    "model": "",
+    "temperature": 0.3,
+    "custom": {
+      "base_url": "http://localhost:1234/v1/",
+      "api_key": "test-api-key"
+    },
+    "web_app_keywords": {
+      "bbcode": [
+        "bitrix24",
+        "b24",
+        "битрикс24",
+        "битрикс",
+        "phpbb",
+        "vbulletin",
+        "mybb",
+        "smf",
+        "simple machines",
+        "xenforo",
+        "invision",
+        "ipboard",
+        "forum",
+        "форум",
+        "board",
+        "доска",
+        "reddit",
+        "реддит",
+        "stack overflow",
+        "stackoverflow",
+        "stack exchange",
+        "мои задачи",
+        "4pda",
+        "habr",
+        "хабр",
+        "pikabu",
+        "пикабу"
+      ],
+      "markdown": [
+        ".markdown",
+        ".md",
+        "dillinger",
+        "github.dev",
+        "gitlab",
+        "gitpod",
+        "hackmd",
+        "markdown",
+        "stackedit",
+        "typora online"
+      ],
+      "notion": [
+        "notion",
+        "notion.app",
+        "notion.exe",
+        "notion.so"
+      ],
+      "obsidian": [
+        "obsidian",
+        "obsidian publish",
+        "obsidian.app",
+        "obsidian.exe"
+      ],
+      "word": [
+        ".doc",
+        ".docx",
+        "airtable",
+        "coda.io",
+        "dropbox paper",
+        "google docs",
+        "google forms",
+        "google keep",
+        "google sheets",
+        "google slides",
+        "google документ",
+        "google документы",
+        "google презентации",
+        "google презентация",
+        "google таблица",
+        "google таблицы",
+        "google форма",
+        "google формы",
+        "microsoft excel online",
+        "microsoft powerpoint online",
+        "microsoft word",
+        "microsoft word online",
+        "office 365",
+        "office online",
+        "quip",
+        "winword.exe",
+        "word",
+        "zoho sheet",
+        "zoho show",
+        "zoho writer"
+      ],
+      "whatsapp": [
+        "discord",
+        "discord.app",
+        "discord.exe",
+        "element",
+        "matrix",
+        "mattermost",
+        "rocket.chat",
+        "rocketchat",
+        "signal",
+        "skype",
+        "slack",
+        "slack.app",
+        "slack.exe",
+        "telegram",
+        "viber",
+        "whats app",
+        "whatsapp",
+        "whatsapp.app",
+        "whatsapp.exe",
+        "вайбер",
+        "ватсап",
+        "вотсап",
+        "дискорд",
+        "сигнал",
+        "скайп",
+        "слак",
+        "телеграм",
+        "телеграмм"
+      ],
+      "libreoffice": [
+        "libreoffice",
+        "soffice",
+        "writer",
+        ".odt"
+      ],
+      "vscode": [
+        "code",
+        "vscode",
+        "visual studio code"
+      ]
+    },
+    "app_prompts": {
+      "notion": "config/prompts/notion.txt",
+      "obsidian": "config/prompts/obsidian.txt",
+      "markdown": "config/prompts/markdown.txt",
+      "word": "config/prompts/word.txt",
+      "libreoffice": "config/prompts/libreoffice.txt",
+      "vscode": "config/prompts/vscode.txt",
+      "_fallback": "config/prompts/_fallback.txt",
+      "bbcode": "config/prompts/bbcode.txt",
+      "whatsapp": "config/prompts/whatsapp.txt"
+    }
+  }
+}

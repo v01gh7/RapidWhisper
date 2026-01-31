@@ -1,0 +1,83 @@
+{
+  // Minimal test configuration
+  // Used for basic tests
+  
+  "ai_provider": {
+    "provider": "groq"
+  },
+  
+  "application": {
+    "app_user_model_id": "RapidWhisper.Test",
+    "hotkey": "ctrl+space"
+  },
+  
+  "audio": {
+    "silence_threshold": 0.02,
+    "silence_duration": 1.5,
+    "silence_padding": 650,
+    "sample_rate": 16000,
+    "chunk_size": 1024,
+    "manual_stop": false
+  },
+  
+  "window": {
+    "width": 400,
+    "height": 120,
+    "opacity": 100,
+    "auto_hide_delay": 2.5,
+    "remember_position": false,
+    "position_preset": "center",
+    "position_x": null,
+    "position_y": null,
+    "font_sizes": {
+      "floating_main": 14,
+      "floating_info": 12,
+      "settings_labels": 11,
+      "settings_titles": 16
+    }
+  },
+  
+  "recording": {
+    "keep_recordings": false,
+    "recordings_path": ""
+  },
+  
+  "post_processing": {
+    "enabled": false,
+    "provider": "groq",
+    "model": "llama-3.3-70b-versatile",
+    "custom_model": "",
+    "prompt": "Fix grammar and punctuation.",
+    "glm_use_coding_plan": false,
+    "llm": {
+      "base_url": "http://localhost:1234/v1/",
+      "api_key": "local"
+    }
+  },
+  
+  "localization": {
+    "language": "en"
+  },
+  
+  "logging": {
+    "level": "INFO",
+    "file": "test.log"
+  },
+  
+  "about": {
+    "github_url": "https://github.com/test/test",
+    "docs_url": "https://github.com/test/test/docs"
+  },
+  
+  "formatting": {
+    "enabled": false,
+    "provider": "groq",
+    "model": "",
+    "temperature": 0.3,
+    "custom": {
+      "base_url": "http://localhost:1234/v1/"
+    },
+    "web_app_keywords": {},
+    "app_prompts": {}
+  }
+}

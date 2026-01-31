@@ -207,7 +207,10 @@ class FormattingConfig:
     @classmethod
     def from_env(cls, env_path: Optional[str] = None) -> 'FormattingConfig':
         """
-        Load formatting configuration from environment variables.
+        Load formatting configuration from environment variables or config.jsonc.
+        
+        DEPRECATED: This method is kept for backward compatibility.
+        New code should use from_config() instead.
         
         Args:
             env_path: Path to .env file. If None, uses default path.
@@ -215,6 +218,15 @@ class FormattingConfig:
         Returns:
             FormattingConfig: Configuration loaded from environment
         """
+        # Try to load from config.jsonc first
+        try:
+            from core.config_loader import get_config_loader
+            config_loader = get_config_loader()
+            return cls.from_config(config_loader)
+        except Exception as e:
+            logger.warning(f"Failed to load from config.jsonc: {e}, falling back to .env")
+        
+        # Fallback to .env
         from core.config import get_env_path
         
         if env_path is None:
@@ -325,6 +337,58 @@ class FormattingConfig:
             applications=applications,
             temperature=temperature,
             system_prompt=system_prompt,
+            app_prompts=app_prompts,
+            custom_base_url=custom_base_url,
+            custom_api_key=custom_api_key,
+            web_app_keywords=web_app_keywords
+        )
+    
+    @classmethod
+    def from_config(cls, config_loader) -> 'FormattingConfig':
+        """
+        Load formatting configuration from config.jsonc.
+        
+        Args:
+            config_loader: ConfigLoader instance
+        
+        Returns:
+            FormattingConfig: Configuration loaded from config.jsonc
+        """
+        config_loader.load()
+        
+        # Get formatting section
+        enabled = config_loader.get("formatting.enabled", False)
+        provider = config_loader.get("formatting.provider", "groq")
+        model = config_loader.get("formatting.model", "")
+        temperature = config_loader.get("formatting.temperature", 0.3)
+        
+        # Get custom provider settings
+        custom_base_url = config_loader.get("formatting.custom.base_url", "")
+        custom_api_key = config_loader.get("formatting.custom.api_key", "")
+        
+        # Get web app keywords
+        web_app_keywords = config_loader.get("formatting.web_app_keywords", {})
+        
+        # Get application list from app_prompts keys
+        app_prompts_paths = config_loader.get("formatting.app_prompts", {})
+        applications = list(app_prompts_paths.keys())
+        
+        # Load prompts from files
+        app_prompts = {}
+        for app_name in applications:
+            prompt = config_loader.get_prompt(app_name)
+            # Encode newlines for storage (to match .env format)
+            app_prompts[app_name] = prompt.replace('\n', '\\n') if prompt else ""
+        
+        logger.info(f"Loaded formatting config from config.jsonc: {len(applications)} applications")
+        
+        return cls(
+            enabled=enabled,
+            provider=provider,
+            model=model,
+            applications=applications,
+            temperature=temperature,
+            system_prompt="",  # Deprecated
             app_prompts=app_prompts,
             custom_base_url=custom_base_url,
             custom_api_key=custom_api_key,

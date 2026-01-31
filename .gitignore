@@ -152,15 +152,10 @@ rapidwhisper.log
 # User configuration (keep .env.example)
 .env
 
+# Secrets (API keys, tokens, etc.)
+secrets.json
+
+# User-specific config (keep config.jsonc.example)
+config.jsonc
+
 # Build artifacts
-*.exe
-*.app
-*.dmg
-*.deb
-*.rpm
-
-# OS specific
-Thumbs.db
-Desktop.ini
-
-public/
