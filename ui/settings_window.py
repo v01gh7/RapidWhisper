@@ -558,13 +558,14 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         header_layout.addWidget(close_btn)
         
         # Style the header to be visually distinct
-        header.setStyleSheet("""
-            QWidget {
-                background-color: rgba(40, 40, 40, {int(self._opacity * 0.8)});
+        header_opacity = int(self._opacity * 0.8)
+        header.setStyleSheet(f"""
+            QWidget {{
+                background-color: rgba(40, 40, 40, {header_opacity});
                 border: none;
                 border-top-left-radius: 5px;
                 border-top-right-radius: 5px;
-            }
+            }}
         """)
         return header
     
