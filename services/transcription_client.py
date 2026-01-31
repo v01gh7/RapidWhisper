@@ -454,6 +454,7 @@ class TranscriptionThread(QThread):
     transcription_error = pyqtSignal(Exception)  # Ошибка транскрипции
     model_not_found = pyqtSignal(str, str)  # Модель не найдена в постобработке (model, provider)
     transcription_model_not_found = pyqtSignal(str, str)  # Модель не найдена в транскрипции (model, provider)
+    api_error = pyqtSignal(str, str, str)  # Ошибка API (error_type, error_message, provider)
     
     def __init__(self, audio_file_path: str, provider: str = "openai", api_key: Optional[str] = None, base_url: Optional[str] = None, model: Optional[str] = None, statistics_manager=None):
         """
@@ -581,7 +582,35 @@ class TranscriptionThread(QThread):
                 logger.info("Используем оригинальный текст без обработки")
                 # Continue with original text
             except Exception as processing_error:
-                logger.error(f"❌ Ошибка обработки: {processing_error}")
+                # Проверить тип ошибки и отправить соответствующий сигнал
+                error_type = type(processing_error).__name__
+                error_message = str(processing_error)
+                
+                # Извлечь информацию о провайдере
+                provider = config.post_processing_provider if config.enable_post_processing else formatting_config.provider
+                
+                # Отправить сигнал api_error для всех ошибок API
+                if "RateLimitError" in error_type or "rate limit" in error_message.lower():
+                    logger.error(f"❌ Rate Limit Error: {processing_error}")
+                    logger.info("Отправка сигнала api_error для уведомления пользователя")
+                    self.api_error.emit("RateLimitError", error_message, provider)
+                elif "AuthenticationError" in error_type or "authentication" in error_message.lower():
+                    logger.error(f"❌ Authentication Error: {processing_error}")
+                    logger.info("Отправка сигнала api_error для уведомления пользователя")
+                    self.api_error.emit("AuthenticationError", error_message, provider)
+                elif "APIConnectionError" in error_type or "connection" in error_message.lower():
+                    logger.error(f"❌ Connection Error: {processing_error}")
+                    logger.info("Отправка сигнала api_error для уведомления пользователя")
+                    self.api_error.emit("APIConnectionError", error_message, provider)
+                elif "APITimeoutError" in error_type or "timeout" in error_message.lower():
+                    logger.error(f"❌ Timeout Error: {processing_error}")
+                    logger.info("Отправка сигнала api_error для уведомления пользователя")
+                    self.api_error.emit("APITimeoutError", error_message, provider)
+                else:
+                    logger.error(f"❌ Ошибка обработки: {processing_error}")
+                    logger.info("Отправка сигнала api_error для уведомления пользователя")
+                    self.api_error.emit("APIError", error_message, provider)
+                
                 logger.info("Используем оригинальный текст без обработки")
                 # Continue with original text
             

@@ -577,6 +577,9 @@ class RapidWhisperApp(QObject):
             self.transcription_thread.transcription_model_not_found.connect(
                 self._on_transcription_model_not_found
             )
+            self.transcription_thread.api_error.connect(
+                self._on_api_error
+            )
             
             self.logger.info("Сигналы TranscriptionThread подключены")
             
@@ -665,6 +668,51 @@ class RapidWhisperApp(QObject):
         )
         
         self.logger.info("Уведомление о модели транскрипции не найдена показано пользователю")
+    
+    def _on_api_error(self, error_type: str, error_message: str, provider: str) -> None:
+        """
+        Обработчик ошибок API (rate limit, authentication, connection, etc.).
+        
+        Показывает уведомление пользователю через tray icon.
+        
+        Args:
+            error_type: Тип ошибки (RateLimitError, AuthenticationError, etc.)
+            error_message: Сообщение об ошибке
+            provider: Провайдер
+        """
+        self.logger.warning(f"API Error: {error_type} для провайдера {provider}")
+        self.logger.warning(f"Сообщение: {error_message}")
+        
+        # Создать понятное сообщение для пользователя
+        if error_type == "RateLimitError":
+            # Извлечь время ожидания из сообщения
+            import re
+            wait_time_match = re.search(r'try again in (\d+[msh][\d.]*[msh]*)', error_message)
+            wait_time = wait_time_match.group(1) if wait_time_match else t("tray.notification.api_rate_limit_wait_default", default="несколько минут")
+            
+            title = t("tray.notification.api_rate_limit")
+            message = t("tray.notification.api_rate_limit_message", provider=provider, wait_time=wait_time)
+        elif error_type == "AuthenticationError":
+            title = t("tray.notification.api_authentication")
+            message = t("tray.notification.api_authentication_message", provider=provider)
+        elif error_type == "APIConnectionError":
+            title = t("tray.notification.api_connection")
+            message = t("tray.notification.api_connection_message", provider=provider)
+        elif error_type == "APITimeoutError":
+            title = t("tray.notification.api_timeout")
+            message = t("tray.notification.api_timeout_message", provider=provider)
+        else:
+            title = t("tray.notification.api_error")
+            message = t("tray.notification.api_error_message", provider=provider, error=error_message[:200])
+        
+        # Показать уведомление в трее
+        self.tray_icon.show_message(
+            title,
+            message,
+            duration=10000  # 10 секунд - дольше для важных ошибок
+        )
+        
+        self.logger.info(f"Уведомление об ошибке API показано пользователю: {title}")
     
     def _display_result(self, text: str) -> None:
         """
