@@ -212,20 +212,21 @@ class StatisticsTab(QWidget):
         )
     
     def _format_duration(self, seconds: float) -> str:
-        """Format duration in seconds to HH:MM or MM:SS.
+        """Format duration in seconds to HH:MM:SS or MM:SS.
         
         Args:
             seconds: Duration in seconds
             
         Returns:
-            Formatted duration string (HH:MM for >= 1 hour, MM:SS otherwise)
+            Formatted duration string (HH:MM:SS for >= 1 hour, MM:SS otherwise)
         """
         total_seconds = int(seconds)
         
         if total_seconds >= 3600:  # 1 hour or more
             hours = total_seconds // 3600
             minutes = (total_seconds % 3600) // 60
-            return f"{hours:02d}:{minutes:02d}"
+            secs = total_seconds % 60
+            return f"{hours:02d}:{minutes:02d}:{secs:02d}"
         else:
             minutes = total_seconds // 60
             secs = total_seconds % 60
