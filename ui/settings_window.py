@@ -2313,6 +2313,14 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         )
         donate_layout.addWidget(kofi_widget)
         
+        # Streamlabs кнопка (ВТОРОЙ)
+        streamlabs_widget = self._create_donate_button(
+            "Streamlabs",
+            "https://streamlabs.com/v01gh7/tip",
+            "public/icons/streamlabs.svg"
+        )
+        donate_layout.addWidget(streamlabs_widget)
+        
         # Donatex кнопка
         donatex_widget = self._create_donate_button(
             "Donatex",
