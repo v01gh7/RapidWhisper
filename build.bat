@@ -68,34 +68,46 @@ if exist secrets.json.backup (
 )
 echo.
 
-if exist dist\RapidWhisper.exe (
-    echo ========================================
-    echo   Сборка завершена успешно!
-    echo ========================================
-    echo.
-    echo Файл: dist\RapidWhisper.exe
-    echo.
-    echo ВАЖНО: 
-    echo   - В .exe НЕТ config.jsonc и secrets.json
-    echo   - Настройки сохраняются в %%APPDATA%%\RapidWhisper\
-    echo   - При первом запуске создаются дефолтные конфиги
-    echo   - Пользователь настраивает через окно настроек
-    echo.
-    echo Включено в сборку:
-    echo   - Иконки для UI (public/icons/)
-    echo   - Промпты форматирования (config/prompts/)
-    echo   - Основная иконка приложения
-    echo.
-    echo Для распространения нужен только:
-    echo   - dist\RapidWhisper.exe
-    echo.
+if exist "dist\RapidWhisper.exe" (
+    goto :success
 ) else (
-    echo ========================================
-    echo   Сборка завершилась с ошибкой
-    echo ========================================
-    echo.
-    echo Проверьте логи выше для деталей
-    echo.
+    goto :error
 )
 
+:success
+echo ========================================
+echo   Сборка завершена успешно!
+echo ========================================
+echo.
+echo Файл: dist\RapidWhisper.exe
+echo.
+echo ВАЖНО: 
+echo   - В .exe НЕТ config.jsonc и secrets.json
+echo   - Настройки сохраняются в %%APPDATA%%\RapidWhisper\
+echo   - При первом запуске создаются дефолтные конфиги
+echo   - Пользователь настраивает через окно настроек
+echo.
+echo Включено в сборку:
+echo   - Иконки для UI (public/icons/)
+echo   - Промпты форматирования (config/prompts/)
+echo   - Переводы интерфейса (utils/translations/)
+echo   - Основная иконка приложения
+echo.
+echo Для распространения нужен только:
+echo   - dist\RapidWhisper.exe
+echo.
+echo Примечание: Предупреждение "tzdata not found" можно игнорировать.
+echo.
+goto :end
+
+:error
+echo ========================================
+echo   Сборка завершилась с ошибкой
+echo ========================================
+echo.
+echo Проверьте логи выше для деталей
+echo.
+goto :end
+
+:end
 pause
