@@ -2332,16 +2332,16 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         donate_layout.addStretch()
         layout.addLayout(donate_layout)
         
-        # Основной текст (после кнопок)
+        # Основной текст (после кнопок) - увеличен на 3 пикселя
         main_text = QLabel(t("settings.support.main_text"))
         main_text.setWordWrap(True)
-        main_text.setStyleSheet("font-size: 14px; color: #ffffff; line-height: 1.8; margin-top: 20px;")
+        main_text.setStyleSheet("font-size: 17px; color: #ffffff; line-height: 1.8; margin-top: 20px;")
         layout.addWidget(main_text)
         
-        # Вторичный текст (на 2 пикселя больше)
+        # Вторичный текст (увеличен на 3 пикселя)
         secondary_text = QLabel(t("settings.support.secondary_text"))
         secondary_text.setWordWrap(True)
-        secondary_text.setStyleSheet("font-size: 16px; color: #ffffff; line-height: 1.8; margin-top: 15px;")
+        secondary_text.setStyleSheet("font-size: 17px; color: #ffffff; line-height: 1.8; margin-top: 15px;")
         layout.addWidget(secondary_text)
         
         layout.addStretch()
