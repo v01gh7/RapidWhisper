@@ -428,7 +428,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             (f"🎙️ {t('settings.recordings.title')}", "recordings"),
             (f"📊 {t('settings.statistics.title')}", "statistics"),  # Statistics tab
             ("Discord", "discord"),  # Discord link
-            (f"ℹ️ {t('settings.about.title')}", "about")
+            # (f"ℹ️ {t('settings.about.title')}", "about")  # Commented out - About page hidden from menu
         ]
         
         # Get icon path for Discord
@@ -546,9 +546,10 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                 # Сохранить текущий индекс как последний выбранный (не Discord)
                 self._last_selected_index = index
                 
-                # Маппинг sidebar индексов на content_stack индексы
-                # Discord находится на позиции 9, поэтому элементы после него сдвигаются
-                content_index = index if index < 9 else index - 1
+                # Теперь sidebar и content_stack имеют одинаковое количество элементов (10)
+                # Discord на позиции 9, about page тоже на позиции 9 в content_stack
+                # Прямое соответствие индексов
+                content_index = index
                 
                 # Переключить страницу
                 self.content_stack.setCurrentIndex(content_index)
