@@ -2840,7 +2840,9 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         from core.config_saver import get_config_saver
         
         # Load current config
-        config = FormattingConfig.from_config(get_config_loader())
+        config_loader = get_config_loader()
+        config_loader.load()
+        config = FormattingConfig.from_config(config_loader)
         
         # Check if it's the last application
         if len(config.applications) <= 1:
@@ -2852,13 +2854,32 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             )
             return
         
-        # Remove application
-        config.applications.remove(app_name)
+        # Remove application from list
+        if app_name in config.applications:
+            config.applications.remove(app_name)
+        
+        # Remove from app_prompts
         if app_name in config.app_prompts:
             del config.app_prompts[app_name]
         
-        # Save config
-        config.save_to_config()
+        # Remove from config.jsonc app_prompts section
+        config_saver = get_config_saver()
+        jsonc_config = config_loader.config
+        if "formatting" in jsonc_config and "app_prompts" in jsonc_config["formatting"]:
+            if app_name in jsonc_config["formatting"]["app_prompts"]:
+                del jsonc_config["formatting"]["app_prompts"][app_name]
+        
+        # Save updated config
+        config_saver.save_config(jsonc_config)
+        
+        # Delete prompt file
+        try:
+            prompt_file = Path("config/prompts") / f"{app_name}.txt"
+            if prompt_file.exists():
+                prompt_file.unlink()
+                logger.info(f"Deleted prompt file: {prompt_file}")
+        except Exception as e:
+            logger.error(f"Failed to delete prompt file for {app_name}: {e}")
         
         # Refresh grid
         self._refresh_formatting_apps_grid()
