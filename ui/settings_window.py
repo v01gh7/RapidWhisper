@@ -3241,6 +3241,8 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             formatting_config.temperature = self.formatting_temperature_spin.value()
             formatting_config.custom_base_url = self.formatting_custom_url_edit.text()
             formatting_config.custom_api_key = self.formatting_custom_key_edit.text()
+            # IMPORTANT: Preserve web_app_keywords - they are managed through separate dialog
+            # Don't overwrite them here, they should persist from config
             # Applications and prompts are already managed through the grid UI
             formatting_config.save_to_config()
             

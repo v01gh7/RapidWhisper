@@ -157,5 +157,5 @@ secrets.json
 
 # User-specific config (keep config.jsonc.example)
 config.jsonc
-
+dep.env
 # Build artifacts
