@@ -427,16 +427,34 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             (f"🎨 {t('settings.ui_customization.title')}", "ui_customization"),
             (f"🎙️ {t('settings.recordings.title')}", "recordings"),
             (f"📊 {t('settings.statistics.title')}", "statistics"),  # Statistics tab
+            ("Discord", "discord"),  # Discord link
             (f"ℹ️ {t('settings.about.title')}", "about")
         ]
         
+        # Get icon path for Discord
+        import sys
+        if getattr(sys, 'frozen', False):
+            base_path = sys._MEIPASS
+        else:
+            base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        
+        discord_icon_path = os.path.join(base_path, 'public', 'icons', 'discord.svg')
+        
         for text, data in items:
             item = QListWidgetItem(text)
-            item.setData(Qt.ItemDataRole.UserRole, data)
+            item.setData(Qt.ItemDataRole.UserRole, data)  # Сохранить тип элемента
+            
+            # Add Discord icon if this is the Discord item
+            if data == "discord":
+                discord_icon = QIcon(discord_icon_path)
+                if not discord_icon.isNull():
+                    item.setIcon(discord_icon)
+            
             self.sidebar.addItem(item)
         
         # Выбрать первый пункт
         self.sidebar.setCurrentRow(0)
+        self._last_selected_index = 0  # Инициализировать последний выбранный индекс
         
         # Подключить сигнал переключения
         self.sidebar.currentRowChanged.connect(self._on_sidebar_changed)
@@ -509,9 +527,33 @@ class SettingsWindow(QDialog, StyledWindowMixin):
     def _on_sidebar_changed(self, index: int):
         """Обработчик переключения пунктов в боковой панели."""
         if index >= 0:  # Проверка что индекс валидный
-            self.content_stack.setCurrentIndex(index)
-            # Убедиться что элемент остается выделенным
-            self.sidebar.setCurrentRow(index)
+            # Получить данные элемента
+            item = self.sidebar.item(index)
+            if item:
+                data = item.data(Qt.ItemDataRole.UserRole)
+                
+                # Если это Discord, открыть ссылку и вернуться к предыдущему выбору
+                if data == "discord":
+                    import webbrowser
+                    webbrowser.open("https://discord.gg/sZUZKDeq")
+                    # Вернуться к предыдущему выбранному элементу
+                    if hasattr(self, '_last_selected_index') and self._last_selected_index != index:
+                        self.sidebar.setCurrentRow(self._last_selected_index)
+                    else:
+                        self.sidebar.setCurrentRow(0)  # По умолчанию первый элемент
+                    return
+                
+                # Сохранить текущий индекс как последний выбранный (не Discord)
+                self._last_selected_index = index
+                
+                # Маппинг sidebar индексов на content_stack индексы
+                # Discord находится на позиции 9, поэтому элементы после него сдвигаются
+                content_index = index if index < 9 else index - 1
+                
+                # Переключить страницу
+                self.content_stack.setCurrentIndex(content_index)
+                # Убедиться что элемент остается выделенным
+                self.sidebar.setCurrentRow(index)
     
     def _wrap_in_scroll_area(self, widget: QWidget) -> QScrollArea:
         """
