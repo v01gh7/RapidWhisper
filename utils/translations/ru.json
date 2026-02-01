@@ -32,6 +32,8 @@
       "hotkey": "Горячая клавиша:",
       "hotkey_placeholder": "Нажмите сочетание клавиш...",
       "hotkey_tooltip": "Нажмите сочетание клавиш для записи (например: Ctrl+Space, F1, Ctrl+Shift+R)",
+      "format_hotkey": "Горячая клавиша выбора формата:",
+      "format_hotkey_tooltip": "Нажмите сочетание клавиш для открытия диалога выбора формата (например: Ctrl+Alt+Space)",
       "auto_hide": "Автоскрытие:",
       "auto_hide_tooltip": "Задержка автоматического скрытия окна (1.0-10.0)",
       "remember_position": "Запоминать позицию окна:",
@@ -293,5 +295,14 @@
     "no_active_window": "Нет активного окна",
     "record": "Запись",
     "cancel_esc": "Отменить Esc"
+  },
+  "format_selection": {
+    "title": "Выбор формата",
+    "select_format": "Выберите приложение для форматирования:",
+    "universal_format": "Универсальный",
+    "load_error": "Не удалось загрузить список форматов. Доступен только универсальный формат.",
+    "format_selected_title": "Формат выбран",
+    "format_selected_message": "Выбран формат: {format}",
+    "dialog_error": "Не удалось показать диалог выбора формата"
   }
 }

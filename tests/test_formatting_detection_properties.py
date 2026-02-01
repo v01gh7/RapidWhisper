@@ -66,7 +66,7 @@ class TestFormatDetectionProperties:
         mock_monitor.get_active_window_info.return_value = window_info
         
         # Create formatting module with mock monitor
-        module = FormattingModule(window_monitor=mock_monitor)
+        module = FormattingModule(window_monitor=mock_monitor, state_manager=None)
         
         # Call get_active_application_format
         # This should not raise an exception and should handle the window info

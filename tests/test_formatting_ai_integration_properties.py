@@ -89,7 +89,7 @@ class TestFormattingAIIntegrationProperties:
                 # Mock get_env_path
                 with patch('core.config.get_env_path', return_value=temp_env_path):
                     mock_monitor = Mock()
-                    module = FormattingModule(window_monitor=mock_monitor)
+                    module = FormattingModule(window_monitor=mock_monitor, state_manager=None)
                     
                     # Call format_text - should return original text on failure
                     original_text = "This is test text"
@@ -122,7 +122,7 @@ class TestFormattingAIIntegrationProperties:
             # Mock get_env_path
             with patch('core.config.get_env_path', return_value=temp_env_path):
                 mock_monitor = Mock()
-                module = FormattingModule(window_monitor=mock_monitor)
+                module = FormattingModule(window_monitor=mock_monitor, state_manager=None)
                 
                 # Call process - should return original text
                 original_text = "This is test text"

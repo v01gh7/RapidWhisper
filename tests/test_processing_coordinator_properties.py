@@ -70,7 +70,8 @@ def test_single_api_call_for_combined_operations(text, post_prompt, format_promp
     formatting_module = FormattingModule(
         config_manager=None,
         ai_client_factory=mock_ai_factory,
-        window_monitor=mock_window_monitor
+        window_monitor=mock_window_monitor,
+        state_manager=None
     )
     formatting_module.config = formatting_config
     
@@ -187,7 +188,8 @@ def test_post_processing_provider_priority(text):
     formatting_module = FormattingModule(
         config_manager=None,
         ai_client_factory=None,
-        window_monitor=mock_window_monitor
+        window_monitor=mock_window_monitor,
+        state_manager=None
     )
     formatting_module.config = formatting_config
     
@@ -279,7 +281,8 @@ def test_processing_decision_matrix(text, formatting_enabled, post_processing_en
     formatting_module = FormattingModule(
         config_manager=None,
         ai_client_factory=None,
-        window_monitor=mock_window_monitor
+        window_monitor=mock_window_monitor,
+        state_manager=None
     )
     formatting_module.config = formatting_config
     
@@ -359,7 +362,8 @@ def test_coordinator_handles_api_failures_gracefully(text):
     formatting_module = FormattingModule(
         config_manager=None,
         ai_client_factory=None,
-        window_monitor=mock_window_monitor
+        window_monitor=mock_window_monitor,
+        state_manager=None
     )
     formatting_module.config = formatting_config
     

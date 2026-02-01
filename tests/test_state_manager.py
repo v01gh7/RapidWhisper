@@ -519,3 +519,455 @@ class TestStateManagerProperties:
         assert actual_transitions > 0, "Должен быть хотя бы один переход"
         assert actual_transitions <= num_transitions, \
             "Количество сигналов не должно превышать количество попыток перехода"
+
+
+class TestManualFormatSelection:
+    """Тесты для хранения ручного выбора формата"""
+    
+    def test_initial_manual_format_selection_is_none(self):
+        """Тест что начальное значение ручного выбора формата - None"""
+        manager = StateManager()
+        
+        assert manager.get_manual_format_selection() is None
+    
+    def test_set_manual_format_selection(self):
+        """Тест установки ручного выбора формата"""
+        manager = StateManager()
+        
+        manager.set_manual_format_selection("notion")
+        
+        assert manager.get_manual_format_selection() == "notion"
+    
+    def test_set_manual_format_selection_fallback(self):
+        """Тест установки универсального формата"""
+        manager = StateManager()
+        
+        manager.set_manual_format_selection("_fallback")
+        
+        assert manager.get_manual_format_selection() == "_fallback"
+    
+    def test_clear_manual_format_selection(self):
+        """Тест очистки ручного выбора формата"""
+        manager = StateManager()
+        
+        manager.set_manual_format_selection("notion")
+        assert manager.get_manual_format_selection() == "notion"
+        
+        manager.clear_manual_format_selection()
+        
+        assert manager.get_manual_format_selection() is None
+    
+    def test_clear_manual_format_selection_when_none(self):
+        """Тест очистки когда выбор не установлен"""
+        manager = StateManager()
+        
+        # Не должно вызывать ошибку
+        manager.clear_manual_format_selection()
+        
+        assert manager.get_manual_format_selection() is None
+    
+    def test_overwrite_manual_format_selection(self):
+        """Тест перезаписи ручного выбора формата"""
+        manager = StateManager()
+        
+        manager.set_manual_format_selection("notion")
+        assert manager.get_manual_format_selection() == "notion"
+        
+        manager.set_manual_format_selection("markdown")
+        
+        assert manager.get_manual_format_selection() == "markdown"
+    
+    def test_manual_format_selection_persists_across_state_transitions(self):
+        """Тест что ручной выбор сохраняется при переходах состояний"""
+        manager = StateManager()
+        
+        manager.set_manual_format_selection("notion")
+        
+        # Переходим через различные состояния
+        manager.transition_to(AppState.RECORDING)
+        assert manager.get_manual_format_selection() == "notion"
+        
+        manager.transition_to(AppState.PROCESSING)
+        assert manager.get_manual_format_selection() == "notion"
+        
+        manager.transition_to(AppState.DISPLAYING)
+        assert manager.get_manual_format_selection() == "notion"
+        
+        manager.transition_to(AppState.IDLE)
+        assert manager.get_manual_format_selection() == "notion"
+    
+    def test_session_id_cleared_with_format_selection(self):
+        """Тест что session_id очищается вместе с выбором формата"""
+        manager = StateManager()
+        
+        manager.set_manual_format_selection("notion")
+        # Session ID устанавливается при установке формата
+        
+        manager.clear_manual_format_selection()
+        
+        # Проверяем что оба атрибута очищены
+        assert manager._manual_format_selection is None
+        assert manager._current_session_id is None
+
+
+
+class TestSessionLifecycle:
+    """Tests for session lifecycle methods (Task 2.2)"""
+    
+    def test_start_recording_session_generates_session_id(self):
+        """Test that start_recording_session generates a UUID session ID"""
+        manager = StateManager()
+        
+        session_id = manager.start_recording_session()
+        
+        # Should return a non-empty string
+        assert session_id is not None
+        assert isinstance(session_id, str)
+        assert len(session_id) > 0
+        
+        # Should be stored in the manager
+        assert manager.get_current_session_id() == session_id
+    
+    def test_start_recording_session_generates_unique_ids(self):
+        """Test that each session gets a unique ID"""
+        manager = StateManager()
+        
+        session_id1 = manager.start_recording_session()
+        manager.end_recording_session()
+        session_id2 = manager.start_recording_session()
+        
+        # Each session should have a different ID
+        assert session_id1 != session_id2
+    
+    def test_start_recording_session_preserves_manual_selection(self):
+        """Test that starting a session doesn't clear manual format selection"""
+        manager = StateManager()
+        
+        manager.set_manual_format_selection("notion")
+        session_id = manager.start_recording_session()
+        
+        # Manual selection should still be set
+        assert manager.get_manual_format_selection() == "notion"
+        assert manager.get_current_session_id() == session_id
+    
+    def test_end_recording_session_clears_manual_selection(self):
+        """Test that ending a session clears manual format selection"""
+        manager = StateManager()
+        
+        manager.set_manual_format_selection("notion")
+        manager.start_recording_session()
+        
+        manager.end_recording_session()
+        
+        # Both manual selection and session ID should be cleared
+        assert manager.get_manual_format_selection() is None
+        assert manager.get_current_session_id() is None
+    
+    def test_end_recording_session_without_active_session(self):
+        """Test that ending a session when none is active doesn't cause errors"""
+        manager = StateManager()
+        
+        # Should not raise an exception
+        manager.end_recording_session()
+        
+        assert manager.get_current_session_id() is None
+        assert manager.get_manual_format_selection() is None
+    
+    def test_session_lifecycle_integration_with_hotkey(self):
+        """Test that session lifecycle integrates with hotkey press"""
+        manager = StateManager()
+        
+        show_window_mock = Mock()
+        start_recording_mock = Mock()
+        
+        manager.set_callbacks(
+            on_show_window=show_window_mock,
+            on_start_recording=start_recording_mock
+        )
+        
+        # Press hotkey in IDLE state
+        manager.on_hotkey_pressed()
+        
+        # Should have started a recording session
+        assert manager.get_current_session_id() is not None
+        assert manager.current_state == AppState.RECORDING
+    
+    def test_session_lifecycle_integration_with_transcription_complete(self):
+        """Test that session ends when transcription completes"""
+        manager = StateManager()
+        manager.transition_to(AppState.PROCESSING)
+        
+        # Set up a session with manual format selection
+        manager.set_manual_format_selection("notion")
+        manager._current_session_id = "test-session-id"
+        
+        display_result_mock = Mock()
+        manager.set_callbacks(on_display_result=display_result_mock)
+        
+        # Complete transcription
+        manager.on_transcription_complete("Test text")
+        
+        # Session should be ended (manual selection cleared)
+        assert manager.get_manual_format_selection() is None
+        assert manager.get_current_session_id() is None
+        assert manager.current_state == AppState.DISPLAYING
+    
+    def test_multiple_session_lifecycle(self):
+        """Test multiple recording sessions in sequence"""
+        manager = StateManager()
+        
+        # First session
+        manager.set_manual_format_selection("notion")
+        session_id1 = manager.start_recording_session()
+        assert manager.get_manual_format_selection() == "notion"
+        manager.end_recording_session()
+        assert manager.get_manual_format_selection() is None
+        
+        # Second session (no manual selection)
+        session_id2 = manager.start_recording_session()
+        assert manager.get_manual_format_selection() is None
+        assert session_id2 != session_id1
+        manager.end_recording_session()
+        
+        # Third session (different manual selection)
+        manager.set_manual_format_selection("markdown")
+        session_id3 = manager.start_recording_session()
+        assert manager.get_manual_format_selection() == "markdown"
+        assert session_id3 != session_id2
+        manager.end_recording_session()
+        assert manager.get_manual_format_selection() is None
+    
+    def test_session_id_is_valid_uuid(self):
+        """Test that generated session ID is a valid UUID"""
+        import uuid
+        manager = StateManager()
+        
+        session_id = manager.start_recording_session()
+        
+        # Should be able to parse as UUID
+        try:
+            uuid.UUID(session_id)
+        except ValueError:
+            pytest.fail(f"Session ID '{session_id}' is not a valid UUID")
+    
+    def test_get_current_session_id_when_no_session(self):
+        """Test getting session ID when no session is active"""
+        manager = StateManager()
+        
+        assert manager.get_current_session_id() is None
+
+
+class TestStorageErrorHandling:
+    """Tests for error handling in storage operations (Task 2.5)"""
+    
+    def test_set_manual_format_selection_handles_attribute_error(self):
+        """Test that set_manual_format_selection handles errors gracefully"""
+        manager = StateManager()
+        
+        # Mock the attribute to raise an error on assignment
+        original_setattr = object.__setattr__
+        
+        def mock_setattr(obj, name, value):
+            if name == '_manual_format_selection' and value == "error_format":
+                raise AttributeError("Simulated storage error")
+            original_setattr(obj, name, value)
+        
+        # Temporarily replace __setattr__
+        StateManager.__setattr__ = mock_setattr
+        
+        try:
+            # Should not raise exception, should log error and set to None
+            manager.set_manual_format_selection("error_format")
+            
+            # Should be None due to error handling
+            assert manager.get_manual_format_selection() is None
+        finally:
+            # Restore original __setattr__
+            StateManager.__setattr__ = original_setattr
+    
+    def test_get_manual_format_selection_handles_errors(self):
+        """Test that get_manual_format_selection handles errors gracefully"""
+        manager = StateManager()
+        manager.set_manual_format_selection("notion")
+        
+        # Mock the attribute to raise an error on access
+        original_getattribute = StateManager.__getattribute__
+        
+        def mock_getattribute(obj, name):
+            if name == '_manual_format_selection':
+                raise AttributeError("Simulated retrieval error")
+            return original_getattribute(obj, name)
+        
+        StateManager.__getattribute__ = mock_getattribute
+        
+        try:
+            # Should return None instead of raising exception
+            result = manager.get_manual_format_selection()
+            assert result is None
+        finally:
+            # Restore original __getattribute__
+            StateManager.__getattribute__ = original_getattribute
+    
+    def test_clear_manual_format_selection_handles_errors(self):
+        """Test that clear_manual_format_selection handles errors gracefully"""
+        manager = StateManager()
+        manager.set_manual_format_selection("notion")
+        
+        # Create a flag to track if error occurred
+        error_occurred = False
+        
+        # Mock to raise error on first clear attempt
+        original_setattr = object.__setattr__
+        call_count = [0]
+        
+        def mock_setattr(obj, name, value):
+            if name == '_manual_format_selection' and value is None:
+                call_count[0] += 1
+                if call_count[0] == 1:
+                    raise AttributeError("Simulated clear error")
+            original_setattr(obj, name, value)
+        
+        StateManager.__setattr__ = mock_setattr
+        
+        try:
+            # Should not raise exception, should attempt to force clear
+            manager.clear_manual_format_selection()
+            
+            # Should eventually be cleared (second attempt succeeds)
+            assert manager._manual_format_selection is None
+        finally:
+            # Restore original __setattr__
+            StateManager.__setattr__ = original_setattr
+    
+    def test_start_recording_session_handles_uuid_error(self):
+        """Test that start_recording_session handles UUID generation errors"""
+        import uuid
+        manager = StateManager()
+        
+        # Mock uuid.uuid4 to raise an error
+        original_uuid4 = uuid.uuid4
+        
+        def mock_uuid4():
+            raise RuntimeError("Simulated UUID generation error")
+        
+        uuid.uuid4 = mock_uuid4
+        
+        try:
+            # Should return a fallback session ID instead of raising
+            session_id = manager.start_recording_session()
+            
+            # Should have some fallback value
+            assert session_id is not None
+            assert isinstance(session_id, str)
+            assert len(session_id) > 0
+            # Should be a fallback ID (not a UUID)
+            assert "fallback" in session_id or "unknown" in session_id
+        finally:
+            # Restore original uuid4
+            uuid.uuid4 = original_uuid4
+    
+    def test_end_recording_session_handles_errors(self):
+        """Test that end_recording_session handles errors gracefully"""
+        manager = StateManager()
+        manager.start_recording_session()
+        manager.set_manual_format_selection("notion")
+        
+        # Mock clear_manual_format_selection to raise error on first call
+        original_clear = manager.clear_manual_format_selection
+        call_count = [0]
+        
+        def mock_clear():
+            call_count[0] += 1
+            if call_count[0] == 1:
+                raise RuntimeError("Simulated clear error")
+            original_clear()
+        
+        manager.clear_manual_format_selection = mock_clear
+        
+        # Should not raise exception, should attempt to clear anyway
+        manager.end_recording_session()
+        
+        # Should eventually be cleared (second attempt in error handler)
+        assert call_count[0] >= 1  # At least one attempt was made
+    
+    def test_storage_error_does_not_block_recording(self):
+        """Test that storage errors don't prevent recording from working"""
+        manager = StateManager()
+        
+        # Simulate storage error
+        original_setattr = object.__setattr__
+        
+        def mock_setattr(obj, name, value):
+            if name == '_manual_format_selection':
+                raise AttributeError("Storage unavailable")
+            original_setattr(obj, name, value)
+        
+        StateManager.__setattr__ = mock_setattr
+        
+        try:
+            # Try to set manual format (will fail)
+            manager.set_manual_format_selection("notion")
+            
+            # Recording should still work
+            show_window_mock = Mock()
+            start_recording_mock = Mock()
+            
+            manager.set_callbacks(
+                on_show_window=show_window_mock,
+                on_start_recording=start_recording_mock
+            )
+            
+            # Should be able to start recording despite storage error
+            manager.on_hotkey_pressed()
+            
+            assert manager.current_state == AppState.RECORDING
+            show_window_mock.assert_called_once()
+            start_recording_mock.assert_called_once()
+        finally:
+            StateManager.__setattr__ = original_setattr
+    
+    def test_retrieval_error_falls_back_to_normal_detection(self):
+        """Test that retrieval errors result in None (normal detection)"""
+        manager = StateManager()
+        manager._manual_format_selection = "notion"
+        
+        # Mock to raise error on retrieval
+        original_getattribute = StateManager.__getattribute__
+        
+        def mock_getattribute(obj, name):
+            if name == '_manual_format_selection':
+                raise RuntimeError("Storage corrupted")
+            return original_getattribute(obj, name)
+        
+        StateManager.__getattribute__ = mock_getattribute
+        
+        try:
+            # Should return None to allow normal detection
+            result = manager.get_manual_format_selection()
+            assert result is None
+        finally:
+            StateManager.__getattribute__ = original_getattribute
+    
+    def test_multiple_storage_errors_dont_crash(self):
+        """Test that multiple consecutive storage errors don't crash the app"""
+        manager = StateManager()
+        
+        # Simulate persistent storage errors
+        original_setattr = object.__setattr__
+        
+        def mock_setattr(obj, name, value):
+            if name == '_manual_format_selection':
+                raise IOError("Persistent storage error")
+            original_setattr(obj, name, value)
+        
+        StateManager.__setattr__ = mock_setattr
+        
+        try:
+            # Multiple attempts should all fail gracefully
+            for i in range(5):
+                manager.set_manual_format_selection(f"format_{i}")
+                # Should not raise, should return None
+                assert manager.get_manual_format_selection() is None
+        finally:
+            StateManager.__setattr__ = original_setattr
+

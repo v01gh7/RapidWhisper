@@ -54,6 +54,9 @@ class RapidWhisperApp(QObject):
     # ВАЖНО: Сигнал для обработки нажатия горячей клавиши из другого потока
     _hotkey_pressed_signal = pyqtSignal()
     
+    # Сигнал для format selection hotkey
+    _format_selection_hotkey_signal = pyqtSignal()
+    
     # Сигнал для отмены записи (ESC)
     _cancel_recording_signal = pyqtSignal()
     
@@ -82,6 +85,10 @@ class RapidWhisperApp(QObject):
         
         # Окно настроек (единственный экземпляр)
         self.settings_window = None
+        
+        # Диалог выбора формата (единственный экземпляр)
+        self.format_selection_dialog = None
+        self._format_dialog_open = False
         
         # Флаг инициализации
         self._initialized = False
@@ -217,6 +224,9 @@ class RapidWhisperApp(QObject):
         # ВАЖНО: Подключаем сигнал горячей клавиши к обработчику в главном потоке
         self._hotkey_pressed_signal.connect(self._handle_hotkey_in_main_thread)
         
+        # Подключаем сигнал format selection hotkey
+        self._format_selection_hotkey_signal.connect(self._handle_format_selection_in_main_thread)
+        
         # Подключаем сигнал отмены записи
         self._cancel_recording_signal.connect(self._handle_cancel_recording)
         
@@ -237,6 +247,18 @@ class RapidWhisperApp(QObject):
             
             # Зарегистрировать ESC для отмены записи
             self.hotkey_manager.register_hotkey("esc", self._on_cancel_pressed)
+            
+            # Зарегистрировать горячую клавишу выбора формата (Requirements: 1.1, 1.2)
+            format_hotkey = self.config.format_selection_hotkey or "ctrl+alt+space"
+            success = self.hotkey_manager.register_format_selection_hotkey(
+                format_hotkey,
+                self._on_format_selection_hotkey
+            )
+            
+            if success:
+                self.logger.info(f"Горячая клавиша выбора формата зарегистрирована: {format_hotkey}")
+            else:
+                self.logger.warning(f"Не удалось зарегистрировать горячую клавишу выбора формата: {format_hotkey}")
             
             self.logger.info(f"Горячая клавиша зарегистрирована: {self.config.hotkey}")
             self.logger.info("ESC зарегистрирован для отмены записи")
@@ -301,6 +323,45 @@ class RapidWhisperApp(QObject):
         self.logger.info("Горячая клавиша нажата")
         # Отправляем сигнал в главный поток Qt
         self._hotkey_pressed_signal.emit()
+    
+    def _on_format_selection_hotkey(self) -> None:
+        """
+        Обработчик нажатия горячей клавиши выбора формата.
+        
+        Вызывается из потока keyboard. Эмитит сигнал для обработки в главном потоке.
+        
+        Requirements: 1.2, 1.3, 3.1, 3.2
+        """
+        self.logger.info("Горячая клавиша выбора формата нажата")
+        self._format_selection_hotkey_signal.emit()
+    
+    def _handle_format_selection_in_main_thread(self) -> None:
+        """
+        Обрабатывает нажатие горячей клавиши выбора формата в главном потоке Qt.
+        
+        Этот метод вызывается через сигнал из главного потока.
+        """
+        self.logger.info("Обработка горячей клавиши выбора формата в главном потоке Qt")
+        
+        # Check if recording is already active
+        if self.state_manager.current_state == AppState.RECORDING:
+            self.logger.info("Запись уже активна - игнорируем нажатие клавиши выбора формата")
+            return
+        
+        # Check if API key is configured
+        if not self.config.has_api_key():
+            self.logger.warning("Попытка выбора формата без API ключа")
+            self.tray_icon.show_message(
+                t("tray.notification.no_api_key"),
+                t("tray.notification.no_api_key_message"),
+                duration=5000
+            )
+            # Open settings
+            self._show_settings()
+            return
+        
+        # Show format selection dialog
+        self._show_format_selection_dialog()
     
     def _handle_hotkey_in_main_thread(self) -> None:
         """
@@ -559,7 +620,8 @@ class RapidWhisperApp(QObject):
                 api_key=self._get_api_key_for_provider(),
                 base_url=self.config.custom_base_url if self.config.ai_provider == "custom" else None,
                 model=transcription_model,
-                statistics_manager=self.statistics_manager
+                statistics_manager=self.statistics_manager,
+                state_manager=self.state_manager
             )
             
             self.logger.info("TranscriptionThread создан")
@@ -900,6 +962,92 @@ class RapidWhisperApp(QObject):
         self.settings_window.activateWindow()
         
         self.logger.info("Окно настроек создано и показано")
+    
+    def _show_format_selection_dialog(self) -> None:
+        """
+        Показывает диалог выбора формата и обрабатывает результат.
+        
+        Создает FormatSelectionDialog, показывает его модально,
+        сохраняет выбранный формат в StateManager и автоматически
+        начинает запись.
+        
+        Requirements: 2.1, 3.1, 3.2, 10.4
+        """
+        try:
+            # Если диалог уже открыт - просто поднять его на передний план
+            if self._format_dialog_open and self.format_selection_dialog is not None:
+                self.logger.info("Диалог уже открыт, поднимаем на передний план")
+                self.format_selection_dialog.raise_()
+                self.format_selection_dialog.activateWindow()
+                return
+            
+            self.logger.info("Показ диалога выбора формата")
+            
+            # Import dialog and formatting config
+            from ui.format_selection_dialog import FormatSelectionDialog
+            from services.formatting_config import FormattingConfig
+            from core.config_loader import get_config_loader
+            
+            # Load formatting configuration
+            config_loader = get_config_loader()
+            formatting_config = FormattingConfig.from_config(config_loader)
+            
+            # Create dialog (without parent to ensure it shows)
+            self.format_selection_dialog = FormatSelectionDialog(formatting_config, parent=None)
+            self._format_dialog_open = True
+            self.logger.info("Диалог создан, показываем...")
+            
+            result = self.format_selection_dialog.exec()
+            self.logger.info(f"Диалог закрыт с результатом: {result}")
+            
+            # Сбросить флаг
+            self._format_dialog_open = False
+            
+            # Check if user selected a format (accepted dialog)
+            if result == self.format_selection_dialog.DialogCode.Accepted:
+                selected_format = self.format_selection_dialog.get_selected_format()
+                
+                if selected_format:
+                    self.logger.info(f"Пользователь выбрал формат: {selected_format}")
+                    
+                    # Store selection in StateManager
+                    self.state_manager.set_manual_format_selection(selected_format)
+                    
+                    # Show notification
+                    format_name = selected_format.replace("_", " ").title()
+                    if selected_format == "_fallback":
+                        format_name = t("format_selection.universal_format")
+                    
+                    self.tray_icon.show_message(
+                        t("format_selection.format_selected_title"),
+                        t("format_selection.format_selected_message", format=format_name),
+                        duration=3000
+                    )
+                    
+                    # Automatically start recording
+                    self.logger.info("Автоматический запуск записи после выбора формата")
+                    QTimer.singleShot(100, lambda: self._hotkey_pressed_signal.emit())
+                else:
+                    self.logger.warning("Диалог принят, но формат не выбран")
+            else:
+                self.logger.info("Пользователь отменил выбор формата")
+            
+            # Очистить ссылку на диалог
+            self.format_selection_dialog = None
+                
+        except Exception as e:
+            self.logger.error(f"Ошибка при показе диалога выбора формата: {e}")
+            import traceback
+            self.logger.error(traceback.format_exc())
+            self._format_dialog_open = False
+            self.format_selection_dialog = None
+            
+            # Show error notification but don't block recording functionality
+            self.tray_icon.show_message(
+                t("common.error"),
+                t("format_selection.dialog_error"),
+                duration=5000
+            )
     
     def _on_settings_window_closed(self) -> None:
         """Обработчик закрытия окна настроек."""

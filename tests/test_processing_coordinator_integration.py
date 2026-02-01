@@ -50,7 +50,8 @@ class TestProcessingCoordinatorIntegration:
         formatting_module = FormattingModule(
             config_manager=None,
             ai_client_factory=mock_ai_factory,
-            window_monitor=mock_window_monitor
+            window_monitor=mock_window_monitor,
+            state_manager=None
         )
         formatting_module.config = formatting_config
         
@@ -107,7 +108,8 @@ class TestProcessingCoordinatorIntegration:
         formatting_module = FormattingModule(
             config_manager=None,
             ai_client_factory=None,
-            window_monitor=mock_window_monitor
+            window_monitor=mock_window_monitor,
+            state_manager=None
         )
         formatting_module.config = formatting_config
         
@@ -183,7 +185,8 @@ class TestProcessingCoordinatorIntegration:
         formatting_module = FormattingModule(
             config_manager=None,
             ai_client_factory=None,
-            window_monitor=mock_window_monitor
+            window_monitor=mock_window_monitor,
+            state_manager=None
         )
         formatting_module.config = formatting_config
         
@@ -254,7 +257,8 @@ class TestProcessingCoordinatorIntegration:
         formatting_module = FormattingModule(
             config_manager=None,
             ai_client_factory=None,
-            window_monitor=mock_window_monitor
+            window_monitor=mock_window_monitor,
+            state_manager=None
         )
         formatting_module.config = formatting_config
         
@@ -315,7 +319,8 @@ class TestProcessingCoordinatorIntegration:
         formatting_module = FormattingModule(
             config_manager=None,
             ai_client_factory=None,
-            window_monitor=mock_window_monitor
+            window_monitor=mock_window_monitor,
+            state_manager=None
         )
         formatting_module.config = formatting_config
         

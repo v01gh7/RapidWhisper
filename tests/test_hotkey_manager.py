@@ -139,6 +139,82 @@ class TestHotkeyManager:
         
         manager.unregister_hotkey()
         assert manager.get_current_hotkey() is None
+    
+    @patch('services.hotkey_manager.keyboard')
+    def test_register_format_selection_hotkey_success(self, mock_keyboard):
+        """Тест успешной регистрации горячей клавиши выбора формата"""
+        main_callback = Mock()
+        format_callback = Mock()
+        manager = HotkeyManager(main_callback)
+        
+        result = manager.register_format_selection_hotkey("ctrl+alt+space", format_callback)
+        
+        assert result is True
+        assert manager._format_selection_hotkey == "ctrl+alt+space"
+        assert "ctrl+alt+space" in manager._additional_hotkeys
+        mock_keyboard.add_hotkey.assert_called_once_with("ctrl+alt+space", format_callback, suppress=False)
+    
+    @patch('services.hotkey_manager.keyboard')
+    def test_register_format_selection_hotkey_failure(self, mock_keyboard):
+        """Тест обработки ошибки при регистрации горячей клавиши выбора формата"""
+        mock_keyboard.add_hotkey.side_effect = Exception("Registration failed")
+        
+        main_callback = Mock()
+        format_callback = Mock()
+        manager = HotkeyManager(main_callback)
+        
+        result = manager.register_format_selection_hotkey("ctrl+alt+space", format_callback)
+        
+        assert result is False
+        assert manager._format_selection_hotkey is None
+    
+    @patch('services.hotkey_manager.keyboard')
+    def test_reregister_format_selection_hotkey(self, mock_keyboard):
+        """Тест перерегистрации горячей клавиши выбора формата"""
+        main_callback = Mock()
+        format_callback = Mock()
+        manager = HotkeyManager(main_callback)
+        
+        # Первая регистрация
+        manager.register_format_selection_hotkey("ctrl+alt+space", format_callback)
+        
+        # Вторая регистрация с другой клавишей
+        manager.register_format_selection_hotkey("ctrl+shift+f", format_callback)
+        
+        assert manager._format_selection_hotkey == "ctrl+shift+f"
+        # Должна быть вызвана отмена старой клавиши
+        mock_keyboard.remove_hotkey.assert_called_once_with("ctrl+alt+space")
+    
+    @patch('services.hotkey_manager.keyboard')
+    def test_unregister_includes_format_selection_hotkey(self, mock_keyboard):
+        """Тест отмены регистрации включает горячую клавишу выбора формата"""
+        main_callback = Mock()
+        format_callback = Mock()
+        manager = HotkeyManager(main_callback)
+        
+        manager.register_hotkey("F1")
+        manager.register_format_selection_hotkey("ctrl+alt+space", format_callback)
+        
+        manager.unregister_hotkey()
+        
+        assert manager._format_selection_hotkey is None
+        assert manager.is_registered() is False
+        # Должны быть вызваны отмены обеих клавиш
+        assert mock_keyboard.remove_hotkey.call_count == 2
+    
+    @patch('services.hotkey_manager.keyboard')
+    def test_format_selection_hotkey_separate_from_main(self, mock_keyboard):
+        """Тест что горячая клавиша выбора формата хранится отдельно от основной"""
+        main_callback = Mock()
+        format_callback = Mock()
+        manager = HotkeyManager(main_callback)
+        
+        manager.register_hotkey("F1")
+        manager.register_format_selection_hotkey("ctrl+alt+space", format_callback)
+        
+        assert manager.hotkey == "F1"
+        assert manager._format_selection_hotkey == "ctrl+alt+space"
+        assert manager.hotkey != manager._format_selection_hotkey
 
 
 class TestHotkeyManagerProperties:

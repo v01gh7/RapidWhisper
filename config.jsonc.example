@@ -23,7 +23,11 @@
   },
   "application": {
     "app_user_model_id": "RapidWhisper",
-    "hotkey": "ctrl+space"
+    "hotkey": "ctrl+space",
+    // Hotkey for manual format selection dialog
+    // Opens a dialog to choose formatting application before recording
+    // Default: ctrl+alt+space
+    "format_selection_hotkey": "ctrl+alt+space"
   },
   "audio": {
     "silence_threshold": 0.02,

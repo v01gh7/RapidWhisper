@@ -468,7 +468,7 @@ class TranscriptionThread(QThread):
     transcription_model_not_found = pyqtSignal(str, str)  # Модель не найдена в транскрипции (model, provider)
     api_error = pyqtSignal(str, str, str)  # Ошибка API (error_type, error_message, provider)
     
-    def __init__(self, audio_file_path: str, provider: str = "openai", api_key: Optional[str] = None, base_url: Optional[str] = None, model: Optional[str] = None, statistics_manager=None):
+    def __init__(self, audio_file_path: str, provider: str = "openai", api_key: Optional[str] = None, base_url: Optional[str] = None, model: Optional[str] = None, statistics_manager=None, state_manager=None):
         """
         Инициализирует поток транскрипции.
         
@@ -479,6 +479,7 @@ class TranscriptionThread(QThread):
             base_url: Кастомный URL для API (для custom провайдера)
             model: Кастомная модель (для custom провайдера)
             statistics_manager: StatisticsManager для отслеживания статистики (опционально)
+            state_manager: StateManager для manual format selection (опционально)
         """
         super().__init__()
         self.audio_file_path = audio_file_path
@@ -487,6 +488,7 @@ class TranscriptionThread(QThread):
         self.base_url = base_url
         self.model = model
         self.statistics_manager = statistics_manager
+        self.state_manager = state_manager
         self.transcription_client: Optional[TranscriptionClient] = None
     
     def run(self) -> None:
@@ -568,7 +570,8 @@ class TranscriptionThread(QThread):
             formatting_module = FormattingModule(
                 config_manager=None,
                 ai_client_factory=None,
-                window_monitor=window_monitor
+                window_monitor=window_monitor,
+                state_manager=self.state_manager
             )
             formatting_module.config = formatting_config
             

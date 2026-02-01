@@ -52,7 +52,7 @@ def test_integration_formatting_uses_correct_prompt_for_each_app():
         assert config.get_prompt_for_app("word") == UNIVERSAL_DEFAULT_PROMPT
         
         # Create formatting module
-        module = FormattingModule(config)
+        module = FormattingModule(config, state_manager=None)
         
         # Mock the TranscriptionClient.post_process_text method
         with patch('services.transcription_client.TranscriptionClient.post_process_text') as mock_post_process:
@@ -117,7 +117,7 @@ def test_integration_formatting_falls_back_to_default():
         assert config.get_prompt_for_app("app2") == UNIVERSAL_DEFAULT_PROMPT
         
         # Create formatting module
-        module = FormattingModule(config)
+        module = FormattingModule(config, state_manager=None)
         
         # Mock the TranscriptionClient.post_process_text method
         with patch('services.transcription_client.TranscriptionClient.post_process_text') as mock_post_process:
@@ -219,7 +219,7 @@ def test_integration_formatting_with_unknown_app():
         assert unknown_prompt == UNIVERSAL_DEFAULT_PROMPT
         
         # Create formatting module
-        module = FormattingModule(config)
+        module = FormattingModule(config, state_manager=None)
         
         # Mock the TranscriptionClient.post_process_text method
         with patch('services.transcription_client.TranscriptionClient.post_process_text') as mock_post_process:
@@ -266,7 +266,7 @@ def test_integration_formatting_prompt_passed_to_ai():
         config = FormattingConfig.from_env(temp_path)
         
         # Create formatting module
-        module = FormattingModule(config)
+        module = FormattingModule(config, state_manager=None)
         
         # Mock the TranscriptionClient.post_process_text method
         with patch('services.transcription_client.TranscriptionClient.post_process_text') as mock_post_process:

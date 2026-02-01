@@ -91,7 +91,8 @@ def test_formatting_decision_logic(formatting_enabled, format_matches, text):
     module = FormattingModule(
         config_manager=None,
         ai_client_factory=mock_ai_factory,
-        window_monitor=mock_window_monitor
+        window_monitor=mock_window_monitor,
+        state_manager=None
     )
     module.config = config  # Override config
     
@@ -145,7 +146,8 @@ def test_original_text_preservation_on_no_match(text, app_name):
     module = FormattingModule(
         config_manager=None,
         ai_client_factory=None,
-        window_monitor=mock_window_monitor
+        window_monitor=mock_window_monitor,
+        state_manager=None
     )
     module.config = config
     
@@ -199,7 +201,8 @@ def test_disabled_formatting_preserves_text(text, enabled):
     module = FormattingModule(
         config_manager=None,
         ai_client_factory=None,
-        window_monitor=mock_window_monitor
+        window_monitor=mock_window_monitor,
+        state_manager=None
     )
     module.config = config
     
@@ -249,7 +252,8 @@ def test_invalid_config_preserves_text(text):
         module = FormattingModule(
             config_manager=None,
             ai_client_factory=None,
-            window_monitor=mock_window_monitor
+            window_monitor=mock_window_monitor,
+            state_manager=None
         )
         module.config = config
         

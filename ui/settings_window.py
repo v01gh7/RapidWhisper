@@ -862,6 +862,24 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         hotkey_label.setToolTip(t("settings.app.hotkey_tooltip"))
         hotkey_layout.addRow(hotkey_label, hotkey_container)
         
+        # Поле ввода горячей клавиши выбора формата с кнопкой сброса
+        format_hotkey_container = QHBoxLayout()
+        self.format_hotkey_edit = HotkeyInput()
+        self.format_hotkey_edit.setPlaceholderText("ctrl+alt+space")
+        format_hotkey_container.addWidget(self.format_hotkey_edit)
+        
+        # Кнопка сброса
+        reset_format_hotkey_btn = QPushButton("🔄")
+        reset_format_hotkey_btn.setMaximumWidth(40)
+        reset_format_hotkey_btn.setToolTip(t("common.reset"))
+        reset_format_hotkey_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        reset_format_hotkey_btn.clicked.connect(self._reset_format_hotkey)
+        format_hotkey_container.addWidget(reset_format_hotkey_btn)
+        
+        format_hotkey_label = QLabel(t("settings.app.format_hotkey"))
+        format_hotkey_label.setToolTip(t("settings.app.format_hotkey_tooltip"))
+        hotkey_layout.addRow(format_hotkey_label, format_hotkey_container)
+        
         hotkey_group.setLayout(hotkey_layout)
         layout.addWidget(hotkey_group)
         
@@ -2372,6 +2390,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         # Приложение
         self.hotkey_edit.setText(self.config.hotkey)
+        self.format_hotkey_edit.setText(self.config.format_selection_hotkey or "ctrl+alt+space")
         self.silence_threshold_spin.setValue(self.config.silence_threshold)
         self.silence_duration_spin.setValue(self.config.silence_duration)
         self.manual_stop_check.setChecked(self.config.manual_stop)
@@ -2507,6 +2526,23 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         self.hotkey_edit.clearFocus()
         
         logger.info(f"Горячая клавиша сброшена на: {current_hotkey}")
+    
+    def _reset_format_hotkey(self):
+        """
+        Сбрасывает горячую клавишу выбора формата на текущее сохраненное значение.
+        
+        Загружает значение из конфигурации и устанавливает в поле.
+        """
+        # Загрузить текущее значение из конфигурации
+        current_hotkey = self.config.format_selection_hotkey or "ctrl+alt+space"
+        
+        # Установить в поле
+        self.format_hotkey_edit.setText(current_hotkey)
+        
+        # Убрать фокус с поля
+        self.format_hotkey_edit.clearFocus()
+        
+        logger.info(f"Горячая клавиша выбора формата сброшена на: {current_hotkey}")
     
     def _on_provider_changed(self, provider: str):
         """
@@ -2968,6 +3004,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             'custom_url': self.custom_url_edit.text(),
             'custom_model': self.custom_model_edit.text(),
             'hotkey': self.hotkey_edit.text(),
+            'format_selection_hotkey': self.format_hotkey_edit.text(),
             'silence_threshold': self.silence_threshold_spin.value(),
             'silence_duration': self.silence_duration_spin.value(),
             'manual_stop': self.manual_stop_check.isChecked(),
@@ -3003,6 +3040,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         self.custom_url_edit.setText(values['custom_url'])
         self.custom_model_edit.setText(values['custom_model'])
         self.hotkey_edit.setText(values['hotkey'])
+        self.format_hotkey_edit.setText(values.get('format_selection_hotkey', 'ctrl+alt+space'))
         self.silence_threshold_spin.setValue(values['silence_threshold'])
         self.silence_duration_spin.setValue(values['silence_duration'])
         self.manual_stop_check.setChecked(values['manual_stop'])
@@ -3136,6 +3174,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                 "ai_provider.custom.model": self.custom_model_edit.text(),
                 "ai_provider.transcription_model": self._get_transcription_model_value(),
                 "application.hotkey": self.hotkey_edit.text(),
+                "application.format_selection_hotkey": self.format_hotkey_edit.text(),
                 "audio.silence_threshold": self.silence_threshold_spin.value(),
                 "audio.silence_duration": self.silence_duration_spin.value(),
                 "audio.manual_stop": self.manual_stop_check.isChecked(),

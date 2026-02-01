@@ -99,7 +99,7 @@ class FormattingModule:
     configured formats, and applies appropriate formatting using AI.
     """
     
-    def __init__(self, config_manager=None, ai_client_factory=None, window_monitor=None):
+    def __init__(self, config_manager=None, ai_client_factory=None, window_monitor=None, state_manager=None):
         """
         Initialize the formatting module.
         
@@ -107,6 +107,7 @@ class FormattingModule:
             config_manager: Configuration manager for loading settings, or FormattingConfig instance (optional)
             ai_client_factory: Factory for creating AI client instances (optional)
             window_monitor: Window monitoring component (optional)
+            state_manager: State manager for manual format selection (optional)
         """
         # Accept either a FormattingConfig instance or load from environment
         if isinstance(config_manager, FormattingConfig):
@@ -117,6 +118,7 @@ class FormattingModule:
         
         self.window_monitor = window_monitor or WindowMonitor.create()
         self.ai_client_factory = ai_client_factory
+        self.state_manager = state_manager
         
         logger.info(f"FormattingModule initialized: enabled={self.config.enabled}, "
                    f"provider={self.config.provider}, model={self.config.get_model()}")
@@ -134,7 +136,11 @@ class FormattingModule:
         """
         Detect active application and match against configured formats.
         
-        If use_fixed_format is enabled, always returns "_fallback" to use universal prompt.
+        PRIORITY ORDER (highest to lowest):
+        1. Manual format selection (from StateManager)
+        2. Fixed format setting (use_fixed_format)
+        3. Automatic application detection
+        4. Fallback/universal format
         
         Returns:
             Optional[str]: Format identifier (e.g., "notion", "obsidian", "markdown")
@@ -142,7 +148,14 @@ class FormattingModule:
                           or None if no match
         """
         try:
-            # If fixed format is enabled, always use fallback prompt
+            # PRIORITY 1: Check manual selection first (Requirements 4.1, 4.2, 4.3, 3.4)
+            if self.state_manager:
+                manual_selection = self.state_manager.get_manual_format_selection()
+                if manual_selection:
+                    logger.info(f"  🎯 Using manual format selection: {manual_selection}")
+                    return manual_selection
+            
+            # PRIORITY 2: If fixed format is enabled, always use fallback prompt
             if self.config.use_fixed_format:
                 logger.info("  🔒 Фиксированный формат включен - используется универсальный промпт")
                 return "_fallback"

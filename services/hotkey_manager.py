@@ -32,6 +32,7 @@ class HotkeyManager:
         self.callback: Callable = callback
         self._is_registered: bool = False
         self._additional_hotkeys: dict = {}  # Дополнительные горячие клавиши
+        self._format_selection_hotkey: Optional[str] = None  # Горячая клавиша выбора формата
     
     def register_hotkey(self, key: str = "F1", callback: Optional[Callable] = None) -> bool:
         """
@@ -73,6 +74,57 @@ class HotkeyManager:
             logger.error(f"Ошибка регистрации горячей клавиши {key}: {e}")
             return False
     
+    def register_format_selection_hotkey(self, key: str, callback: Callable) -> bool:
+        """
+        Регистрирует горячую клавишу для выбора формата.
+        
+        Args:
+            key: Комбинация клавиш (например, "ctrl+alt+space")
+            callback: Функция, которая будет вызвана при нажатии горячей клавиши
+        
+        Returns:
+            True если регистрация успешна, False в случае ошибки
+        
+        Requirements: 1.1, 1.2, 1.4, 10.2
+        """
+        try:
+            # Если уже есть зарегистрированная клавиша выбора формата - отменяем старую
+            if self._format_selection_hotkey:
+                keyboard.remove_hotkey(self._format_selection_hotkey)
+                if self._format_selection_hotkey in self._additional_hotkeys:
+                    del self._additional_hotkeys[self._format_selection_hotkey]
+                logger.info(f"Старая горячая клавиша выбора формата {self._format_selection_hotkey} отменена")
+            
+            # Регистрируем горячую клавишу
+            keyboard.add_hotkey(key, callback, suppress=False)
+            
+            # Сохраняем клавишу выбора формата
+            self._format_selection_hotkey = key
+            self._additional_hotkeys[key] = callback
+            
+            logger.info(f"Горячая клавиша выбора формата {key} успешно зарегистрирована")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Ошибка регистрации горячей клавиши выбора формата {key}: {e}")
+            
+            # Try default binding as fallback
+            default_key = "ctrl+alt+space"
+            if key != default_key:
+                logger.info(f"Попытка использовать дефолтную комбинацию: {default_key}")
+                try:
+                    keyboard.add_hotkey(default_key, callback, suppress=False)
+                    self._format_selection_hotkey = default_key
+                    self._additional_hotkeys[default_key] = callback
+                    logger.info(f"Дефолтная горячая клавиша выбора формата {default_key} успешно зарегистрирована")
+                    return True
+                except Exception as fallback_error:
+                    logger.error(f"Ошибка регистрации дефолтной горячей клавиши: {fallback_error}")
+            
+            # Log error and continue without format selection hotkey
+            logger.warning("Продолжение работы без горячей клавиши выбора формата")
+            return False
+    
     def unregister_hotkey(self) -> None:
         """
         Отменяет регистрацию всех горячих клавиш.
@@ -89,6 +141,19 @@ class HotkeyManager:
             finally:
                 self._is_registered = False
                 self.hotkey = None
+        
+        # Отменить клавишу выбора формата
+        if self._format_selection_hotkey:
+            try:
+                keyboard.remove_hotkey(self._format_selection_hotkey)
+                logger.info(f"Горячая клавиша выбора формата {self._format_selection_hotkey} отменена")
+                # Удалить из дополнительных клавиш, чтобы не обрабатывать дважды
+                if self._format_selection_hotkey in self._additional_hotkeys:
+                    del self._additional_hotkeys[self._format_selection_hotkey]
+            except Exception as e:
+                logger.error(f"Ошибка отмены регистрации клавиши выбора формата: {e}")
+            finally:
+                self._format_selection_hotkey = None
         
         # Отменить дополнительные клавиши
         for key in list(self._additional_hotkeys.keys()):

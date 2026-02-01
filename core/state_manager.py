@@ -5,6 +5,7 @@
 взаимодействием между компонентами.
 """
 
+import uuid
 from enum import Enum
 from typing import Optional, Callable
 from PyQt6.QtCore import QObject, pyqtSignal
@@ -49,6 +50,10 @@ class StateManager(QObject):
         super().__init__()
         self.current_state: AppState = AppState.IDLE
         self._previous_state: Optional[AppState] = None
+        
+        # Manual format selection storage (Requirements 3.1, 8.1, 8.3)
+        self._manual_format_selection: Optional[str] = None
+        self._current_session_id: Optional[str] = None
         
         # Callbacks для действий при переходах состояний
         self._on_show_window: Optional[Callable] = None
@@ -128,6 +133,8 @@ class StateManager(QObject):
         
         if self.current_state == AppState.IDLE:
             # IDLE → RECORDING
+            # Start a new recording session
+            self.start_recording_session()
             if self._on_show_window:
                 self._on_show_window()
             if self._on_start_recording:
@@ -174,15 +181,19 @@ class StateManager(QObject):
         Обрабатывает завершение транскрипции.
         
         Переходит в состояние DISPLAYING и отображает результат.
+        Ends the recording session and clears manual format selection.
         
         Args:
             text: Транскрибированный текст
         
-        Requirements: 8.1, 8.2
+        Requirements: 8.1, 8.2, 4.4
         """
         logger.info(f"Транскрипция завершена в состоянии {self.current_state.value}")
         
         if self.current_state == AppState.PROCESSING:
+            # End the recording session (clears manual format selection)
+            self.end_recording_session()
+            
             # PROCESSING → DISPLAYING
             if self._on_display_result:
                 self._on_display_result(text)
@@ -268,3 +279,120 @@ class StateManager(QObject):
             Предыдущее состояние или None
         """
         return self._previous_state
+    
+    def set_manual_format_selection(self, format_id: str) -> None:
+        """
+        Store manual format selection for current session.
+        
+        Args:
+            format_id: Format identifier (e.g., "notion", "_fallback")
+        
+        Requirements: 3.1, 8.1, 10.3
+        """
+        try:
+            self._manual_format_selection = format_id
+            logger.info(f"Manual format selection set: {format_id}")
+        except Exception as e:
+            logger.error(f"Failed to store manual format selection: {e}")
+            # Try to set to None using object.__setattr__ to bypass potential issues
+            try:
+                object.__setattr__(self, '_manual_format_selection', None)
+            except:
+                pass  # Continue with normal detection even if we can't clear
+    
+    def get_manual_format_selection(self) -> Optional[str]:
+        """
+        Get manual format selection for current session.
+        
+        Returns:
+            Format identifier or None if not set
+        
+        Requirements: 8.3, 10.3
+        """
+        try:
+            return self._manual_format_selection
+        except Exception as e:
+            logger.error(f"Failed to retrieve manual format selection: {e}")
+            return None  # Continue with normal detection
+    
+    def clear_manual_format_selection(self) -> None:
+        """
+        Clear manual format selection.
+        
+        Called when recording session completes.
+        
+        Requirements: 8.1, 8.3, 10.3
+        """
+        try:
+            if self._manual_format_selection:
+                logger.info(f"Clearing manual format selection: {self._manual_format_selection}")
+            self._manual_format_selection = None
+            self._current_session_id = None
+        except Exception as e:
+            logger.error(f"Failed to clear manual format selection: {e}")
+            # Attempt to force clear even if logging fails
+            try:
+                self._manual_format_selection = None
+                self._current_session_id = None
+            except:
+                pass  # Continue operation even if clearing fails
+    
+    def start_recording_session(self) -> str:
+        """
+        Start a new recording session.
+        
+        Generates a new session ID for tracking the recording lifecycle.
+        Does not clear manual format selection - that should be set before
+        starting the session.
+        
+        Returns:
+            The generated session ID
+        
+        Requirements: 4.4, 8.2, 8.4, 10.3
+        """
+        try:
+            self._current_session_id = str(uuid.uuid4())
+            logger.info(f"Recording session started: {self._current_session_id}")
+            if self._manual_format_selection:
+                logger.info(f"  Manual format selection active: {self._manual_format_selection}")
+            return self._current_session_id
+        except Exception as e:
+            logger.error(f"Failed to start recording session: {e}")
+            # Generate a fallback session ID to allow recording to continue
+            try:
+                self._current_session_id = f"fallback-{id(self)}"
+                return self._current_session_id
+            except:
+                return "unknown-session"  # Last resort fallback
+    
+    def end_recording_session(self) -> None:
+        """
+        End the current recording session.
+        
+        Clears manual format selection and session ID. This should be called
+        when transcription completes to ensure the manual selection doesn't
+        persist to the next recording.
+        
+        Requirements: 4.4, 8.2, 8.4, 10.3
+        """
+        try:
+            if self._current_session_id:
+                logger.info(f"Recording session ended: {self._current_session_id}")
+            self.clear_manual_format_selection()
+        except Exception as e:
+            logger.error(f"Failed to end recording session: {e}")
+            # Attempt to clear anyway to prevent state leakage
+            try:
+                self.clear_manual_format_selection()
+            except:
+                pass  # Continue operation even if clearing fails
+    
+    def get_current_session_id(self) -> Optional[str]:
+        """
+        Get the current session ID.
+        
+        Returns:
+            Current session ID or None if no session is active
+        """
+        return self._current_session_id
+
