@@ -3,9 +3,9 @@
     "title": "RapidWhisper Settings",
     "support": {
       "title": "Support",
-      "main_text": "Even a 30 cent donation will help us with updates and say thank you to us, because we improved your life, made it faster, more fun, more efficient. All your thoughts will be fully recorded correctly and in full. We don't collect any statistics that we would send, we don't ask you to pay 20 bucks like other programs to use the program at all even with your own models, so even 30 cents will help us not die of hunger!",
-      "secondary_text": "Just please don't think that others will donate, who are richer and so on, everyone thinks so and in the end no one helps, although we literally saved you at least 20 bucks a month, and that's if you converted voice to text for 20 minutes and that's it, but you only pay for your models or use the free one from Groq where you can convert more than 1.5 hours of audio to text every day, and that's with post-processing, and if formatting is enabled also with formatting, so you can safely do 3 hours a day, and with others it would specifically be 100 bucks, be kinder!",
-      "donate_title": "Support the project:"
+      "donate_title": "Support the project:",
+      "main_text": "Even a 30 cent donation helps us with updates and says thank you.\n\nWe improved your life — made it faster, more fun, more efficient. All your thoughts are recorded correctly and in full.\n\nWe don't collect statistics, don't ask for 20 bucks like other programs. Even 30 cents helps us not die of hunger!",
+      "secondary_text": "Please don't think that others will donate or someone richer will help.\n\nEveryone thinks so, and in the end no one helps.\n\nWe saved you at least 20 bucks a month. With Groq you can convert 1.5+ hours of audio per day for free, with post-processing and formatting — that's 3 hours a day.\n\nWith other services it would be 100 bucks. Be kinder!"
     },
     "ai_provider": {
       "title": "AI Provider",

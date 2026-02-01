@@ -2288,26 +2288,16 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         layout = QVBoxLayout()
         layout.setSpacing(20)
         
-        # Заголовок
+        # Заголовок (по центру)
         title = QLabel(t("settings.support.title"))
         title.setObjectName("pageTitle")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title)
         
-        # Основной текст
-        main_text = QLabel(t("settings.support.main_text"))
-        main_text.setWordWrap(True)
-        main_text.setStyleSheet("font-size: 14px; color: #ffffff; line-height: 1.6;")
-        layout.addWidget(main_text)
-        
-        # Вторичный текст (на 2 пикселя больше)
-        secondary_text = QLabel(t("settings.support.secondary_text"))
-        secondary_text.setWordWrap(True)
-        secondary_text.setStyleSheet("font-size: 16px; color: #ffffff; line-height: 1.6; margin-top: 10px;")
-        layout.addWidget(secondary_text)
-        
-        # Заголовок для донатов
+        # Заголовок для донатов (ПЕРВЫМ после заголовка страницы)
         donate_title = QLabel(t("settings.support.donate_title"))
-        donate_title.setStyleSheet("font-size: 18px; font-weight: bold; color: #ffffff; margin-top: 20px;")
+        donate_title.setStyleSheet("font-size: 18px; font-weight: bold; color: #ffffff; margin-top: 10px;")
+        donate_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(donate_title)
         
         # Контейнер для кнопок донатов
@@ -2333,6 +2323,18 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         donate_layout.addStretch()
         layout.addLayout(donate_layout)
+        
+        # Основной текст (после кнопок)
+        main_text = QLabel(t("settings.support.main_text"))
+        main_text.setWordWrap(True)
+        main_text.setStyleSheet("font-size: 14px; color: #ffffff; line-height: 1.8; margin-top: 20px;")
+        layout.addWidget(main_text)
+        
+        # Вторичный текст (на 2 пикселя больше)
+        secondary_text = QLabel(t("settings.support.secondary_text"))
+        secondary_text.setWordWrap(True)
+        secondary_text.setStyleSheet("font-size: 16px; color: #ffffff; line-height: 1.8; margin-top: 15px;")
+        layout.addWidget(secondary_text)
         
         layout.addStretch()
         widget.setLayout(layout)
