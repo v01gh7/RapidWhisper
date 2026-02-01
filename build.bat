@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 >nul
 echo ========================================
 echo   Сборка RapidWhisper в .exe
 echo ========================================
@@ -14,12 +15,20 @@ if errorlevel 1 (
 )
 echo.
 
-echo [2/4] Сохранение вашего .env...
-if exist .env.backup del .env.backup
-if exist .env (
-    echo Сохраняю текущий .env в .env.backup
-    copy .env .env.backup >nul
-    echo Ваш .env сохранен
+echo [2/4] Сохранение ваших конфигураций...
+if exist config.jsonc.backup del config.jsonc.backup
+if exist secrets.json.backup del secrets.json.backup
+
+if exist config.jsonc (
+    echo Сохраняю текущий config.jsonc в config.jsonc.backup
+    copy config.jsonc config.jsonc.backup >nul
+    echo Ваш config.jsonc сохранен
+)
+
+if exist secrets.json (
+    echo Сохраняю текущий secrets.json в secrets.json.backup
+    copy secrets.json secrets.json.backup >nul
+    echo Ваш secrets.json сохранен
 )
 echo.
 
@@ -29,18 +38,33 @@ if exist dist rmdir /s /q dist
 echo Очистка завершена
 echo.
 
-echo Сборка .exe файла (без .env файлов)...
+echo Сборка .exe файла...
+echo Включаются:
+echo   - Иконки (public/icons/*.svg, *.png)
+echo   - Промпты форматирования (config/prompts/*.txt)
+echo   - Основная иконка (public/RapidWhisper.ico)
+echo.
+echo НЕ включаются:
+echo   - config.jsonc (создается в %%APPDATA%%\RapidWhisper)
+echo   - secrets.json (создается в %%APPDATA%%\RapidWhisper)
+echo.
+
 uv run pyinstaller RapidWhisper.spec --clean
 echo.
 
-echo [4/4] Восстановление вашего .env...
-if exist .env.backup (
-    echo Восстанавливаю ваш .env с ключами
-    copy .env.backup .env >nul
-    del .env.backup
-    echo Ваш .env восстановлен
-) else (
-    echo Backup не найден
+echo [4/4] Восстановление ваших конфигураций...
+if exist config.jsonc.backup (
+    echo Восстанавливаю ваш config.jsonc
+    copy config.jsonc.backup config.jsonc >nul
+    del config.jsonc.backup
+    echo Ваш config.jsonc восстановлен
+)
+
+if exist secrets.json.backup (
+    echo Восстанавливаю ваш secrets.json
+    copy secrets.json.backup secrets.json >nul
+    del secrets.json.backup
+    echo Ваш secrets.json восстановлен
 )
 echo.
 
@@ -52,10 +76,15 @@ if exist dist\RapidWhisper.exe (
     echo Файл: dist\RapidWhisper.exe
     echo.
     echo ВАЖНО: 
-    echo   - В .exe НЕТ .env файлов
-    echo   - Настройки сохраняются в %%APPDATA%%\RapidWhisper\.env
-    echo   - При первом запуске пользователь увидит инструкцию
-    echo   - Нужно будет установить API ключ через настройки
+    echo   - В .exe НЕТ config.jsonc и secrets.json
+    echo   - Настройки сохраняются в %%APPDATA%%\RapidWhisper\
+    echo   - При первом запуске создаются дефолтные конфиги
+    echo   - Пользователь настраивает через окно настроек
+    echo.
+    echo Включено в сборку:
+    echo   - Иконки для UI (public/icons/)
+    echo   - Промпты форматирования (config/prompts/)
+    echo   - Основная иконка приложения
     echo.
     echo Для распространения нужен только:
     echo   - dist\RapidWhisper.exe

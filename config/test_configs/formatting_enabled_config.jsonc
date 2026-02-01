@@ -3,12 +3,24 @@
   // Used for formatting tests
   
   "ai_provider": {
-    "provider": "groq"
+    "provider": "groq",
+    "transcription_model": "",
+    "custom": {
+      "base_url": "",
+      "model": "",
+      "api_key": ""
+    },
+    "api_keys": {
+      "openai": "",
+      "groq": "",
+      "glm": ""
+    }
   },
   
   "application": {
     "app_user_model_id": "RapidWhisper.Test",
-    "hotkey": "ctrl+space"
+    "hotkey": "ctrl+space",
+    "format_selection_hotkey": "ctrl+alt+space"
   },
   
   "audio": {
@@ -23,7 +35,7 @@
   "window": {
     "width": 400,
     "height": 120,
-    "opacity": 100,
+    "opacity": 150,
     "auto_hide_delay": 2.5,
     "remember_position": false,
     "position_preset": "center",
@@ -31,9 +43,9 @@
     "position_y": null,
     "font_sizes": {
       "floating_main": 14,
-      "floating_info": 12,
-      "settings_labels": 11,
-      "settings_titles": 16
+      "floating_info": 11,
+      "settings_labels": 12,
+      "settings_titles": 24
     }
   },
   
@@ -71,20 +83,35 @@
   
   "formatting": {
     "enabled": true,
+    "use_fixed_format": false,
     "provider": "groq",
     "model": "llama-3.3-70b-versatile",
     "temperature": 0.3,
     "custom": {
-      "base_url": "http://localhost:1234/v1/"
+      "base_url": "",
+      "api_key": "test-api-key"
     },
     "web_app_keywords": {
       "notion": ["notion.so", "notion"],
       "whatsapp": ["whatsapp", "telegram"],
+      "markdown": [".md", "markdown"],
+      "bbcode": ["bitrix24", "forum"],
+      "word": ["word", "google docs"],
+      "libreoffice": ["libreoffice", "writer"],
+      "vscode": ["vscode", "code"],
+      "obsidian": ["obsidian"],
       "test_app": ["test_app"]
     },
     "app_prompts": {
       "notion": "config/test_configs/prompts/test_notion.txt",
       "whatsapp": "config/test_configs/prompts/test_whatsapp.txt",
+      "markdown": "config/test_configs/prompts/test_markdown.txt",
+      "bbcode": "config/test_configs/prompts/test_bbcode.txt",
+      "word": "config/test_configs/prompts/test_word.txt",
+      "libreoffice": "config/test_configs/prompts/test_libreoffice.txt",
+      "vscode": "config/test_configs/prompts/test_vscode.txt",
+      "obsidian": "config/test_configs/prompts/test_obsidian.txt",
+      "_fallback": "config/test_configs/prompts/test_fallback.txt",
       "test_app": "config/test_configs/prompts/test_app.txt"
     }
   }
