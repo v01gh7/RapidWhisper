@@ -418,6 +418,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         # Добавить пункты меню
         items = [
+            (f"💝 {t('settings.support.title')}", "support"),  # Support tab - FIRST
             (f"🤖 {t('settings.ai_provider.title')}", "ai"),
             (f"⚡ {t('settings.app.title')}", "app"),
             (f"🎤 {t('settings.audio.title')}", "audio"),
@@ -453,6 +454,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         self.content_stack = QStackedWidget()
         
         # Создать страницы с прокруткой
+        self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_support_page()))  # Support page FIRST
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_ai_page()))
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_app_page()))
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_audio_page()))
@@ -2280,6 +2282,150 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                     QMessageBox.StandardButton.Ok
                 )
     
+    def _create_support_page(self) -> QWidget:
+        """Создает страницу Поддержка."""
+        widget = QWidget()
+        layout = QVBoxLayout()
+        layout.setSpacing(20)
+        
+        # Заголовок
+        title = QLabel(t("settings.support.title"))
+        title.setObjectName("pageTitle")
+        layout.addWidget(title)
+        
+        # Основной текст
+        main_text = QLabel(t("settings.support.main_text"))
+        main_text.setWordWrap(True)
+        main_text.setStyleSheet("font-size: 14px; color: #ffffff; line-height: 1.6;")
+        layout.addWidget(main_text)
+        
+        # Вторичный текст (на 2 пикселя больше)
+        secondary_text = QLabel(t("settings.support.secondary_text"))
+        secondary_text.setWordWrap(True)
+        secondary_text.setStyleSheet("font-size: 16px; color: #ffffff; line-height: 1.6; margin-top: 10px;")
+        layout.addWidget(secondary_text)
+        
+        # Заголовок для донатов
+        donate_title = QLabel(t("settings.support.donate_title"))
+        donate_title.setStyleSheet("font-size: 18px; font-weight: bold; color: #ffffff; margin-top: 20px;")
+        layout.addWidget(donate_title)
+        
+        # Контейнер для кнопок донатов
+        donate_layout = QHBoxLayout()
+        donate_layout.setSpacing(30)
+        donate_layout.addStretch()
+        
+        # Ko-fi кнопка
+        kofi_widget = self._create_donate_button(
+            "Ko-fi",
+            "https://ko-fi.com/v01gh7",
+            "public/icons/kofi.svg"
+        )
+        donate_layout.addWidget(kofi_widget)
+        
+        # Donatex кнопка
+        donatex_widget = self._create_donate_button(
+            "Donatex",
+            "https://donatex.gg/donate/v01gh7",
+            "public/icons/donate.svg"
+        )
+        donate_layout.addWidget(donatex_widget)
+        
+        donate_layout.addStretch()
+        layout.addLayout(donate_layout)
+        
+        layout.addStretch()
+        widget.setLayout(layout)
+        return widget
+    
+    def _create_donate_button(self, name: str, url: str, icon_path: str) -> QWidget:
+        """
+        Создает виджет кнопки доната с иконкой и ссылкой.
+        
+        Args:
+            name: Название платформы
+            url: URL для доната
+            icon_path: Путь к SVG иконке
+            
+        Returns:
+            QWidget: Виджет с иконкой и ссылкой
+        """
+        container = QWidget()
+        container_layout = QVBoxLayout()
+        container_layout.setSpacing(10)
+        container_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        # Кнопка с иконкой
+        btn = QPushButton()
+        btn.setFixedSize(100, 100)
+        btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        
+        # Загрузить SVG иконку
+        import sys
+        if getattr(sys, 'frozen', False):
+            base_path = sys._MEIPASS
+        else:
+            base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        
+        full_icon_path = os.path.join(base_path, icon_path)
+        
+        try:
+            from PyQt6.QtSvg import QSvgRenderer
+            from PyQt6.QtGui import QPixmap, QPainter
+            
+            # Создать pixmap из SVG
+            renderer = QSvgRenderer(full_icon_path)
+            pixmap = QPixmap(80, 80)
+            pixmap.fill(Qt.GlobalColor.transparent)
+            painter = QPainter(pixmap)
+            renderer.render(painter)
+            painter.end()
+            
+            icon = QIcon(pixmap)
+            btn.setIcon(icon)
+            btn.setIconSize(btn.size() * 0.7)
+        except Exception as e:
+            logger.error(f"Failed to load icon {icon_path}: {e}")
+            # Fallback to text
+            btn.setText("💝")
+            btn.setStyleSheet("font-size: 40px;")
+        
+        btn.setStyleSheet("""
+            QPushButton {
+                background-color: #0078d4;
+                border: 2px solid #ffffff;
+                border-radius: 12px;
+            }
+            QPushButton:hover {
+                background-color: #1084d8;
+                border: 2px solid #00ff00;
+            }
+            QPushButton:pressed {
+                background-color: #006cc1;
+            }
+        """)
+        
+        # Подключить клик к открытию URL
+        btn.clicked.connect(lambda: self._open_url(url))
+        
+        container_layout.addWidget(btn, alignment=Qt.AlignmentFlag.AlignCenter)
+        
+        # Ссылка под кнопкой (жирная)
+        link_label = QLabel(f'<a href="{url}" style="color: #0078d4; font-weight: bold; font-size: 14px; text-decoration: none;">{name}</a>')
+        link_label.setOpenExternalLinks(True)
+        link_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        link_label.setStyleSheet("font-weight: bold;")
+        container_layout.addWidget(link_label)
+        
+        container.setLayout(container_layout)
+        return container
+    
+    def _open_url(self, url: str):
+        """Открывает URL в браузере."""
+        from PyQt6.QtGui import QDesktopServices
+        from PyQt6.QtCore import QUrl
+        QDesktopServices.openUrl(QUrl(url))
+    
     def _create_about_page(self) -> QWidget:
         """Создает страницу О программе."""
         widget = QWidget()
@@ -2949,14 +3095,16 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         # Обновить боковую панель
         sidebar_items = [
-            (f"🤖 {t('settings.ai_provider.title')}", 0),
-            (f"⚡ {t('settings.app.title')}", 1),
-            (f"🎤 {t('settings.audio.title')}", 2),
-            (f"✨ {t('settings.processing.title')}", 3),
-            (f"🌍 {t('settings.languages.title')}", 4),
-            (f"🎨 {t('settings.ui_customization.title')}", 5),
-            (f"🎙️ {t('settings.recordings.title')}", 6),
-            (f"ℹ️ {t('settings.about.title')}", 7)
+            (f"💝 {t('settings.support.title')}", 0),  # Support tab
+            (f"🤖 {t('settings.ai_provider.title')}", 1),
+            (f"⚡ {t('settings.app.title')}", 2),
+            (f"🎤 {t('settings.audio.title')}", 3),
+            (f"✨ {t('settings.processing.title')}", 4),
+            (f"🌍 {t('settings.languages.title')}", 5),
+            (f"🎨 {t('settings.ui_customization.title')}", 6),
+            (f"🎙️ {t('settings.recordings.title')}", 7),
+            (f"📊 {t('settings.statistics.title')}", 8),
+            (f"ℹ️ {t('settings.about.title')}", 9)
         ]
         
         for text, index in sidebar_items:
@@ -2985,28 +3133,45 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         # Пересоздать страницы с новыми переводами
         self.content_stack.removeWidget(self.content_stack.widget(0))
-        self.content_stack.insertWidget(0, self._wrap_in_scroll_area(self._create_ai_page()))
+        self.content_stack.insertWidget(0, self._wrap_in_scroll_area(self._create_support_page()))  # Support page
         
         self.content_stack.removeWidget(self.content_stack.widget(1))
-        self.content_stack.insertWidget(1, self._wrap_in_scroll_area(self._create_app_page()))
+        self.content_stack.insertWidget(1, self._wrap_in_scroll_area(self._create_ai_page()))
         
         self.content_stack.removeWidget(self.content_stack.widget(2))
-        self.content_stack.insertWidget(2, self._wrap_in_scroll_area(self._create_audio_page()))
+        self.content_stack.insertWidget(2, self._wrap_in_scroll_area(self._create_app_page()))
         
         self.content_stack.removeWidget(self.content_stack.widget(3))
-        self.content_stack.insertWidget(3, self._wrap_in_scroll_area(self._create_processing_page()))
+        self.content_stack.insertWidget(3, self._wrap_in_scroll_area(self._create_audio_page()))
         
         self.content_stack.removeWidget(self.content_stack.widget(4))
-        self.content_stack.insertWidget(4, self._wrap_in_scroll_area(self._create_languages_page()))
+        self.content_stack.insertWidget(4, self._wrap_in_scroll_area(self._create_processing_page()))
         
         self.content_stack.removeWidget(self.content_stack.widget(5))
-        self.content_stack.insertWidget(5, self._wrap_in_scroll_area(self._create_ui_customization_page()))
+        self.content_stack.insertWidget(5, self._wrap_in_scroll_area(self._create_languages_page()))
         
         self.content_stack.removeWidget(self.content_stack.widget(6))
-        self.content_stack.insertWidget(6, self._wrap_in_scroll_area(self._create_recordings_page()))
+        self.content_stack.insertWidget(6, self._wrap_in_scroll_area(self._create_ui_customization_page()))
         
         self.content_stack.removeWidget(self.content_stack.widget(7))
-        self.content_stack.insertWidget(7, self._wrap_in_scroll_area(self._create_about_page()))
+        self.content_stack.insertWidget(7, self._wrap_in_scroll_area(self._create_recordings_page()))
+        
+        # Statistics tab
+        self.content_stack.removeWidget(self.content_stack.widget(8))
+        if self.statistics_manager:
+            self.statistics_tab = StatisticsTab(self.statistics_manager)
+            self.content_stack.insertWidget(8, self._wrap_in_scroll_area(self.statistics_tab))
+        else:
+            placeholder = QWidget()
+            placeholder_layout = QVBoxLayout()
+            placeholder_label = QLabel(t('settings.statistics.no_data'))
+            placeholder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            placeholder_layout.addWidget(placeholder_label)
+            placeholder.setLayout(placeholder_layout)
+            self.content_stack.insertWidget(8, self._wrap_in_scroll_area(placeholder))
+        
+        self.content_stack.removeWidget(self.content_stack.widget(9))
+        self.content_stack.insertWidget(9, self._wrap_in_scroll_area(self._create_about_page()))
         
         # Восстановить текущую страницу
         self.content_stack.setCurrentIndex(current_index)
