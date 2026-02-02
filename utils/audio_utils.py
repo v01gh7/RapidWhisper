@@ -51,7 +51,12 @@ def trim_silence(audio_file_path: str, threshold: float = 0.02, padding_ms: int 
         elif sampwidth == 4:
             dtype = np.int32
         else:
-            raise ValueError(f"Неподдерживаемая ширина сэмпла: {sampwidth}")
+            from utils.exceptions import RapidWhisperError
+            raise RapidWhisperError(
+                message=f"Неподдерживаемая ширина сэмпла: {sampwidth}",
+                translation_key="errors.unsupported_sample_width",
+                width=sampwidth
+            )
         
         audio_data = np.frombuffer(frames, dtype=dtype)
         

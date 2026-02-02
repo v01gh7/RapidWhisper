@@ -52,15 +52,17 @@ class TranscriptionClient:
             InvalidAPIKeyError: Если API ключ не найден или пустой
             ValueError: Если провайдер неизвестен или не хватает параметров
         """
+        from utils.exceptions import MissingConfigError, InvalidConfigError
+        
         self.provider = provider.lower()
         
         # API ключ должен быть передан явно (из Config)
         # НЕ загружаем из переменных окружения
         if api_key is None:
-            raise InvalidAPIKeyError(f"API ключ не передан для провайдера {provider}")
+            raise InvalidAPIKeyError(provider=provider)
         
         if not api_key:
-            raise InvalidAPIKeyError()
+            raise InvalidAPIKeyError(provider=provider)
         
         # Настроить параметры в зависимости от провайдера
         if self.provider == "openai":
@@ -75,15 +77,19 @@ class TranscriptionClient:
         elif self.provider == "custom":
             # Для кастомного провайдера требуются base_url и model
             if base_url is None or model is None:
-                raise ValueError("Для custom провайдера требуется base_url и model")
+                raise MissingConfigError(parameter="base_url и model для custom провайдера")
             
             if not base_url:
-                raise ValueError("Для custom провайдера требуется CUSTOM_BASE_URL")
+                raise MissingConfigError(parameter="CUSTOM_BASE_URL")
             
             self.base_url = base_url
             self.model = model
         else:
-            raise ValueError(f"Неизвестный провайдер: {provider}")
+            raise InvalidConfigError(
+                parameter="provider",
+                value=provider,
+                reason="неизвестный провайдер"
+            )
         
         self.timeout = 30
         
@@ -94,7 +100,12 @@ class TranscriptionClient:
                 timeout=self.timeout
             )
         except Exception as e:
-            raise APIError(f"Не удалось инициализировать клиент {provider}: {e}")
+            raise APIError(
+                message=f"Не удалось инициализировать клиент {provider}: {e}",
+                translation_key="errors.client_init_error",
+                provider=provider,
+                error=str(e)
+            )
     
     def transcribe_audio(self, audio_file_path: str) -> str:
         """
@@ -113,6 +124,7 @@ class TranscriptionClient:
             APIError: Для других ошибок API
         """
         from utils.logger import get_logger
+        from utils.exceptions import ModelNotFoundError, APIResponseError
         logger = get_logger()
         
         audio_file = None
@@ -141,11 +153,13 @@ class TranscriptionClient:
                 return response.text
             else:
                 logger.error("Ответ API не содержит поле 'text'")
-                raise APIError("Ответ API не содержит поле 'text'")
+                raise APIResponseError(
+                    message="Ответ API не содержит поле 'text'"
+                )
         
         except AuthenticationError as e:
             logger.error(f"Ошибка аутентификации: {e}")
-            raise APIAuthenticationError(str(e))
+            raise APIAuthenticationError(provider=self.provider, message=str(e))
         
         except NotFoundError as e:
             logger.error(f"🔍 МОДЕЛЬ ТРАНСКРИПЦИИ НЕ НАЙДЕНА: {e}")
@@ -153,15 +167,15 @@ class TranscriptionClient:
             logger.error("Проверьте название модели в настройках AI Provider")
             logger.warning("⚠️ Пробрасываем исключение для уведомления пользователя")
             # Пробросить исключение чтобы TranscriptionThread мог показать уведомление
-            raise
+            raise ModelNotFoundError(model=self.model, provider=self.provider)
         
         except APITimeoutError as e:
             logger.error(f"Таймаут API: {e}")
-            raise CustomAPITimeoutError(str(e))
+            raise CustomAPITimeoutError(provider=self.provider, timeout=self.timeout)
         
         except APIConnectionError as e:
             logger.error(f"Ошибка подключения к API: {e}")
-            raise APINetworkError(str(e))
+            raise APINetworkError(provider=self.provider, message=str(e))
         
         except Exception as ex:
             # Обработать другие ошибки
@@ -169,7 +183,10 @@ class TranscriptionClient:
             import traceback
             logger.error(traceback.format_exc())
             error_message = self._handle_api_error(ex)
-            raise APIError(error_message)
+            raise APIError(
+                message=error_message,
+                translation_key="errors.generic_error"
+            )
         
         finally:
             # ВАЖНО: Закрыть файл после использования
@@ -193,12 +210,18 @@ class TranscriptionClient:
         Raises:
             APIError: Если файл не найден или не может быть открыт
         """
+        from utils.exceptions import APIResponseError
+        
         try:
             return open(filepath, 'rb')
         except FileNotFoundError:
-            raise APIError(f"Аудио файл не найден: {filepath}")
+            raise APIResponseError(
+                message=f"Аудио файл не найден: {filepath}"
+            )
         except Exception as e:
-            raise APIError(f"Не удалось открыть аудио файл: {e}")
+            raise APIResponseError(
+                message=f"Не удалось открыть аудио файл: {e}"
+            )
     
     def _handle_api_error(self, error: Exception) -> str:
         """
@@ -247,6 +270,7 @@ class TranscriptionClient:
             APIError: При ошибке обработки
         """
         from utils.logger import get_logger
+        from utils.exceptions import MissingConfigError, InvalidConfigError
         logger = get_logger()
         
         try:
@@ -262,11 +286,11 @@ class TranscriptionClient:
             # НЕ загружаем из переменных окружения
             if api_key is None:
                 logger.error(f"API ключ для {provider} не передан!")
-                raise InvalidAPIKeyError(f"API ключ для {provider} не передан")
+                raise InvalidAPIKeyError(provider=provider)
             
             if not api_key and provider != "llm":
                 logger.error(f"API ключ для {provider} не найден!")
-                raise InvalidAPIKeyError(f"API ключ для {provider} не найден")
+                raise InvalidAPIKeyError(provider=provider)
             
             logger.info(f"API ключ найден: {api_key[:10]}...")
             
@@ -289,11 +313,15 @@ class TranscriptionClient:
                 # LLM - локальные модели, base_url должен быть передан
                 if not base_url:
                     logger.error("LLM base_url не передан!")
-                    raise ValueError("Для LLM провайдера требуется base_url")
+                    raise MissingConfigError(parameter="base_url для LLM провайдера")
                 logger.info(f"Используется локальный LLM endpoint: {base_url}")
             else:
                 logger.error(f"Неизвестный провайдер: {provider}")
-                raise ValueError(f"Неизвестный провайдер для постобработки: {provider}")
+                raise InvalidConfigError(
+                    parameter="provider",
+                    value=provider,
+                    reason="неизвестный провайдер для постобработки"
+                )
             
             logger.info(f"Base URL: {base_url}")
             

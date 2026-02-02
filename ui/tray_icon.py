@@ -235,6 +235,31 @@ class TrayIcon(QObject):
             duration
         )
     
+    def show_error_notification(self, error: Exception, duration: int = 5000) -> None:
+        """
+        Показывает уведомление об ошибке в трее.
+        
+        Использует exception.user_message для получения переведенного сообщения.
+        
+        Args:
+            error: Исключение для отображения
+            duration: Длительность показа в миллисекундах (по умолчанию 5 секунд)
+        """
+        from utils.exceptions import RapidWhisperError
+        
+        # Получить переведенное сообщение
+        if isinstance(error, RapidWhisperError):
+            message = error.user_message
+        else:
+            message = str(error)
+        
+        # Показать уведомление
+        self.show_message(
+            t("common.error"),
+            message,
+            duration
+        )
+    
     def hide(self) -> None:
         """Скрывает иконку трея."""
         self.tray_icon.hide()

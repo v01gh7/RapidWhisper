@@ -11,28 +11,92 @@ from typing import Optional
 
 class RapidWhisperError(Exception):
     """
-    Базовое исключение для всех ошибок RapidWhisper.
+    Базовое исключение для всех ошибок RapidWhisper с поддержкой i18n.
     
     Все пользовательские исключения в приложении должны наследоваться от этого класса.
-    Поддерживает как техническое сообщение для логирования, так и понятное
-    сообщение для отображения пользователю.
+    Поддерживает как техническое сообщение для логирования (на русском), так и
+    переводимое сообщение для отображения пользователю через систему i18n.
     
     Attributes:
-        message: Техническое сообщение об ошибке для разработчиков
-        user_message: Понятное сообщение для пользователя (если не указано, используется message)
+        message: Техническое сообщение об ошибке для разработчиков (на русском, для логов)
+        translation_key: Ключ для перевода сообщения через систему i18n
+        translation_params: Параметры для интерполяции в переведенное сообщение
+        _user_message: Опциональное переопределение пользовательского сообщения
+    
+    Examples:
+        # Новый стиль с translation_key:
+        raise RapidWhisperError(
+            message="Ошибка аутентификации для Groq",
+            translation_key="errors.api_authentication",
+            provider="Groq"
+        )
+        
+        # Старый стиль (обратная совместимость):
+        raise RapidWhisperError(
+            message="Ошибка аутентификации",
+            user_message="Проверьте API ключ"
+        )
     """
     
-    def __init__(self, message: str, user_message: Optional[str] = None):
+    def __init__(
+        self, 
+        message: str, 
+        user_message: Optional[str] = None,
+        translation_key: Optional[str] = None,
+        **kwargs
+    ):
         """
-        Инициализирует исключение с сообщениями.
+        Инициализирует исключение с поддержкой i18n.
         
         Args:
-            message: Техническое сообщение об ошибке
-            user_message: Опциональное сообщение для пользователя
+            message: Техническое сообщение об ошибке (на русском, для логов)
+            user_message: Опциональное переопределение пользовательского сообщения
+                         (используется для обратной совместимости)
+            translation_key: Ключ для перевода через i18n (например, "errors.api_authentication")
+            **kwargs: Параметры для интерполяции в переведенное сообщение
+                     (например, provider="Groq", model="whisper-large-v3")
         """
         self.message = message
-        self.user_message = user_message or message
+        self.translation_key = translation_key
+        self.translation_params = kwargs
+        self._user_message = user_message
         super().__init__(self.message)
+    
+    @property
+    def user_message(self) -> str:
+        """
+        Получает переведенное пользовательское сообщение.
+        
+        Порядок приоритета:
+        1. Если задан _user_message - возвращает его (обратная совместимость)
+        2. Если задан translation_key - переводит через i18n систему
+        3. Иначе возвращает техническое сообщение (fallback)
+        
+        Returns:
+            Переведенное сообщение в текущем языке интерфейса
+        """
+        # Обратная совместимость: если задан user_message явно
+        if self._user_message:
+            return self._user_message
+        
+        # Новый стиль: перевод через i18n
+        if self.translation_key:
+            try:
+                from utils.i18n import t
+                return t(self.translation_key, **self.translation_params)
+            except Exception as e:
+                # Если i18n система недоступна или произошла ошибка,
+                # логируем и возвращаем техническое сообщение
+                try:
+                    from utils.logger import get_logger
+                    logger = get_logger()
+                    logger.error(f"Не удалось перевести сообщение об ошибке: {e}")
+                except:
+                    pass  # Даже логирование не работает
+                return self.message
+        
+        # Fallback: техническое сообщение
+        return self.message
 
 
 # ============================================================================
@@ -62,7 +126,7 @@ class MicrophoneUnavailableError(AudioError):
     def __init__(self, message: str = "Микрофон недоступен"):
         super().__init__(
             message=message,
-            user_message="Микрофон занят другим приложением или недоступен"
+            translation_key="errors.microphone_unavailable"
         )
 
 
@@ -83,7 +147,8 @@ class RecordingTooShortError(AudioError):
         
         super().__init__(
             message=message,
-            user_message="Запись слишком короткая, попробуйте еще раз"
+            translation_key="errors.recording_too_short",
+            duration=duration
         )
 
 
@@ -100,7 +165,7 @@ class EmptyRecordingError(AudioError):
     def __init__(self):
         super().__init__(
             message="Аудио буфер пустой",
-            user_message="Не удалось записать аудио, попробуйте еще раз"
+            translation_key="errors.empty_recording"
         )
 
 
@@ -112,10 +177,11 @@ class AudioDeviceError(AudioError):
     в более специфичные категории.
     """
     
-    def __init__(self, message: str):
+    def __init__(self, error: str):
         super().__init__(
-            message=f"Ошибка аудио устройства: {message}",
-            user_message="Ошибка работы с аудио устройством"
+            message=f"Ошибка аудио устройства: {error}",
+            translation_key="errors.audio_device_error",
+            error=error
         )
 
 
@@ -143,10 +209,14 @@ class APIAuthenticationError(APIError):
     - Нет доступа к запрашиваемому ресурсу
     """
     
-    def __init__(self, message: str = "Ошибка аутентификации"):
+    def __init__(self, provider: str, message: Optional[str] = None):
+        if message is None:
+            message = f"Ошибка аутентификации для {provider}"
+        
         super().__init__(
             message=message,
-            user_message="Проверьте GLM_API_KEY в secrets.json"
+            translation_key="errors.api_authentication",
+            provider=provider
         )
 
 
@@ -160,10 +230,11 @@ class APINetworkError(APIError):
     - Проблемы с DNS или маршрутизацией
     """
     
-    def __init__(self, message: str = "Ошибка подключения к API"):
+    def __init__(self, provider: str, message: str = "Ошибка подключения к API"):
         super().__init__(
             message=message,
-            user_message="Ошибка сети, проверьте подключение к интернету"
+            translation_key="errors.api_network",
+            provider=provider
         )
 
 
@@ -181,7 +252,7 @@ class APITimeoutError(APIError):
     высокой нагрузкой на сервер.
     """
     
-    def __init__(self, timeout: Optional[float] = None):
+    def __init__(self, provider: str, timeout: Optional[float] = None):
         if timeout is not None:
             message = f"Превышено время ожидания ответа от API ({timeout} сек)"
         else:
@@ -189,7 +260,28 @@ class APITimeoutError(APIError):
         
         super().__init__(
             message=message,
-            user_message="Превышено время ожидания, попробуйте еще раз"
+            translation_key="errors.api_timeout",
+            provider=provider,
+            timeout=timeout
+        )
+
+
+class ModelNotFoundError(APIError):
+    """
+    Модель не найдена или недоступна.
+    
+    Возникает когда:
+    - Указанная модель не существует у провайдера
+    - Нет доступа к запрашиваемой модели
+    - Модель была удалена или переименована
+    """
+    
+    def __init__(self, model: str, provider: str):
+        super().__init__(
+            message=f"Модель {model} не найдена у провайдера {provider}",
+            translation_key="errors.model_not_found",
+            model=model,
+            provider=provider
         )
 
 
@@ -232,10 +324,11 @@ class InvalidAPIKeyError(ConfigurationError):
     или имеет пустое значение.
     """
     
-    def __init__(self):
+    def __init__(self, provider: str):
         super().__init__(
-            message="API ключ GLM_API_KEY не найден или пустой",
-            user_message="Проверьте GLM_API_KEY в secrets.json"
+            message=f"API ключ для {provider} не найден или пустой",
+            translation_key="errors.invalid_api_key",
+            provider=provider
         )
 
 
@@ -250,7 +343,8 @@ class MissingConfigError(ConfigurationError):
     def __init__(self, parameter: str):
         super().__init__(
             message=f"Отсутствует обязательный параметр конфигурации: {parameter}",
-            user_message=f"Не найден параметр {parameter} в конфигурации"
+            translation_key="errors.missing_config",
+            parameter=parameter
         )
 
 
@@ -265,7 +359,10 @@ class InvalidConfigError(ConfigurationError):
     def __init__(self, parameter: str, value: str, reason: str):
         super().__init__(
             message=f"Некорректное значение параметра {parameter}='{value}': {reason}",
-            user_message=f"Некорректное значение параметра {parameter}"
+            translation_key="errors.invalid_config",
+            parameter=parameter,
+            value=value,
+            reason=reason
         )
 
 
@@ -286,7 +383,9 @@ class HotkeyConflictError(ConfigurationError):
         
         super().__init__(
             message=message,
-            user_message=f"Не удалось зарегистрировать горячую клавишу {hotkey}, попробуйте другую"
+            translation_key="errors.hotkey_conflict",
+            hotkey=hotkey,
+            reason=reason
         )
 
 

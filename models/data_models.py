@@ -45,7 +45,11 @@ class AudioData:
             ValueError: Если путь к файлу некорректен
         """
         if not filepath:
-            raise ValueError("Путь к файлу не может быть пустым")
+            from utils.exceptions import RapidWhisperError
+            raise RapidWhisperError(
+                message="Путь к файлу не может быть пустым",
+                translation_key="errors.empty_filepath"
+            )
         
         # Создать директорию если не существует
         directory = os.path.dirname(filepath)
@@ -92,7 +96,11 @@ class TranscriptionResult:
             ValueError: Если max_length меньше или равен 0
         """
         if max_length <= 0:
-            raise ValueError("max_length должен быть положительным числом")
+            from utils.exceptions import RapidWhisperError
+            raise RapidWhisperError(
+                message="max_length должен быть положительным числом",
+                translation_key="errors.invalid_max_length"
+            )
         
         if len(self.text) <= max_length:
             return self.text

@@ -116,7 +116,7 @@ class AudioEngine:
                 
         except Exception as e:
             # Другие непредвиденные ошибки
-            raise AudioDeviceError(f"Не удалось начать запись: {e}")
+            raise AudioDeviceError(error=f"Не удалось начать запись: {e}")
     
     def stop_recording(self) -> str:
         """
@@ -135,7 +135,11 @@ class AudioEngine:
         Requirements: 3.5
         """
         if not self.is_recording:
-            raise RuntimeError("Запись не активна")
+            from utils.exceptions import RapidWhisperError
+            raise RapidWhisperError(
+                message="Запись не активна",
+                translation_key="errors.recording_not_active"
+            )
         
         try:
             # Остановить и закрыть поток
@@ -180,7 +184,7 @@ class AudioEngine:
             raise
             
         except Exception as e:
-            raise AudioDeviceError(f"Ошибка при остановке записи: {e}")
+            raise AudioDeviceError(error=f"Ошибка при остановке записи: {e}")
     
     def get_current_rms(self) -> float:
         """
@@ -295,7 +299,7 @@ class AudioEngine:
                     wav_file.writeframes(chunk)
                     
         except Exception as e:
-            raise AudioDeviceError(f"Не удалось сохранить WAV файл: {e}")
+            raise AudioDeviceError(error=f"Не удалось сохранить WAV файл: {e}")
     
     def cleanup(self) -> None:
         """

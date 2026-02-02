@@ -99,7 +99,12 @@ class SingleInstance:
     def __enter__(self):
         """Контекстный менеджер - вход."""
         if not self.acquire():
-            raise RuntimeError(f"{self.app_name} уже запущен!")
+            from utils.exceptions import RapidWhisperError
+            raise RapidWhisperError(
+                message=f"{self.app_name} уже запущен!",
+                translation_key="errors.app_already_running",
+                app_name=self.app_name
+            )
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):

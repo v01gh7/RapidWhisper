@@ -132,7 +132,11 @@ class RapidWhisperApp(QObject):
                 if errors:
                     for error in errors:
                         self.logger.error(f"Ошибка конфигурации: {error}")
-                    raise ValueError("Ошибки в конфигурации. Проверьте config.jsonc и secrets.json")
+                    from utils.exceptions import RapidWhisperError
+                    raise RapidWhisperError(
+                        message="Ошибки в конфигурации. Проверьте config.jsonc и secrets.json",
+                        translation_key="errors.config_validation_error"
+                    )
             
             self.logger.info("Конфигурация загружена успешно")
             
@@ -1256,7 +1260,11 @@ class RapidWhisperApp(QObject):
         Requirements: 12.6
         """
         if not self._initialized:
-            raise RuntimeError("Приложение не инициализировано. Вызовите initialize() сначала.")
+            from utils.exceptions import RapidWhisperError
+            raise RapidWhisperError(
+                message="Приложение не инициализировано. Вызовите initialize() сначала.",
+                translation_key="errors.app_not_initialized"
+            )
         
         # Проверить необходимость первоначальной настройки
         if self._needs_setup:
