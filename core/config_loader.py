@@ -205,8 +205,8 @@ def _create_minimal_config(config_path: Path):
             "file": "rapidwhisper.log"
         },
         "about": {
-            "github_url": "https://github.com/yourusername/rapidwhisper",
-            "docs_url": "https://github.com/yourusername/rapidwhisper/tree/main/docs"
+            "github_url": "https://github.com/V01GH7/rapidwhisper",
+            "docs_url": "https://github.com/V01GH7/rapidwhisper/tree/main/docs"
         }
     }
     

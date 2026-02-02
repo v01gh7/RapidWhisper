@@ -233,10 +233,10 @@ AUTO_HIDE_DELAY=2.5
 # About Section Links (OPTIONAL)
 # ============================================
 # GitHub repository URL
-GITHUB_URL=https://github.com/yourusername/rapidwhisper
+GITHUB_URL=https://github.com/V01GH7/rapidwhisper
 
 # Documentation URL
-DOCS_URL=https://github.com/yourusername/rapidwhisper/tree/main/docs
+DOCS_URL=https://github.com/V01GH7/rapidwhisper/tree/main/docs
 
 # ============================================
 # Window Position (OPTIONAL)
@@ -345,8 +345,8 @@ class Config:
         self.log_file: str = "rapidwhisper.log"
         
         # Ссылки для раздела "О программе"
-        self.github_url: str = "https://github.com/yourusername/rapidwhisper"
-        self.docs_url: str = "https://github.com/yourusername/rapidwhisper/tree/main/docs"
+        self.github_url: str = "https://github.com/V01GH7/rapidwhisper"
+        self.docs_url: str = "https://github.com/V01GH7/rapidwhisper/tree/main/docs"
         
         # Позиция окна
         self.remember_window_position: bool = True
@@ -698,8 +698,8 @@ class Config:
         config.interface_language = config_loader.get("localization.language", get_system_language())
         
         # Ссылки
-        config.github_url = config_loader.get("about.github_url", "https://github.com/yourusername/rapidwhisper")
-        config.docs_url = config_loader.get("about.docs_url", "https://github.com/yourusername/rapidwhisper/tree/main/docs")
+        config.github_url = config_loader.get("about.github_url", "https://github.com/V01GH7/rapidwhisper")
+        config.docs_url = config_loader.get("about.docs_url", "https://github.com/V01GH7/rapidwhisper/tree/main/docs")
         
         return config
     

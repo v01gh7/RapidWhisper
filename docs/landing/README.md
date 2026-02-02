@@ -95,7 +95,7 @@ Edit CSS variables in `styles.css`:
 
 ### Content
 
-1. **Update Links**: Replace `yourusername` in GitHub links
+1. **Update Links**: Replace `V01GH7` in GitHub links
 2. **Add Download Links**: Update download URLs in the download section
 3. **Customize Features**: Edit feature cards in the features section
 4. **Update Documentation**: Modify docs.html content as needed
@@ -205,7 +205,7 @@ To improve the landing page:
 ## 📞 Support
 
 For issues or questions:
-- GitHub Issues: [Create an issue](https://github.com/yourusername/rapidwhisper/issues)
+- GitHub Issues: [Create an issue](https://github.com/V01GH7/rapidwhisper/issues)
 - Documentation: [View docs](docs.html)
 
 ---

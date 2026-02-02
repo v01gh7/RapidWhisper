@@ -111,8 +111,8 @@ def load_env_file(env_path=".env"):
     
     # About Section
     config["about"] = {
-        "github_url": os.getenv("GITHUB_URL", "https://github.com/yourusername/rapidwhisper"),
-        "docs_url": os.getenv("DOCS_URL", "https://github.com/yourusername/rapidwhisper/tree/main/docs")
+        "github_url": os.getenv("GITHUB_URL", "https://github.com/V01GH7/rapidwhisper"),
+        "docs_url": os.getenv("DOCS_URL", "https://github.com/V01GH7/rapidwhisper/tree/main/docs")
     }
     
     # Formatting Settings
