@@ -27,6 +27,7 @@ def create_default_configs():
     config_dir = get_config_dir()
     config_path = config_dir / "config.jsonc"
     secrets_path = config_dir / "secrets.json"
+    prompts_dir = config_dir / "config" / "prompts"
     
     # Создать config.jsonc если его нет
     if not config_path.exists():
@@ -70,6 +71,9 @@ def create_default_configs():
                     _create_minimal_secrets(secrets_path)
             else:
                 _create_minimal_secrets(secrets_path)
+    
+    # Создать промпты если их нет или они пустые
+    _ensure_prompts_exist(prompts_dir)
 
 
 def _create_minimal_config(config_path: Path):
@@ -234,6 +238,69 @@ def _create_minimal_secrets(secrets_path: Path):
     with open(secrets_path, 'w', encoding='utf-8') as f:
         json.dump(minimal_secrets, f, indent=2, ensure_ascii=False)
     logger.info(f"Created minimal secrets at {secrets_path}")
+
+
+def _ensure_prompts_exist(prompts_dir: Path):
+    """
+    Создает промпты если их нет или они пустые.
+    Копирует из встроенных ресурсов (для .exe) или из config/prompts (для разработки).
+    """
+    # Создать директорию если не существует
+    prompts_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Список всех промптов которые должны существовать
+    prompt_files = [
+        "_fallback.txt",
+        "bbcode.txt",
+        "libreoffice.txt",
+        "markdown.txt",
+        "notion.txt",
+        "obsidian.txt",
+        "vscode.txt",
+        "whatsapp.txt",
+        "word.txt"
+    ]
+    
+    # Определить источник промптов
+    if hasattr(sys, '_MEIPASS'):
+        # Запущено из .exe - промпты встроены в PyInstaller
+        source_dir = Path(sys._MEIPASS) / "config" / "prompts"
+    else:
+        # Разработка - промпты в config/prompts
+        source_dir = Path("config") / "prompts"
+    
+    # Проверить и скопировать каждый промпт
+    for prompt_file in prompt_files:
+        dest_path = prompts_dir / prompt_file
+        source_path = source_dir / prompt_file
+        
+        # Проверить нужно ли создавать/обновлять файл
+        needs_update = False
+        
+        if not dest_path.exists():
+            needs_update = True
+            logger.info(f"Prompt file missing: {prompt_file}")
+        else:
+            # Проверить не пустой ли файл
+            try:
+                content = dest_path.read_text(encoding='utf-8').strip()
+                if not content:
+                    needs_update = True
+                    logger.info(f"Prompt file empty: {prompt_file}")
+            except Exception as e:
+                needs_update = True
+                logger.warning(f"Cannot read prompt file {prompt_file}: {e}")
+        
+        # Скопировать из источника если нужно
+        if needs_update:
+            if source_path.exists():
+                try:
+                    shutil.copy(source_path, dest_path)
+                    logger.info(f"✓ Copied prompt: {prompt_file}")
+                except Exception as e:
+                    logger.error(f"Failed to copy prompt {prompt_file}: {e}")
+            else:
+                logger.warning(f"Source prompt not found: {source_path}")
 
 
 def strip_json_comments(json_str: str) -> str:
@@ -406,6 +473,9 @@ class ConfigLoader:
         Returns:
             Configuration dictionary
         """
+        # Очистить кеш промптов при перезагрузке
+        self.prompts_cache = {}
+        
         # Создать дефолтные конфиги если их нет
         create_default_configs()
         

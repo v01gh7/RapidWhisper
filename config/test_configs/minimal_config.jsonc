@@ -89,7 +89,7 @@
     "temperature": 0.3,
     "custom": {
       "base_url": "",
-      "api_key": "test-api-key"
+      "api_key": ""
     },
     "web_app_keywords": {},
     "app_prompts": {}
