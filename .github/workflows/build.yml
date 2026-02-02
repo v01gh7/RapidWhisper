@@ -83,7 +83,7 @@ jobs:
     
     - name: Build macOS executable
       run: |
-        uv run pyinstaller RapidWhisper.spec --clean
+        uv run pyinstaller RapidWhisper-macOS.spec --clean
     
     - name: Create DMG (optional)
       run: |
@@ -158,7 +158,7 @@ jobs:
     
     - name: Build Linux executable
       run: |
-        uv run pyinstaller RapidWhisper.spec --clean
+        uv run pyinstaller RapidWhisper-Linux.spec --clean
     
     - name: Upload Linux artifact
       uses: actions/upload-artifact@v4

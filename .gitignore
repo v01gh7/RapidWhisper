@@ -32,6 +32,10 @@ env/
 # PyInstaller
 *.manifest
 *.spec
+# Но НЕ игнорируем наши spec файлы - они нужны для сборки!
+!RapidWhisper.spec
+!RapidWhisper-macOS.spec
+!RapidWhisper-Linux.spec
 
 # Unit test / coverage reports
 htmlcov/
