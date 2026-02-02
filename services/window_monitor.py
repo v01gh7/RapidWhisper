@@ -55,14 +55,17 @@ class WindowMonitor(ABC):
         
         Returns:
             WindowMonitor instance for the current platform
-            
-        Raises:
-            NotImplementedError: If platform is not supported
         """
         system = platform.system()
         
         if system == "Windows":
             from services.windows_window_monitor import WindowsWindowMonitor
             return WindowsWindowMonitor()
+        elif system == "Darwin":  # macOS
+            from services.macos_window_monitor import MacOSWindowMonitor
+            return MacOSWindowMonitor()
+        elif system == "Linux":
+            from services.linux_window_monitor import LinuxWindowMonitor
+            return LinuxWindowMonitor()
         else:
             raise NotImplementedError(f"Unsupported platform: {system}")

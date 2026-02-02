@@ -28,8 +28,7 @@ jobs:
     - name: Create virtual environment and install dependencies
       run: |
         uv venv
-        uv pip install -r requirements.txt
-        uv pip install pyinstaller
+        uv pip install -r requirements-windows.txt
     
     - name: Verify files
       run: |
@@ -69,8 +68,7 @@ jobs:
     - name: Create virtual environment and install dependencies
       run: |
         uv venv
-        uv pip install -r requirements.txt
-        uv pip install pyinstaller
+        uv pip install -r requirements-macos.txt
     
     - name: Verify files
       run: |
@@ -78,8 +76,8 @@ jobs:
         pwd
         echo "Files in current directory:"
         ls -la
-        echo "Checking for RapidWhisper.spec:"
-        if [ -f "RapidWhisper.spec" ]; then echo "RapidWhisper.spec found"; else echo "RapidWhisper.spec NOT found"; exit 1; fi
+        echo "Checking for RapidWhisper-macOS.spec:"
+        if [ -f "RapidWhisper-macOS.spec" ]; then echo "RapidWhisper-macOS.spec found"; else echo "RapidWhisper-macOS.spec NOT found"; exit 1; fi
     
     - name: Build macOS executable
       run: |
@@ -135,7 +133,7 @@ jobs:
     - name: Install system dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y portaudio19-dev python3-pyqt6
+        sudo apt-get install -y portaudio19-dev python3-pyqt6 xdotool wmctrl
     
     - name: Install uv
       run: |
@@ -144,8 +142,7 @@ jobs:
     - name: Create virtual environment and install dependencies
       run: |
         uv venv
-        uv pip install -r requirements.txt
-        uv pip install pyinstaller
+        uv pip install -r requirements-linux.txt
     
     - name: Verify files
       run: |
@@ -153,8 +150,8 @@ jobs:
         pwd
         echo "Files in current directory:"
         ls -la
-        echo "Checking for RapidWhisper.spec:"
-        if [ -f "RapidWhisper.spec" ]; then echo "RapidWhisper.spec found"; else echo "RapidWhisper.spec NOT found"; exit 1; fi
+        echo "Checking for RapidWhisper-Linux.spec:"
+        if [ -f "RapidWhisper-Linux.spec" ]; then echo "RapidWhisper-Linux.spec found"; else echo "RapidWhisper-Linux.spec NOT found"; exit 1; fi
     
     - name: Build Linux executable
       run: |
