@@ -97,6 +97,10 @@
 
 ### macOS Build
 ```yaml
+- name: Install system dependencies
+  run: |
+    brew install portaudio
+
 - name: Create virtual environment and install dependencies
   run: |
     uv venv
@@ -132,7 +136,13 @@
 
 ### macOS
 - Python 3.13
+- PortAudio (через Homebrew)
 - pyobjc (устанавливается через pip)
+
+Установка на macOS:
+```bash
+brew install portaudio
+```
 
 ### Linux
 - `portaudio19-dev` - для PyAudio
@@ -158,7 +168,10 @@ uv run pyinstaller RapidWhisper.spec --clean
 
 ### macOS
 ```bash
-# Установить зависимости
+# Установить системные зависимости
+brew install portaudio
+
+# Установить Python зависимости
 uv pip install -r requirements-macos.txt
 
 # Собрать
