@@ -1,58 +1,48 @@
 name: Build RapidWhisper
 
-# NOTE: Windows build временно закомментирован, так как он работает локально
-# и не требует тестирования в CI. Это экономит время и ресурсы GitHub Actions.
-# Для включения Windows build раскомментируйте секцию build-windows ниже.
-
 on:
-  push:
-    branches: [ main, master ]
-    tags:
-      - 'v*'
-  pull_request:
-    branches: [ main, master ]
-  workflow_dispatch:  # Позволяет запускать вручную
+  workflow_dispatch:  # Запуск только вручную
 
 jobs:
-  # build-windows:
-  #   runs-on: windows-latest
-  #   
-  #   steps:
-  #   - uses: actions/checkout@v4
-  #   
-  #   - name: Set up Python
-  #     uses: actions/setup-python@v5
-  #     with:
-  #       python-version: '3.13'
-  #   
-  #   - name: Install uv
-  #     run: |
-  #       pip install uv
-  #   
-  #   - name: Create virtual environment and install dependencies
-  #     run: |
-  #       uv venv
-  #       uv pip install -r requirements-windows.txt
-  #   
-  #   - name: Verify files
-  #     run: |
-  #       echo "Current directory:"
-  #       pwd
-  #       echo "Files in current directory:"
-  #       dir
-  #       echo "Checking for RapidWhisper.spec:"
-  #       if (Test-Path "RapidWhisper.spec") { echo "RapidWhisper.spec found" } else { echo "RapidWhisper.spec NOT found"; exit 1 }
-  #   
-  #   - name: Build Windows executable
-  #     run: |
-  #       uv run pyinstaller RapidWhisper.spec --clean
-  #   
-  #   - name: Upload Windows artifact
-  #     uses: actions/upload-artifact@v4
-  #     with:
-  #       name: RapidWhisper-Windows
-  #       path: dist/RapidWhisper.exe
-  #       retention-days: 30
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+    
+    - name: Install uv
+      run: |
+        pip install uv
+    
+    - name: Create virtual environment and install dependencies
+      run: |
+        uv venv
+        uv pip install -r requirements-windows.txt
+    
+    - name: Verify files
+      run: |
+        echo "Current directory:"
+        pwd
+        echo "Files in current directory:"
+        dir
+        echo "Checking for RapidWhisper.spec:"
+        if (Test-Path "RapidWhisper.spec") { echo "RapidWhisper.spec found" } else { echo "RapidWhisper.spec NOT found"; exit 1 }
+    
+    - name: Build Windows executable
+      run: |
+        uv run pyinstaller RapidWhisper.spec --clean
+    
+    - name: Upload Windows artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: RapidWhisper-Windows
+        path: dist/RapidWhisper.exe
+        retention-days: 30
 
   build-macos:
     runs-on: macos-latest
@@ -174,23 +164,29 @@ jobs:
         path: dist/RapidWhisper
         retention-days: 30
 
-  # Создать релиз при пуше тега
+  # Создать релиз (опционально, можно запустить вручную)
   release:
-    needs: [build-macos, build-linux]  # Временно без build-windows
+    needs: [build-windows, build-macos, build-linux]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'workflow_dispatch'
     
     steps:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
     
-    - name: Create Release
+    - name: Display structure of downloaded files
+      run: ls -R
+    
+    - name: Create Release Draft
       uses: softprops/action-gh-release@v1
       with:
         files: |
+          RapidWhisper-Windows/RapidWhisper.exe
           RapidWhisper-macOS/RapidWhisper-macOS.dmg
           RapidWhisper-Linux/RapidWhisper
-        draft: false
+        draft: true
         prerelease: false
+        tag_name: manual-build-${{ github.run_number }}
+        name: Manual Build ${{ github.run_number }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
