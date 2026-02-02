@@ -214,7 +214,7 @@ class TranscriptionClient:
         
         # Определить тип ошибки по сообщению
         if "authentication" in error_str or "api key" in error_str:
-            return "Ошибка аутентификации. Проверьте GLM_API_KEY в .env файле"
+            return "Ошибка аутентификации. Проверьте GLM_API_KEY в secrets.json"
         elif "network" in error_str or "connection" in error_str:
             return "Ошибка сети. Проверьте подключение к интернету"
         elif "timeout" in error_str:

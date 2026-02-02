@@ -452,16 +452,28 @@ class ConfigLoader:
     3. .env (legacy format, fallback)
     """
     
-    def __init__(self, config_path: str = "config.jsonc", secrets_path: str = "secrets.json"):
+    def __init__(self, config_path: str = None, secrets_path: str = None):
         """
         Initialize configuration loader.
         
         Args:
-            config_path: Path to config.jsonc file
-            secrets_path: Path to secrets.json file
+            config_path: Path to config.jsonc file (if None, uses get_config_dir())
+            secrets_path: Path to secrets.json file (if None, uses get_config_dir())
         """
-        self.config_path = config_path
-        self.secrets_path = secrets_path
+        from core.config import get_config_dir
+        
+        config_dir = get_config_dir()
+        
+        if config_path is None:
+            self.config_path = str(config_dir / "config.jsonc")
+        else:
+            self.config_path = config_path
+            
+        if secrets_path is None:
+            self.secrets_path = str(config_dir / "secrets.json")
+        else:
+            self.secrets_path = secrets_path
+            
         self.config = None
         self.secrets = None
         self.prompts_cache = {}
@@ -551,22 +563,23 @@ class ConfigLoader:
                     self.config["formatting"]["custom"]["api_key"] = self.secrets["formatting"]["custom"]["api_key"]
         
         # LEGACY SUPPORT: Old structure for backward compatibility
-        if "api_keys" in self.secrets:
+        # Only apply if new structure doesn't exist
+        if "api_keys" in self.secrets and "ai_provider" not in self.secrets:
             if "ai_provider" not in self.config:
                 self.config["ai_provider"] = {}
             self.config["ai_provider"]["api_keys"] = self.secrets["api_keys"]
         
         if "custom_providers" in self.secrets:
-            # Custom transcription API key
-            if "api_key" in self.secrets["custom_providers"]:
+            # Custom transcription API key (only if new structure doesn't exist)
+            if "api_key" in self.secrets["custom_providers"] and "ai_provider" not in self.secrets:
                 if "ai_provider" not in self.config:
                     self.config["ai_provider"] = {}
                 if "custom" not in self.config["ai_provider"]:
                     self.config["ai_provider"]["custom"] = {}
                 self.config["ai_provider"]["custom"]["api_key"] = self.secrets["custom_providers"]["api_key"]
             
-            # Custom formatting API key
-            if "formatting_api_key" in self.secrets["custom_providers"]:
+            # Custom formatting API key (only if new structure doesn't exist)
+            if "formatting_api_key" in self.secrets["custom_providers"] and "formatting" not in self.secrets:
                 if "formatting" not in self.config:
                     self.config["formatting"] = {}
                 if "custom" not in self.config["formatting"]:

@@ -125,7 +125,7 @@ class RapidWhisperApp(QObject):
                 if errors:
                     for error in errors:
                         self.logger.error(f"Ошибка конфигурации: {error}")
-                    raise ValueError("Ошибки в конфигурации. Проверьте .env файл")
+                    raise ValueError("Ошибки в конфигурации. Проверьте config.jsonc и secrets.json")
             
             self.logger.info("Конфигурация загружена успешно")
             

@@ -2,7 +2,7 @@
 Модуль конфигурации приложения RapidWhisper.
 
 Этот модуль предоставляет класс Config для загрузки и валидации
-конфигурационных параметров из .env файла.
+конфигурационных параметров из config.jsonc и secrets.json.
 """
 
 import os
@@ -283,7 +283,7 @@ class Config:
     """
     Конфигурация приложения RapidWhisper.
     
-    Загружает параметры из .env файла и предоставляет значения по умолчанию
+    Загружает параметры из config.jsonc и secrets.json и предоставляет значения по умолчанию
     для всех опциональных параметров. Поддерживает валидацию обязательных
     параметров.
     
@@ -388,6 +388,9 @@ class Config:
     def load_from_env(env_path: Optional[str] = None) -> 'Config':
         """
         Загружает конфигурацию из .env файла.
+        
+        DEPRECATED: Этот метод оставлен только для обратной совместимости с тестами.
+        В основном коде используйте Config.load_from_config().
         
         Читает параметры из .env файла и создает объект Config с загруженными
         значениями. Если параметр отсутствует в .env файле, используется
@@ -725,16 +728,16 @@ class Config:
         
         # Проверка API ключей в зависимости от провайдера
         if self.ai_provider == "openai" and not self.openai_api_key:
-            errors.append("OPENAI_API_KEY не найден в .env файле. Получите ключ на https://platform.openai.com/api-keys")
+            errors.append("OPENAI_API_KEY не найден в secrets.json. Получите ключ на https://platform.openai.com/api-keys")
         elif self.ai_provider == "groq" and not self.groq_api_key:
-            errors.append("GROQ_API_KEY не найден в .env файле. Получите ключ на https://console.groq.com/keys")
+            errors.append("GROQ_API_KEY не найден в secrets.json. Получите ключ на https://console.groq.com/keys")
         elif self.ai_provider == "glm" and not self.glm_api_key:
-            errors.append("GLM_API_KEY не найден в .env файле. Получите ключ на https://open.bigmodel.cn/")
+            errors.append("GLM_API_KEY не найден в secrets.json. Получите ключ на https://open.bigmodel.cn/")
         elif self.ai_provider == "custom":
             if not self.custom_api_key:
-                errors.append("CUSTOM_API_KEY не найден в .env файле для custom провайдера")
+                errors.append("CUSTOM_API_KEY не найден в secrets.json для custom провайдера")
             if not self.custom_base_url:
-                errors.append("CUSTOM_BASE_URL не найден в .env файле для custom провайдера")
+                errors.append("CUSTOM_BASE_URL не найден в config.jsonc для custom провайдера")
         
         # Проверка корректности значений
         if self.silence_threshold < 0.01 or self.silence_threshold > 0.1:

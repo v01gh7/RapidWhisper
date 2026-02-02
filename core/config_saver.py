@@ -23,16 +23,27 @@ class ConfigSaver:
     3. config/prompts/*.txt - formatting prompts (public)
     """
     
-    def __init__(self, config_path: str = "config.jsonc", secrets_path: str = "secrets.json"):
+    def __init__(self, config_path: str = None, secrets_path: str = None):
         """
         Initialize configuration saver.
         
         Args:
-            config_path: Path to config.jsonc file
-            secrets_path: Path to secrets.json file
+            config_path: Path to config.jsonc file (if None, uses get_config_dir())
+            secrets_path: Path to secrets.json file (if None, uses get_config_dir())
         """
-        self.config_path = config_path
-        self.secrets_path = secrets_path
+        from core.config import get_config_dir
+        
+        config_dir = get_config_dir()
+        
+        if config_path is None:
+            self.config_path = str(config_dir / "config.jsonc")
+        else:
+            self.config_path = config_path
+            
+        if secrets_path is None:
+            self.secrets_path = str(config_dir / "secrets.json")
+        else:
+            self.secrets_path = secrets_path
     
     def save_config(self, config: Dict[str, Any]):
         """
@@ -76,21 +87,30 @@ class ConfigSaver:
             logger.error(f"Failed to save secrets: {e}")
             raise
     
-    def save_prompt(self, app_name: str, prompt: str, prompts_dir: str = "config/prompts"):
+    def save_prompt(self, app_name: str, prompt: str, prompts_dir: str = None):
         """
         Save prompt to file.
         
         Args:
             app_name: Application name
             prompt: Prompt text
-            prompts_dir: Directory for prompts (relative to current directory)
+            prompts_dir: Directory for prompts (if None, uses get_config_dir()/config/prompts)
         """
         try:
+            from core.config import get_config_dir
+            
+            # Use config directory if prompts_dir not specified
+            if prompts_dir is None:
+                config_dir = get_config_dir()
+                prompts_dir = config_dir / "config" / "prompts"
+            else:
+                prompts_dir = Path(prompts_dir)
+            
             # Create directory if needed
-            Path(prompts_dir).mkdir(parents=True, exist_ok=True)
+            prompts_dir.mkdir(parents=True, exist_ok=True)
             
             # Save prompt
-            prompt_file = f"{prompts_dir}/{app_name}.txt"
+            prompt_file = prompts_dir / f"{app_name}.txt"
             with open(prompt_file, 'w', encoding='utf-8') as f:
                 f.write(prompt)
             
