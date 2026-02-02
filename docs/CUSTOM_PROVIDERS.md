@@ -54,7 +54,7 @@ RapidWhisper поддерживает любые OpenAI-совместимые A
 AI_PROVIDER=custom
 CUSTOM_API_KEY=your_api_key_here
 CUSTOM_BASE_URL=http://localhost:1234/v1/
-CUSTOM_MODEL=whisper-1
+CUSTOM_MODEL=
 ```
 
 ## Примеры настройки
@@ -147,7 +147,6 @@ LocalAI - локальная альтернатива OpenAI API.
 AI_PROVIDER=custom
 CUSTOM_API_KEY=local
 CUSTOM_BASE_URL=http://localhost:8080/v1/
-CUSTOM_MODEL=whisper-1
 ```
 
 ### Удаленный сервер

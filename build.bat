@@ -42,11 +42,13 @@ echo Сборка .exe файла...
 echo Включаются:
 echo   - Иконки (public/icons/*.svg, *.png)
 echo   - Промпты форматирования (config/prompts/*.txt)
+echo   - Переводы интерфейса (utils/translations/*.json)
 echo   - Основная иконка (public/RapidWhisper.ico)
 echo.
-echo НЕ включаются:
-echo   - config.jsonc (создается в %%APPDATA%%\RapidWhisper)
-echo   - secrets.json (создается в %%APPDATA%%\RapidWhisper)
+echo PORTABLE MODE:
+echo   - config.jsonc создается рядом с .exe
+echo   - secrets.json создается рядом с .exe
+echo   - Логи сохраняются рядом с .exe
 echo.
 
 uv run pyinstaller RapidWhisper.spec --clean
@@ -81,11 +83,12 @@ echo ========================================
 echo.
 echo Файл: dist\RapidWhisper.exe
 echo.
-echo ВАЖНО: 
-echo   - В .exe НЕТ config.jsonc и secrets.json
-echo   - Настройки сохраняются в %%APPDATA%%\RapidWhisper\
-echo   - При первом запуске создаются дефолтные конфиги
-echo   - Пользователь настраивает через окно настроек
+echo PORTABLE MODE:
+echo   - Все конфиги создаются рядом с .exe
+echo   - config.jsonc (настройки приложения)
+echo   - secrets.json (API ключи)
+echo   - rapidwhisper.log (логи)
+echo   - config/prompts/ (промпты форматирования)
 echo.
 echo Включено в сборку:
 echo   - Иконки для UI (public/icons/)
@@ -95,6 +98,7 @@ echo   - Основная иконка приложения
 echo.
 echo Для распространения нужен только:
 echo   - dist\RapidWhisper.exe
+echo   - config/prompts/ (будет создана автоматически)
 echo.
 echo Примечание: Предупреждение "tzdata not found" можно игнорировать.
 echo.

@@ -65,7 +65,7 @@ class TranscriptionClient:
         # Настроить параметры в зависимости от провайдера
         if self.provider == "openai":
             self.base_url = "https://api.openai.com/v1/"
-            self.model = model if model else "whisper-1"  # Используем кастомную модель если указана
+            self.model = model if model else ""  # Используем кастомную модель если указана
         elif self.provider == "groq":
             self.base_url = "https://api.groq.com/openai/v1/"
             self.model = model if model else "whisper-large-v3"  # Используем кастомную модель если указана

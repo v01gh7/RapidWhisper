@@ -7,6 +7,7 @@
 
 import os
 import locale
+import sys
 from typing import List, Optional
 from pathlib import Path
 from dotenv import load_dotenv
@@ -82,21 +83,23 @@ def get_config_dir() -> Path:
     """
     Возвращает путь к директории конфигурации приложения.
     
-    Для Windows: %APPDATA%/RapidWhisper
-    Для macOS: ~/Library/Application Support/RapidWhisper
-    Для Linux: ~/.config/RapidWhisper
+    PORTABLE MODE: Конфиги хранятся рядом с .exe файлом
+    - При запуске из .exe: рядом с .exe
+    - При разработке: в текущей директории
     
     Returns:
         Path: Путь к директории конфигурации
     """
-    if os.name == 'nt':  # Windows
-        base_dir = Path(os.getenv('APPDATA', '~'))
-    elif os.sys.platform == 'darwin':  # macOS
-        base_dir = Path.home() / 'Library' / 'Application Support'
-    else:  # Linux
-        base_dir = Path.home() / '.config'
+    # Проверить, запущено ли из PyInstaller
+    if getattr(sys, 'frozen', False):
+        # Запущено из .exe - используем директорию где лежит .exe
+        exe_dir = Path(sys.executable).parent
+        config_dir = exe_dir
+    else:
+        # Разработка - используем текущую директорию
+        config_dir = Path.cwd()
     
-    config_dir = base_dir / 'RapidWhisper'
+    # Создать директорию если не существует
     config_dir.mkdir(parents=True, exist_ok=True)
     return config_dir
 
@@ -202,7 +205,7 @@ GLM_API_KEY=
 # Examples: LM Studio, Ollama, vLLM, LocalAI, etc.
 CUSTOM_API_KEY=your_api_key_here
 CUSTOM_BASE_URL=http://localhost:1234/v1/
-CUSTOM_MODEL=whisper-1
+CUSTOM_MODEL=
 
 # ============================================
 # Application Settings (OPTIONAL)
@@ -313,7 +316,7 @@ class Config:
         self.groq_api_key: str = ""
         self.custom_api_key: str = ""
         self.custom_base_url: str = ""
-        self.custom_model: str = "whisper-1"  # Используется для всех провайдеров если указано
+        self.custom_model: str = ""  # Используется для всех провайдеров если указано
         self.transcription_model: str = ""  # Модель для транскрипции (если пусто - используется дефолтная для провайдера)
         
         # Параметры приложения
@@ -647,7 +650,7 @@ class Config:
         config.glm_api_key = config_loader.get("ai_provider.api_keys.glm", "")
         config.custom_api_key = config_loader.get("ai_provider.custom.api_key", "")
         config.custom_base_url = config_loader.get("ai_provider.custom.base_url", "")
-        config.custom_model = config_loader.get("ai_provider.custom.model", "whisper-1")
+        config.custom_model = config_loader.get("ai_provider.custom.model", "")
         config.transcription_model = config_loader.get("ai_provider.transcription_model", "")
         
         # Параметры приложения

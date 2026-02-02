@@ -7,11 +7,233 @@ and provides backward compatibility with .env format.
 
 import json
 import os
+import sys
+import shutil
 from pathlib import Path
 from typing import Dict, Any, Optional
 from utils.logger import get_logger
 
 logger = get_logger()
+
+
+def create_default_configs():
+    """
+    Создает дефолтные config.jsonc и secrets.json если их нет.
+    
+    Копирует из примеров или создает с минимальными настройками.
+    """
+    from core.config import get_config_dir
+    
+    config_dir = get_config_dir()
+    config_path = config_dir / "config.jsonc"
+    secrets_path = config_dir / "secrets.json"
+    
+    # Создать config.jsonc если его нет
+    if not config_path.exists():
+        logger.info(f"Creating default config.jsonc at {config_path}")
+        
+        # Попробовать скопировать из примера
+        example_path = Path("config.jsonc.example")
+        if example_path.exists():
+            shutil.copy(example_path, config_path)
+            logger.info("Copied from config.jsonc.example")
+        else:
+            # Создать минимальный конфиг
+            # Читаем из встроенного ресурса если это .exe
+            if hasattr(sys, '_MEIPASS'):
+                # Запущено из PyInstaller
+                example_path = Path(sys._MEIPASS) / "config.jsonc.example"
+                if example_path.exists():
+                    shutil.copy(example_path, config_path)
+                    logger.info("Copied from bundled config.jsonc.example")
+                else:
+                    _create_minimal_config(config_path)
+            else:
+                _create_minimal_config(config_path)
+    
+    # Создать secrets.json если его нет
+    if not secrets_path.exists():
+        logger.info(f"Creating default secrets.json at {secrets_path}")
+        
+        example_path = Path("secrets.json.example")
+        if example_path.exists():
+            shutil.copy(example_path, secrets_path)
+            logger.info("Copied from secrets.json.example")
+        else:
+            # Создать минимальный secrets
+            if hasattr(sys, '_MEIPASS'):
+                example_path = Path(sys._MEIPASS) / "secrets.json.example"
+                if example_path.exists():
+                    shutil.copy(example_path, secrets_path)
+                    logger.info("Copied from bundled secrets.json.example")
+                else:
+                    _create_minimal_secrets(secrets_path)
+            else:
+                _create_minimal_secrets(secrets_path)
+
+
+def _create_minimal_config(config_path: Path):
+    """Создает минимальный config.jsonc с полными app_prompts и web_keywords"""
+    minimal_config = {
+        "ai_provider": {
+            "provider": "groq",
+            "transcription_model": "",
+            "api_keys": {
+                "groq": "",
+                "openai": "",
+                "glm": ""
+            },
+            "custom": {
+                "api_key": "",
+                "base_url": "http://localhost:1234/v1/",
+                "model": ""
+            }
+        },
+        "application": {
+            "hotkey": "ctrl+space",
+            "format_selection_hotkey": "ctrl+alt+space"
+        },
+        "audio": {
+            "silence_threshold": 0.02,
+            "silence_duration": 1.5,
+            "sample_rate": 16000,
+            "chunk_size": 1024,
+            "silence_padding": 650,
+            "manual_stop": False
+        },
+        "window": {
+            "auto_hide_delay": 2.5,
+            "remember_position": True,
+            "position_preset": "center",
+            "position_x": None,
+            "position_y": None,
+            "opacity": 150,
+            "font_sizes": {
+                "floating_main": 14,
+                "floating_info": 11,
+                "settings_labels": 12,
+                "settings_titles": 24
+            }
+        },
+        "recording": {
+            "keep_recordings": False,
+            "recordings_path": ""
+        },
+        "post_processing": {
+            "enabled": False,
+            "provider": "groq",
+            "model": "llama-3.3-70b-versatile",
+            "custom_model": "",
+            "prompt": "You are a text editor. Your task: fix grammatical errors, add punctuation and improve text readability. Preserve the original meaning and style. Don't add anything extra. Return only the corrected text without comments.",
+            "glm_use_coding_plan": False,
+            "llm": {
+                "base_url": "http://localhost:1234/v1/",
+                "api_key": "local"
+            }
+        },
+        "formatting": {
+            "enabled": True,
+            "use_fixed_format": False,
+            "fixed_format_name": "whatsapp",
+            "app_prompts": {
+                "notion": "config/prompts/notion.txt",
+                "obsidian": "config/prompts/obsidian.txt",
+                "markdown": "config/prompts/markdown.txt",
+                "word": "config/prompts/word.txt",
+                "libreoffice": "config/prompts/libreoffice.txt",
+                "vscode": "config/prompts/vscode.txt",
+                "_fallback": "config/prompts/_fallback.txt",
+                "bbcode": "config/prompts/bbcode.txt",
+                "whatsapp": "config/prompts/whatsapp.txt"
+            },
+            "web_app_keywords": {
+                "bbcode": [
+                    "bitrix24", "b24", "битрикс24", "битрикс", "phpbb", "vbulletin", "mybb",
+                    "smf", "simple machines", "xenforo", "invision", "ipboard", "forum", "форум",
+                    "board", "доска", "reddit", "реддит", "stack overflow", "stackoverflow",
+                    "stack exchange", "мои задачи", "4pda", "habr", "хабр", "pikabu", "пикабу"
+                ],
+                "libreoffice": [
+                    "libreoffice", "soffice", "writer", ".odt"
+                ],
+                "markdown": [
+                    ".markdown", ".md", "dillinger", "github.dev", "gitlab", "gitpod",
+                    "hackmd", "markdown", "stackedit", "typora online"
+                ],
+                "notion": [
+                    "notion", "notion.app", "notion.exe", "notion.so"
+                ],
+                "obsidian": [
+                    "obsidian", "obsidian publish", "obsidian.app", "obsidian.exe"
+                ],
+                "vscode": [
+                    "code", "vscode", "visual studio code"
+                ],
+                "whatsapp": [
+                    "discord", "discord.app", "discord.exe", "element", "matrix", "mattermost",
+                    "rocket.chat", "rocketchat", "signal", "skype", "slack", "slack.app",
+                    "slack.exe", "telegram", "viber", "whats app", "whatsapp", "whatsapp.app",
+                    "whatsapp.exe", "вайбер", "ватсап", "вотсап", "дискорд", "сигнал",
+                    "скайп", "слак", "телеграм", "телеграмм"
+                ],
+                "word": [
+                    ".doc", ".docx", "airtable", "coda.io", "dropbox paper", "google docs",
+                    "google forms", "google keep", "google sheets", "google slides",
+                    "google документ", "google документы", "google презентации",
+                    "google презентация", "google таблица", "google таблицы",
+                    "google форма", "google формы", "microsoft excel online",
+                    "microsoft powerpoint online", "microsoft word", "microsoft word online",
+                    "office 365", "office online", "quip", "winword.exe", "word",
+                    "zoho sheet", "zoho show", "zoho writer"
+                ]
+            },
+            "custom": {
+                "api_key": "",
+                "base_url": "http://localhost:1234/v1/",
+                "model": "llama-3.3-70b-versatile"
+            }
+        },
+        "localization": {
+            "language": "en"
+        },
+        "logging": {
+            "level": "INFO",
+            "file": "rapidwhisper.log"
+        },
+        "about": {
+            "github_url": "https://github.com/yourusername/rapidwhisper",
+            "docs_url": "https://github.com/yourusername/rapidwhisper/tree/main/docs"
+        }
+    }
+    
+    with open(config_path, 'w', encoding='utf-8') as f:
+        json.dump(minimal_config, f, indent=2, ensure_ascii=False)
+    logger.info(f"Created minimal config at {config_path}")
+
+
+def _create_minimal_secrets(secrets_path: Path):
+    """Создает минимальный secrets.json"""
+    minimal_secrets = {
+        "ai_provider": {
+            "api_keys": {
+                "groq": "",
+                "openai": "",
+                "glm": ""
+            },
+            "custom": {
+                "api_key": ""
+            }
+        },
+        "formatting": {
+            "custom": {
+                "api_key": ""
+            }
+        }
+    }
+    
+    with open(secrets_path, 'w', encoding='utf-8') as f:
+        json.dump(minimal_secrets, f, indent=2, ensure_ascii=False)
+    logger.info(f"Created minimal secrets at {secrets_path}")
 
 
 def strip_json_comments(json_str: str) -> str:
@@ -184,6 +406,9 @@ class ConfigLoader:
         Returns:
             Configuration dictionary
         """
+        # Создать дефолтные конфиги если их нет
+        create_default_configs()
+        
         # Try to load from config.jsonc
         if os.path.exists(self.config_path):
             logger.info(f"Loading configuration from {self.config_path}")

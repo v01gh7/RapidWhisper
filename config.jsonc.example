@@ -18,7 +18,7 @@
     // API keys are stored in secrets.json (not in git)
     "custom": {
       "base_url": "http://localhost:1234/v1/",
-      "model": "whisper-1"
+      "model": ""
     }
   },
   "application": {

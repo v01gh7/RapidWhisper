@@ -159,3 +159,7 @@ secrets.json
 config.jsonc
 dep.env
 # Build artifacts
+
+
+build/
+statistics.json

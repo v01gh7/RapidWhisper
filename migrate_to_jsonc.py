@@ -37,7 +37,7 @@ def load_env_file(env_path=".env"):
         "provider": os.getenv("AI_PROVIDER", "groq"),
         "custom": {
             "base_url": os.getenv("CUSTOM_BASE_URL", "http://localhost:1234/v1/"),
-            "model": os.getenv("CUSTOM_MODEL", "whisper-1")
+            "model": os.getenv("CUSTOM_MODEL", "")
         }
     }
     
