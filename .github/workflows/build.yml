@@ -1,0 +1,160 @@
+name: Build RapidWhisper
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Позволяет запускать вручную
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+    
+    - name: Install uv
+      run: |
+        pip install uv
+    
+    - name: Install dependencies
+      run: |
+        uv pip install --system -r requirements.txt
+        uv pip install --system pyinstaller
+    
+    - name: Build Windows executable
+      run: |
+        pyinstaller RapidWhisper.spec --clean
+    
+    - name: Upload Windows artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: RapidWhisper-Windows
+        path: dist/RapidWhisper.exe
+        retention-days: 30
+
+  build-macos:
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+    
+    - name: Install uv
+      run: |
+        pip install uv
+    
+    - name: Install dependencies
+      run: |
+        uv pip install --system -r requirements.txt
+        uv pip install --system pyinstaller
+    
+    - name: Build macOS executable
+      run: |
+        pyinstaller RapidWhisper.spec --clean
+    
+    - name: Create DMG (optional)
+      run: |
+        # Создать .app bundle
+        mkdir -p "dist/RapidWhisper.app/Contents/MacOS"
+        mv dist/RapidWhisper "dist/RapidWhisper.app/Contents/MacOS/"
+        
+        # Создать Info.plist
+        cat > "dist/RapidWhisper.app/Contents/Info.plist" << EOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>CFBundleExecutable</key>
+            <string>RapidWhisper</string>
+            <key>CFBundleIdentifier</key>
+            <string>com.rapidwhisper.app</string>
+            <key>CFBundleName</key>
+            <string>RapidWhisper</string>
+            <key>CFBundleVersion</key>
+            <string>1.0.0</string>
+            <key>CFBundleShortVersionString</key>
+            <string>1.0.0</string>
+        </dict>
+        </plist>
+        EOF
+        
+        # Создать DMG
+        hdiutil create -volname "RapidWhisper" -srcfolder "dist/RapidWhisper.app" -ov -format UDZO "dist/RapidWhisper-macOS.dmg"
+    
+    - name: Upload macOS artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: RapidWhisper-macOS
+        path: dist/RapidWhisper-macOS.dmg
+        retention-days: 30
+
+  build-linux:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y portaudio19-dev python3-pyqt6
+    
+    - name: Install uv
+      run: |
+        pip install uv
+    
+    - name: Install dependencies
+      run: |
+        uv pip install --system -r requirements.txt
+        uv pip install --system pyinstaller
+    
+    - name: Build Linux executable
+      run: |
+        pyinstaller RapidWhisper.spec --clean
+    
+    - name: Upload Linux artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: RapidWhisper-Linux
+        path: dist/RapidWhisper
+        retention-days: 30
+
+  # Создать релиз при пуше тега
+  release:
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          RapidWhisper-Windows/RapidWhisper.exe
+          RapidWhisper-macOS/RapidWhisper-macOS.dmg
+          RapidWhisper-Linux/RapidWhisper
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

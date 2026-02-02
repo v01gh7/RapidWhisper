@@ -1,8 +1,15 @@
 """
-RapidWhisper - Главное приложение.
+RapidWhisper - Main Application.
 
-Минималистичное приложение для быстрой транскрипции речи с микрофона
-используя Zhipu GLM API.
+Minimalist application for fast speech transcription from microphone
+using AI APIs (Groq, OpenAI, GLM).
+
+Copyright (c) 2026 V01GH7 - All Rights Reserved
+Licensed under Proprietary Software License - Personal Use Only
+See LICENSE file: https://github.com/V01GH7/RapidWhisper/blob/main/LICENSE
+
+NOTICE: This is proprietary software. Source code access, modification,
+and distribution are prohibited without written permission.
 """
 
 import sys

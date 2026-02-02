@@ -329,9 +329,60 @@ mypy .
   sudo apt-get install portaudio19-dev python3-pyaudio
   ```
 
+## 🏗️ Building for Multiple Platforms
+
+### Automatic Build (Recommended)
+
+RapidWhisper uses **GitHub Actions** to automatically build for Windows, macOS, and Linux:
+
+1. **Push code to GitHub** - builds start automatically
+2. **Download artifacts** from Actions tab
+3. **Create release** by pushing a tag: `git tag v1.0.0 && git push origin v1.0.0`
+
+**No Mac required!** GitHub provides free macOS runners.
+
+📖 **Full guide**: See [BUILD_CROSS_PLATFORM.md](BUILD_CROSS_PLATFORM.md) for detailed instructions.
+
+### Manual Build
+
+**Windows:**
+```bash
+build.bat
+```
+
+**macOS/Linux:**
+```bash
+pyinstaller RapidWhisper.spec --clean
+```
+
 ## License
 
-[Add your license here]
+**Proprietary Software - Free for Personal & Business Use**
+
+Copyright (c) 2026 V01GH7 - All Rights Reserved
+
+✅ **Allowed:**
+- Personal use free of charge
+- Use at work for your own tasks
+- Use in business for your own productivity
+- Use anywhere as long as YOU are the end user
+
+❌ **Prohibited:**
+- Viewing or accessing source code
+- Selling the software or its copies
+- Selling services based on the software
+- Distribution or sharing binaries
+- Modification or reverse engineering
+- Resale or sublicensing
+
+📧 For commercial licenses (selling services/products based on this software), contact the author.
+
+📖 **More Information:**
+- Full License: [LICENSE](LICENSE)
+- Detailed Explanation: [LICENSE_EXPLAINED.md](LICENSE_EXPLAINED.md)
+- Business Use Clarification: [LICENSE_CLARIFICATION.md](LICENSE_CLARIFICATION.md)
+
+**Note:** This is proprietary software. Source code is not available for viewing or modification.
 
 ## Contributing
 
