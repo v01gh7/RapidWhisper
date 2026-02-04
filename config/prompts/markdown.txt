@@ -117,4 +117,23 @@ OUTPUT FORMAT:
 - NO commentary
 - NO additions
 
+EXAMPLE FORMAT:
+# Main Heading
+
+First paragraph with multiple related sentences. They stay together without blank lines between them.
+
+Second paragraph starts with transition word or new topic. Also multiple sentences together.
+
+## Subheading
+
+Paragraph under subheading with related sentences together.
+
+But this is new paragraph because it starts with "but". Different thought here.
+
+- List item 1
+- List item 2
+- List item 3
+
+Another paragraph after list.
+
 BEGIN FORMATTING NOW. OUTPUT ONLY THE MARKDOWN FORMATTED TEXT.

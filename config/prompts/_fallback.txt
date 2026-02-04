@@ -93,4 +93,11 @@ OUTPUT FORMAT:
 - NO commentary
 - NO additions
 
+EXAMPLE FORMAT:
+First paragraph with multiple related sentences. They stay together. More text in same paragraph.
+
+Second paragraph starts with transition word or new topic. Also multiple sentences together. More text here.
+
+But this is new paragraph because it starts with "but". Different thought here.
+
 BEGIN FORMATTING NOW. OUTPUT ONLY THE FORMATTED TEXT.

@@ -111,4 +111,28 @@ OUTPUT FORMAT:
 - NO commentary
 - NO additions
 
+EXAMPLE FORMAT:
+<h1>Main Heading</h1>
+<p>First paragraph with multiple related sentences. They stay together in one p tag.</p>
+<p>Second paragraph starts with transition word or new topic. Also multiple sentences together.</p>
+<h2>Subheading</h2>
+<p>Paragraph under subheading with related sentences together.</p>
+<p>But this is new paragraph because it starts with "but". Different thought here.</p>
+<ul>
+<li>List item 1</li>
+<li>List item 2</li>
+<li>List item 3</li>
+</ul>
+<p>Another paragraph after list.</p>
+
+WRONG EXAMPLE (DO NOT DO THIS):
+<p>помидоры, томаты, арбузы</p>  ← WRONG! This should be a list!
+
+CORRECT:
+<ul>
+<li>помидоры</li>
+<li>томаты</li>
+<li>арбузы</li>
+</ul>
+
 BEGIN FORMATTING NOW. OUTPUT ONLY THE HTML FORMATTED TEXT.
