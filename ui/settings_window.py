@@ -1135,6 +1135,17 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         self.post_processing_custom_model_edit.setPlaceholderText(t("settings.processing.custom_model_placeholder"))
         settings_form.addRow(self.post_processing_custom_model_label, self.post_processing_custom_model_edit)
         
+        # Max Tokens
+        max_tokens_label = QLabel("Max Tokens")
+        max_tokens_label.setToolTip("Максимальное количество токенов для ответа модели (по умолчанию 16000)")
+        self.post_processing_max_tokens_spin = NoScrollSpinBox()
+        self.post_processing_max_tokens_spin.setMinimum(100)
+        self.post_processing_max_tokens_spin.setMaximum(128000)
+        self.post_processing_max_tokens_spin.setSingleStep(1000)
+        self.post_processing_max_tokens_spin.setValue(16000)
+        self.post_processing_max_tokens_spin.setCursor(Qt.CursorShape.PointingHandCursor)
+        settings_form.addRow(max_tokens_label, self.post_processing_max_tokens_spin)
+        
         # GLM Coding Plan чекбокс (показывается только для GLM)
         self.glm_coding_plan_check = QCheckBox(t("settings.processing.glm_coding_plan"))
         self.glm_coding_plan_check.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -2625,6 +2636,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         # Постобработка
         self.enable_post_processing_check.setChecked(self.config.enable_post_processing)
         self.post_processing_provider_combo.setCurrentText(self.config.post_processing_provider)
+        self.post_processing_max_tokens_spin.setValue(self.config.post_processing_max_tokens)
         
         # GLM Coding Plan
         self.glm_coding_plan_check.setChecked(self.config.glm_use_coding_plan)
@@ -2776,6 +2788,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         self.post_processing_provider_combo.setEnabled(checked)
         self.post_processing_model_combo.setEnabled(checked)
         self.post_processing_custom_model_edit.setEnabled(checked)
+        self.post_processing_max_tokens_spin.setEnabled(checked)
         self.post_processing_prompt_edit.setEnabled(checked)
     
     def _on_post_processing_provider_changed(self, provider: str):
@@ -3268,6 +3281,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             'post_processing_provider': self.post_processing_provider_combo.currentText(),
             'post_processing_model': self.post_processing_model_combo.currentText(),
             'post_processing_custom_model': self.post_processing_custom_model_edit.text(),
+            'post_processing_max_tokens': self.post_processing_max_tokens_spin.value(),
             'post_processing_prompt': self.post_processing_prompt_edit.toPlainText(),
             'glm_coding_plan': self.glm_coding_plan_check.isChecked(),
             'llm_base_url': self.llm_base_url_edit.text(),
@@ -3304,6 +3318,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         self.post_processing_provider_combo.setCurrentText(values['post_processing_provider'])
         self.post_processing_model_combo.setCurrentText(values['post_processing_model'])
         self.post_processing_custom_model_edit.setText(values['post_processing_custom_model'])
+        self.post_processing_max_tokens_spin.setValue(values.get('post_processing_max_tokens', 16000))
         
         # Проверить, является ли промпт дефолтным на любом языке
         current_prompt = values['post_processing_prompt']
@@ -3413,8 +3428,8 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             old_language = self.config.interface_language
             language_changed = (selected_language != old_language)
             
-            # Экранировать многострочные значения (заменить переносы строк на \n)
-            post_processing_prompt = self.post_processing_prompt_edit.toPlainText().replace('\n', '\\n')
+            # Получить промпт как есть - JSON сам правильно экранирует переносы строк
+            post_processing_prompt = self.post_processing_prompt_edit.toPlainText()
             
             # Подготовить обновления для config.jsonc
             config_updates = {
@@ -3443,6 +3458,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                 "post_processing.provider": self.post_processing_provider_combo.currentText(),
                 "post_processing.model": self.post_processing_model_combo.currentText(),
                 "post_processing.custom_model": self.post_processing_custom_model_edit.text(),
+                "post_processing.max_tokens": int(self.post_processing_max_tokens_spin.value()),
                 "post_processing.prompt": post_processing_prompt,
                 "post_processing.glm_use_coding_plan": self.glm_coding_plan_check.isChecked(),
                 "post_processing.llm.base_url": self.llm_base_url_edit.text(),

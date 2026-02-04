@@ -202,7 +202,7 @@ class TestProperty4_AnthropicAPIRequestStructure:
         # Проверяем структуру запроса
         call_kwargs = mock_client.messages.create.call_args[1]
         assert call_kwargs['model'] == model
-        assert call_kwargs['max_tokens'] == 2000
+        assert call_kwargs['max_tokens'] == 16000  # Дефолтное значение
         assert call_kwargs['temperature'] == temperature
         assert call_kwargs['system'] == system_prompt
         assert call_kwargs['messages'] == [{"role": "user", "content": text}]
@@ -250,7 +250,7 @@ class TestProperty4_AnthropicAPIRequestStructure:
         # Проверяем что используются значения по умолчанию
         call_kwargs = mock_client.messages.create.call_args[1]
         assert call_kwargs['temperature'] == 0.3  # Значение по умолчанию
-        assert call_kwargs['max_tokens'] == 2000  # Значение по умолчанию
+        assert call_kwargs['max_tokens'] == 16000  # Значение по умолчанию
 
 
 class TestProperty5_ResponseParsingCorrectness:

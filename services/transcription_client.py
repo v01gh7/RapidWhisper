@@ -312,7 +312,7 @@ class TranscriptionClient:
         else:
             return f"Ошибка API: {error}"
     
-    def post_process_text(self, text: str, provider: str, model: str, system_prompt: str, api_key: Optional[str] = None, base_url: Optional[str] = None, use_coding_plan: bool = False, temperature: float = 0.3) -> str:
+    def post_process_text(self, text: str, provider: str, model: str, system_prompt: str, api_key: Optional[str] = None, base_url: Optional[str] = None, use_coding_plan: bool = False, temperature: float = 0.3, max_tokens: int = 16000) -> str:
         """
         Постобработка транскрибированного текста через LLM.
         
@@ -327,6 +327,8 @@ class TranscriptionClient:
             api_key: API ключ (если None, загружается из env)
             base_url: Base URL для LLM провайдера (локальные модели)
             use_coding_plan: Использовать Coding Plan endpoint для GLM
+            temperature: Температура для генерации (по умолчанию 0.3)
+            max_tokens: Максимальное количество токенов для ответа (по умолчанию 16000)
         
         Returns:
             Обработанный текст
@@ -396,7 +398,7 @@ class TranscriptionClient:
                 
                 # Отправить запрос через Anthropic API
                 logger.info("Отправка запроса на постобработку через Anthropic API...")
-                logger.info(f"Параметры: temperature={temperature}, max_tokens=2000")
+                logger.info(f"Параметры: temperature={temperature}, max_tokens={max_tokens}")
                 logger.info(f"Отправка к {base_url} с моделью {model}...")
                 logger.info("⏱️ Таймаут: 130 секунд")
                 
@@ -406,7 +408,7 @@ class TranscriptionClient:
                 # Anthropic API использует другой формат запроса
                 response = anthropic_client.messages.create(
                     model=model,
-                    max_tokens=2000,
+                    max_tokens=max_tokens,
                     temperature=temperature,
                     system=system_prompt,  # Anthropic использует отдельный параметр system
                     messages=[
@@ -478,7 +480,7 @@ class TranscriptionClient:
                 
                 # Отправить запрос на обработку
                 logger.info("Отправка запроса на постобработку...")
-                logger.info(f"Параметры: temperature={temperature}, max_tokens=2000")
+                logger.info(f"Параметры: temperature={temperature}, max_tokens={max_tokens}")
                 logger.info(f"Отправка к {base_url} с моделью {model}...")
                 logger.info("⏱️ Таймаут: 60 секунд (после этого вернется оригинальный текст)")
                 
@@ -492,7 +494,7 @@ class TranscriptionClient:
                         {"role": "user", "content": text}
                     ],
                     temperature=temperature,  # Use provided temperature
-                    max_tokens=2000,
+                    max_tokens=max_tokens,
                     timeout=60.0  # Дополнительный таймаут на уровне запроса
                 )
                 

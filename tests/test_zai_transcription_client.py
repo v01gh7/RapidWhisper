@@ -166,7 +166,7 @@ class TestZAIClientPostProcessText:
         mock_client.messages.create.assert_called_once()
         call_kwargs = mock_client.messages.create.call_args[1]
         assert call_kwargs['model'] == "GLM-4.7"
-        assert call_kwargs['max_tokens'] == 2000
+        assert call_kwargs['max_tokens'] == 16000  # Дефолтное значение
         assert call_kwargs['temperature'] == 0.3
         assert call_kwargs['system'] == "Добавь пунктуацию"
         assert call_kwargs['messages'] == [

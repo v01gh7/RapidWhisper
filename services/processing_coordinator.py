@@ -229,7 +229,8 @@ IMPORTANT: Both steps are required. Output must be both corrected AND formatted.
                 system_prompt=combined_prompt,
                 api_key=api_key,
                 base_url=config.llm_base_url if config.post_processing_provider == "llm" else None,
-                use_coding_plan=config.glm_use_coding_plan if config.post_processing_provider == "glm" else False
+                use_coding_plan=config.glm_use_coding_plan if config.post_processing_provider == "glm" else False,
+                max_tokens=config.post_processing_max_tokens
             )
             
             # Check if processing actually worked (not just returned original text)
@@ -300,7 +301,8 @@ IMPORTANT: Both steps are required. Output must be both corrected AND formatted.
                 system_prompt=config.post_processing_prompt,
                 api_key=api_key,
                 base_url=config.llm_base_url if config.post_processing_provider == "llm" else None,
-                use_coding_plan=config.glm_use_coding_plan if config.post_processing_provider == "glm" else False
+                use_coding_plan=config.glm_use_coding_plan if config.post_processing_provider == "glm" else False,
+                max_tokens=config.post_processing_max_tokens
             )
             
             # Check if processing actually worked
@@ -380,7 +382,8 @@ IMPORTANT: Both steps are required. Output must be both corrected AND formatted.
                 model=model,
                 system_prompt=fallback_prompt,
                 api_key=api_key,
-                temperature=temperature
+                temperature=temperature,
+                max_tokens=config.post_processing_max_tokens
             )
             
             # Check if formatting actually worked
