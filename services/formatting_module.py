@@ -281,6 +281,12 @@ class FormattingModule:
                     config_loader = get_config_loader()
                     api_key = config_loader.get("ai_provider.api_keys.glm")
                     logger.info(f"  🔑 Загружен GLM_API_KEY: {api_key[:10] if api_key else 'НЕ НАЙДЕН'}...")
+                elif self.config.provider == "zai":
+                    # Z.AI uses GLM_API_KEY
+                    from core.config_loader import get_config_loader
+                    config_loader = get_config_loader()
+                    api_key = config_loader.get("ai_provider.api_keys.glm")
+                    logger.info(f"  🔑 Загружен GLM_API_KEY для Z.AI: {api_key[:10] if api_key else 'НЕ НАЙДЕН'}...")
                 elif self.config.provider == "custom":
                     # Custom API key is in self.config.custom_api_key (loaded from secrets.json)
                     api_key = self.config.custom_api_key
@@ -312,7 +318,8 @@ class FormattingModule:
                 provider=self.config.provider,
                 model=self.config.get_model(),
                 system_prompt=format_prompt,
-                temperature=self.config.temperature
+                temperature=self.config.temperature,
+                api_key=api_key
             )
             
             logger.info("  ✅ Текст успешно отформатирован")

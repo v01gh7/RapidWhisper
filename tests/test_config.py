@@ -342,6 +342,60 @@ class TestConfigValidation:
         assert any("SILENCE_THRESHOLD" in error for error in errors)
         assert any("WINDOW_WIDTH" in error for error in errors)
         assert any("SAMPLE_RATE" in error for error in errors)
+    
+    def test_zai_provider_is_valid(self):
+        """
+        Тест что Z.AI является валидным провайдером.
+        
+        Validates: Requirements 1.5
+        """
+        config = Config()
+        config.ai_provider = "zai"
+        config.glm_api_key = "valid_glm_key"
+        
+        errors = config.validate()
+        
+        # Не должно быть ошибок о неизвестном провайдере
+        assert not any("AI_PROVIDER должен быть одним из" in error for error in errors)
+    
+    def test_zai_requires_glm_api_key(self):
+        """
+        Тест что Z.AI требует GLM_API_KEY.
+        
+        Validates: Requirements 1.2
+        """
+        config = Config()
+        config.ai_provider = "zai"
+        config.glm_api_key = ""
+        
+        errors = config.validate()
+        
+        assert len(errors) >= 1
+        assert any("GLM_API_KEY" in error and "Z.AI" in error for error in errors)
+    
+    def test_has_api_key_for_zai(self):
+        """
+        Тест что has_api_key() возвращает True для Z.AI с GLM_API_KEY.
+        
+        Validates: Requirements 1.2
+        """
+        config = Config()
+        config.ai_provider = "zai"
+        config.glm_api_key = "valid_glm_key"
+        
+        assert config.has_api_key() is True
+    
+    def test_has_api_key_false_for_zai_without_key(self):
+        """
+        Тест что has_api_key() возвращает False для Z.AI без GLM_API_KEY.
+        
+        Validates: Requirements 1.2
+        """
+        config = Config()
+        config.ai_provider = "zai"
+        config.glm_api_key = ""
+        
+        assert config.has_api_key() is False
 
 
 class TestConfigRepr:

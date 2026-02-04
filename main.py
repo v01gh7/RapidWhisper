@@ -903,6 +903,8 @@ class RapidWhisperApp(QObject):
             return self.config.groq_api_key
         elif self.config.ai_provider == "glm":
             return self.config.glm_api_key
+        elif self.config.ai_provider == "zai":
+            return self.config.glm_api_key  # Z.AI использует GLM_API_KEY
         elif self.config.ai_provider == "custom":
             return self.config.custom_api_key
         return None

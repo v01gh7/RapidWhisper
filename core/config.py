@@ -722,7 +722,7 @@ class Config:
         errors: List[str] = []
         
         # Проверка AI Provider
-        valid_providers = ["openai", "groq", "glm", "custom"]
+        valid_providers = ["openai", "groq", "glm", "custom", "zai"]
         if self.ai_provider not in valid_providers:
             errors.append(f"AI_PROVIDER должен быть одним из {valid_providers}, получено: {self.ai_provider}")
         
@@ -733,6 +733,8 @@ class Config:
             errors.append("GROQ_API_KEY не найден в secrets.json. Получите ключ на https://console.groq.com/keys")
         elif self.ai_provider == "glm" and not self.glm_api_key:
             errors.append("GLM_API_KEY не найден в secrets.json. Получите ключ на https://open.bigmodel.cn/")
+        elif self.ai_provider == "zai" and not self.glm_api_key:
+            errors.append("GLM_API_KEY не найден в secrets.json. Z.AI использует GLM_API_KEY. Получите ключ на https://open.bigmodel.cn/")
         elif self.ai_provider == "custom":
             if not self.custom_api_key:
                 errors.append("CUSTOM_API_KEY не найден в secrets.json для custom провайдера")
@@ -780,6 +782,8 @@ class Config:
             return bool(self.groq_api_key)
         elif self.ai_provider == "glm":
             return bool(self.glm_api_key)
+        elif self.ai_provider == "zai":
+            return bool(self.glm_api_key)  # Z.AI использует GLM_API_KEY
         elif self.ai_provider == "custom":
             return bool(self.custom_api_key and self.custom_base_url)
         return False

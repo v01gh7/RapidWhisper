@@ -709,7 +709,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         provider_layout.setSpacing(12)
         
         self.provider_combo = NoScrollComboBox()
-        self.provider_combo.addItems(["groq", "openai", "glm", "custom"])
+        self.provider_combo.addItems(["groq", "openai", "glm", "custom", "zai"])
         self.provider_combo.currentTextChanged.connect(self._on_provider_changed)
         self.provider_combo.setCursor(Qt.CursorShape.PointingHandCursor)  # Курсор "рука"
         provider_layout.addRow(t("settings.ai_provider.label"), self.provider_combo)
@@ -1114,7 +1114,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         # Выбор провайдера
         self.post_processing_provider_combo = NoScrollComboBox()
-        self.post_processing_provider_combo.addItems(["groq", "openai", "glm", "llm"])
+        self.post_processing_provider_combo.addItems(["groq", "openai", "glm", "llm", "zai"])
         self.post_processing_provider_combo.setCursor(Qt.CursorShape.PointingHandCursor)
         self.post_processing_provider_combo.currentTextChanged.connect(self._on_post_processing_provider_changed)
         provider_label = QLabel(t("settings.processing.provider"))
@@ -1221,7 +1221,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         # Выбор провайдера для форматирования
         self.formatting_provider_combo = NoScrollComboBox()
-        self.formatting_provider_combo.addItems(["groq", "openai", "glm", "custom"])
+        self.formatting_provider_combo.addItems(["groq", "openai", "glm", "custom", "zai"])
         self.formatting_provider_combo.setCursor(Qt.CursorShape.PointingHandCursor)
         self.formatting_provider_combo.currentTextChanged.connect(self._on_formatting_provider_changed)
         formatting_provider_label = QLabel("AI провайдер")
@@ -2764,6 +2764,8 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             self.openai_key_edit.setStyleSheet("border: 2px solid #0078d4;")
         elif provider == "glm":
             self.glm_key_edit.setStyleSheet("border: 2px solid #0078d4;")
+        elif provider == "zai":
+            self.glm_key_edit.setStyleSheet("border: 2px solid #0078d4;")  # Z.AI использует GLM_API_KEY
         elif provider == "custom":
             self.custom_key_edit.setStyleSheet("border: 2px solid #0078d4;")
             self.custom_url_edit.setStyleSheet("border: 2px solid #0078d4;")
@@ -2812,6 +2814,12 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                     "glm-4-airx",
                     "glm-4-flash"
                 ]
+        elif provider == "zai":
+            # Z.AI модели через Anthropic API
+            models = [
+                "GLM-4.7",
+                "GLM-4-Plus"
+            ]
         elif provider == "llm":
             # LLM - локальные модели (пользователь вводит название сам)
             models = [
@@ -2856,6 +2864,8 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             self.formatting_model_edit.setPlaceholderText("опционально, по умолчанию: gpt-4o-mini")
         elif provider == "glm":
             self.formatting_model_edit.setPlaceholderText("опционально, по умолчанию: glm-4-flash")
+        elif provider == "zai":
+            self.formatting_model_edit.setPlaceholderText("опционально, по умолчанию: GLM-4.7")
         elif provider == "custom":
             self.formatting_model_edit.setPlaceholderText("название модели для custom провайдера")
         

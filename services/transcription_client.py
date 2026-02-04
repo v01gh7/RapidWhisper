@@ -1,8 +1,8 @@
 """
 Клиент для взаимодействия с AI API для транскрипции аудио.
 
-Поддерживает несколько провайдеров: OpenAI, Groq, GLM, и кастомные OpenAI-совместимые API.
-Использует OpenAI Python SDK с настройкой на разные API endpoints.
+Поддерживает несколько провайдеров: OpenAI, Groq, GLM, Z.AI и кастомные OpenAI-совместимые API.
+Использует OpenAI Python SDK для большинства провайдеров и Anthropic SDK для Z.AI.
 """
 
 import os
@@ -10,6 +10,27 @@ import shutil
 from typing import BinaryIO, Optional
 from pathlib import Path
 from openai import OpenAI, AuthenticationError, APIConnectionError, APITimeoutError, Timeout, NotFoundError, BadRequestError, RateLimitError
+
+# Anthropic SDK imports (для Z.AI провайдера)
+try:
+    from anthropic import Anthropic
+    from anthropic import AuthenticationError as AnthropicAuthenticationError
+    from anthropic import APIConnectionError as AnthropicAPIConnectionError
+    from anthropic import APITimeoutError as AnthropicAPITimeoutError
+    from anthropic import NotFoundError as AnthropicNotFoundError
+    from anthropic import BadRequestError as AnthropicBadRequestError
+    from anthropic import RateLimitError as AnthropicRateLimitError
+    ANTHROPIC_AVAILABLE = True
+except ImportError:
+    ANTHROPIC_AVAILABLE = False
+    # Создаем заглушки для типов если Anthropic не установлен
+    Anthropic = None
+    AnthropicAuthenticationError = Exception
+    AnthropicAPIConnectionError = Exception
+    AnthropicAPITimeoutError = Exception
+    AnthropicNotFoundError = Exception
+    AnthropicBadRequestError = Exception
+    AnthropicRateLimitError = Exception
 
 from utils.exceptions import (
     APIError,
@@ -27,12 +48,13 @@ class TranscriptionClient:
     """
     Универсальный клиент для транскрипции аудио.
     
-    Поддерживает несколько провайдеров: OpenAI, Groq, GLM, и кастомные OpenAI-совместимые API.
-    Использует OpenAI SDK для всех провайдеров.
+    Поддерживает несколько провайдеров: OpenAI, Groq, GLM, Z.AI и кастомные OpenAI-совместимые API.
+    Использует OpenAI SDK для большинства провайдеров и Anthropic SDK для Z.AI.
     
     Attributes:
-        client: Экземпляр OpenAI клиента
-        provider: Название провайдера (openai, groq, glm, custom)
+        client: Экземпляр OpenAI клиента (для openai, groq, glm, custom)
+        anthropic_client: Экземпляр Anthropic клиента (для zai)
+        provider: Название провайдера (openai, groq, glm, custom, zai)
         base_url: URL endpoint для API
         model: Модель для транскрипции
         timeout: Таймаут запроса в секундах
@@ -43,7 +65,7 @@ class TranscriptionClient:
         Инициализирует клиент транскрипции.
         
         Args:
-            provider: Провайдер AI (openai, groq, glm, custom)
+            provider: Провайдер AI (openai, groq, glm, custom, zai)
             api_key: API ключ. Если не указан, загружается из переменных окружения
             base_url: Кастомный URL для API (для custom провайдера)
             model: Кастомная модель (для custom провайдера)
@@ -55,6 +77,8 @@ class TranscriptionClient:
         from utils.exceptions import MissingConfigError, InvalidConfigError
         
         self.provider = provider.lower()
+        self.client = None
+        self.anthropic_client = None
         
         # API ключ должен быть передан явно (из Config)
         # НЕ загружаем из переменных окружения
@@ -74,6 +98,32 @@ class TranscriptionClient:
         elif self.provider == "glm":
             self.base_url = "https://open.bigmodel.cn/api/paas/v4/"
             self.model = model if model else "glm-4-voice"  # Используем кастомную модель если указана
+        elif self.provider == "zai":
+            # Z.AI использует Anthropic SDK
+            if not ANTHROPIC_AVAILABLE:
+                raise MissingConfigError(
+                    parameter="anthropic SDK (pip install anthropic>=0.18.0)"
+                )
+            
+            self.base_url = "https://api.z.ai/api/anthropic"
+            self.model = model if model else "GLM-4.7"  # Дефолтная модель для Z.AI
+            self.timeout = 130.0  # Z.AI использует увеличенный таймаут
+            
+            try:
+                self.anthropic_client = Anthropic(
+                    api_key=api_key,
+                    base_url=self.base_url,
+                    timeout=self.timeout
+                )
+            except Exception as e:
+                raise APIError(
+                    message=f"Не удалось инициализировать Anthropic клиент для Z.AI: {e}",
+                    translation_key="errors.client_init_error",
+                    provider="zai",
+                    error=str(e)
+                )
+            return  # Для Z.AI не создаем OpenAI клиент
+            
         elif self.provider == "custom":
             # Для кастомного провайдера требуются base_url и model
             if base_url is None or model is None:
@@ -93,6 +143,7 @@ class TranscriptionClient:
         
         self.timeout = 30
         
+        # Создать OpenAI клиент для всех провайдеров кроме Z.AI
         try:
             self.client = OpenAI(
                 api_key=api_key,
@@ -111,6 +162,9 @@ class TranscriptionClient:
         """
         Отправляет аудио файл на транскрипцию и возвращает текст.
         
+        ВАЖНО: Z.AI провайдер НЕ поддерживает транскрипцию аудио.
+        Z.AI может использоваться только для постобработки текста.
+        
         Args:
             audio_file_path: Путь к аудио файлу (WAV формат)
         
@@ -118,6 +172,7 @@ class TranscriptionClient:
             Транскрибированный текст
         
         Raises:
+            NotImplementedError: Если провайдер Z.AI используется для транскрипции
             APIAuthenticationError: Если API ключ неверен
             APINetworkError: Если произошла сетевая ошибка
             CustomAPITimeoutError: Если запрос превысил таймаут
@@ -126,6 +181,16 @@ class TranscriptionClient:
         from utils.logger import get_logger
         from utils.exceptions import ModelNotFoundError, APIResponseError
         logger = get_logger()
+        
+        # Z.AI не поддерживает транскрипцию аудио
+        if self.provider == "zai":
+            error_message = (
+                "Z.AI провайдер не поддерживает транскрипцию аудио. "
+                "Z.AI может использоваться только для постобработки текста. "
+                "Пожалуйста, выберите другой провайдер (OpenAI, Groq, GLM) для транскрипции."
+            )
+            logger.error(f"❌ {error_message}")
+            raise NotImplementedError(error_message)
         
         audio_file = None
         try:
@@ -309,6 +374,81 @@ class TranscriptionClient:
                 else:
                     base_url = "https://open.bigmodel.cn/api/paas/v4/"
                     logger.info("Используется обычный GLM endpoint")
+            elif provider == "zai":
+                # Z.AI использует Anthropic SDK
+                if not ANTHROPIC_AVAILABLE:
+                    logger.error("Anthropic SDK не установлен!")
+                    raise MissingConfigError(
+                        parameter="anthropic SDK (pip install anthropic>=0.18.0)"
+                    )
+                
+                base_url = "https://api.z.ai/api/anthropic"
+                logger.info("Используется Z.AI endpoint через Anthropic SDK")
+                
+                # Создать Anthropic клиент для Z.AI
+                logger.info("Создание Anthropic клиента для Z.AI...")
+                anthropic_client = Anthropic(
+                    api_key=api_key,
+                    base_url=base_url,
+                    timeout=130.0  # Z.AI использует увеличенный таймаут
+                )
+                logger.info("Anthropic клиент создан успешно с таймаутом 130 секунд")
+                
+                # Отправить запрос через Anthropic API
+                logger.info("Отправка запроса на постобработку через Anthropic API...")
+                logger.info(f"Параметры: temperature={temperature}, max_tokens=2000")
+                logger.info(f"Отправка к {base_url} с моделью {model}...")
+                logger.info("⏱️ Таймаут: 130 секунд")
+                
+                import time
+                start_time = time.time()
+                
+                # Anthropic API использует другой формат запроса
+                response = anthropic_client.messages.create(
+                    model=model,
+                    max_tokens=2000,
+                    temperature=temperature,
+                    system=system_prompt,  # Anthropic использует отдельный параметр system
+                    messages=[
+                        {"role": "user", "content": text}
+                    ]
+                )
+                
+                elapsed_time = time.time() - start_time
+                logger.info(f"Запрос выполнен за {elapsed_time:.2f} секунд")
+                logger.info("Ответ получен от Anthropic API")
+                
+                # Извлечь обработанный текст из Anthropic response
+                # Anthropic возвращает response.content[0].text
+                if response.content and len(response.content) > 0:
+                    processed_text = response.content[0].text
+                    
+                    # Проверить что текст не None и не пустой
+                    if processed_text:
+                        processed_text = processed_text.strip()
+                        
+                        if processed_text:  # Проверка что после strip() текст не пустой
+                            logger.info(f"Обработанный текст получен, длина: {len(processed_text)} символов")
+                            logger.info(f"Обработанный текст: {processed_text[:200]}...")
+                            logger.info("✅ ПОСТОБРАБОТКА ЗАВЕРШЕНА УСПЕШНО (Z.AI)")
+                            logger.info("=" * 80)
+                            return processed_text
+                        else:
+                            logger.warning("⚠️ Ответ постобработки пустой (после strip)!")
+                            logger.warning("⚠️ Возвращаем оригинальный текст")
+                            logger.info("=" * 80)
+                            return text
+                    else:
+                        logger.warning("⚠️ Ответ постобработки пустой (None или пустая строка)!")
+                        logger.warning("⚠️ Возвращаем оригинальный текст")
+                        logger.info("=" * 80)
+                        return text
+                else:
+                    logger.warning("⚠️ Ответ постобработки не содержит content!")
+                    logger.warning("⚠️ Возвращаем оригинальный текст")
+                    logger.info("=" * 80)
+                    return text
+                    
             elif provider == "llm":
                 # LLM - локальные модели, base_url должен быть передан
                 if not base_url:
@@ -323,98 +463,135 @@ class TranscriptionClient:
                     reason="неизвестный провайдер для постобработки"
                 )
             
-            logger.info(f"Base URL: {base_url}")
-            
-            # Создать клиент для постобработки с жестким таймаутом
-            logger.info("Создание OpenAI клиента...")
-            client = OpenAI(
-                api_key=api_key,
-                base_url=base_url,
-                timeout=Timeout(60.0, connect=10.0)  # 60 секунд на запрос, 10 на подключение
-            )
-            logger.info("Клиент создан успешно с таймаутом 60 секунд")
-            
-            # Отправить запрос на обработку
-            logger.info("Отправка запроса на постобработку...")
-            logger.info(f"Параметры: temperature={temperature}, max_tokens=2000")
-            logger.info(f"Отправка к {base_url} с моделью {model}...")
-            logger.info("⏱️ Таймаут: 60 секунд (после этого вернется оригинальный текст)")
-            
-            import time
-            start_time = time.time()
-            
-            response = client.chat.completions.create(
-                model=model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": text}
-                ],
-                temperature=temperature,  # Use provided temperature
-                max_tokens=2000,
-                timeout=60.0  # Дополнительный таймаут на уровне запроса
-            )
-            
-            elapsed_time = time.time() - start_time
-            logger.info(f"Запрос выполнен за {elapsed_time:.2f} секунд")
-            elapsed_time = time.time() - start_time
-            logger.info(f"Запрос выполнен за {elapsed_time:.2f} секунд")
-            logger.info("Ответ получен от API")
-            
-            # Извлечь обработанный текст
-            if response.choices and len(response.choices) > 0:
-                processed_text = response.choices[0].message.content
+            # Для всех провайдеров кроме Z.AI используем OpenAI SDK
+            if provider != "zai":
+                logger.info(f"Base URL: {base_url}")
                 
-                # Проверить что текст не None и не пустой
-                if processed_text:
-                    processed_text = processed_text.strip()
+                # Создать клиент для постобработки с жестким таймаутом
+                logger.info("Создание OpenAI клиента...")
+                client = OpenAI(
+                    api_key=api_key,
+                    base_url=base_url,
+                    timeout=Timeout(60.0, connect=10.0)  # 60 секунд на запрос, 10 на подключение
+                )
+                logger.info("Клиент создан успешно с таймаутом 60 секунд")
+                
+                # Отправить запрос на обработку
+                logger.info("Отправка запроса на постобработку...")
+                logger.info(f"Параметры: temperature={temperature}, max_tokens=2000")
+                logger.info(f"Отправка к {base_url} с моделью {model}...")
+                logger.info("⏱️ Таймаут: 60 секунд (после этого вернется оригинальный текст)")
+                
+                import time
+                start_time = time.time()
+                
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": text}
+                    ],
+                    temperature=temperature,  # Use provided temperature
+                    max_tokens=2000,
+                    timeout=60.0  # Дополнительный таймаут на уровне запроса
+                )
+                
+                elapsed_time = time.time() - start_time
+                logger.info(f"Запрос выполнен за {elapsed_time:.2f} секунд")
+                logger.info("Ответ получен от API")
+                
+                # Извлечь обработанный текст
+                if response.choices and len(response.choices) > 0:
+                    processed_text = response.choices[0].message.content
                     
-                    if processed_text:  # Проверка что после strip() текст не пустой
-                        logger.info(f"Обработанный текст получен, длина: {len(processed_text)} символов")
-                        logger.info(f"Обработанный текст: {processed_text[:200]}...")
-                        logger.info("✅ ПОСТОБРАБОТКА ЗАВЕРШЕНА УСПЕШНО")
-                        logger.info("=" * 80)
-                        return processed_text
+                    # Проверить что текст не None и не пустой
+                    if processed_text:
+                        processed_text = processed_text.strip()
+                        
+                        if processed_text:  # Проверка что после strip() текст не пустой
+                            logger.info(f"Обработанный текст получен, длина: {len(processed_text)} символов")
+                            logger.info(f"Обработанный текст: {processed_text[:200]}...")
+                            logger.info("✅ ПОСТОБРАБОТКА ЗАВЕРШЕНА УСПЕШНО")
+                            logger.info("=" * 80)
+                            return processed_text
+                        else:
+                            logger.warning("⚠️ Ответ постобработки пустой (после strip)!")
+                            logger.warning("⚠️ Возвращаем оригинальный текст")
+                            logger.info("=" * 80)
+                            return text
                     else:
-                        logger.warning("⚠️ Ответ постобработки пустой (после strip)!")
+                        logger.warning("⚠️ Ответ постобработки пустой (None или пустая строка)!")
                         logger.warning("⚠️ Возвращаем оригинальный текст")
                         logger.info("=" * 80)
                         return text
                 else:
-                    logger.warning("⚠️ Ответ постобработки пустой (None или пустая строка)!")
+                    logger.warning("⚠️ Ответ постобработки не содержит choices!")
                     logger.warning("⚠️ Возвращаем оригинальный текст")
                     logger.info("=" * 80)
                     return text
-            else:
-                logger.warning("⚠️ Ответ постобработки не содержит choices!")
-                logger.warning("⚠️ Возвращаем оригинальный текст")
-                logger.info("=" * 80)
-                return text
+        
+        except AnthropicRateLimitError as e:
+            logger.error("=" * 80)
+            logger.error(f"⚠️ ANTHROPIC RATE LIMIT EXCEEDED: {e}")
+            logger.error("Превышен лимит запросов к Z.AI API")
+            logger.warning("⚠️ Пробрасываем исключение для уведомления пользователя")
+            logger.error("=" * 80)
+            # Пробросить Anthropic исключение как есть
+            raise
         
         except RateLimitError as e:
             logger.error("=" * 80)
             logger.error(f"⚠️ RATE LIMIT EXCEEDED: {e}")
             logger.error("Превышен лимит запросов к API")
-            logger.warning("⚠️ Возвращаем оригинальный текст без обработки")
+            logger.warning("⚠️ Пробрасываем исключение для уведомления пользователя")
             logger.error("=" * 80)
             # Пробросить исключение для уведомления пользователя
+            raise
+        
+        except AnthropicAPITimeoutError as e:
+            logger.error("=" * 80)
+            logger.error(f"⏱️ ANTHROPIC ТАЙМАУТ ПОСТОБРАБОТКИ: {e}")
+            logger.error("Запрос к Z.AI превысил 130 секунд")
+            logger.warning("⚠️ Пробрасываем исключение для уведомления пользователя")
+            logger.error("=" * 80)
+            # Пробросить Anthropic исключение как есть
             raise
         
         except APITimeoutError as e:
             logger.error("=" * 80)
             logger.error(f"⏱️ ТАЙМАУТ ПОСТОБРАБОТКИ: {e}")
             logger.error("Запрос превысил 60 секунд")
-            logger.warning("⚠️ Возвращаем оригинальный текст без обработки")
+            logger.warning("⚠️ Пробрасываем исключение для уведомления пользователя")
             logger.error("=" * 80)
             # Пробросить исключение для уведомления пользователя
+            raise
+        
+        except AnthropicAuthenticationError as e:
+            logger.error("=" * 80)
+            logger.error(f"🔐 ANTHROPIC ОШИБКА АУТЕНТИФИКАЦИИ: {e}")
+            logger.error("Проверьте GLM_API_KEY для Z.AI в настройках")
+            logger.warning("⚠️ Пробрасываем исключение для уведомления пользователя")
+            logger.error("=" * 80)
+            # Пробросить Anthropic исключение как есть
             raise
         
         except AuthenticationError as e:
             logger.error("=" * 80)
             logger.error(f"🔐 ОШИБКА АУТЕНТИФИКАЦИИ: {e}")
             logger.error("Проверьте API ключ в настройках")
-            logger.warning("⚠️ Возвращаем оригинальный текст без обработки")
+            logger.warning("⚠️ Пробрасываем исключение для уведомления пользователя")
             logger.error("=" * 80)
             # Пробросить исключение для уведомления пользователя
+            raise
+        
+        except AnthropicAPIConnectionError as e:
+            logger.error("=" * 80)
+            logger.error(f"🌐 ANTHROPIC ОШИБКА ПОДКЛЮЧЕНИЯ: {e}")
+            logger.error("Не удалось подключиться к Z.AI API")
+            logger.error("Проверьте интернет-соединение и доступность api.z.ai")
+            logger.warning("⚠️ Пробрасываем исключение для уведомления пользователя")
+            logger.error("=" * 80)
+            # Пробросить Anthropic исключение как есть
             raise
         
         except APIConnectionError as e:
@@ -422,9 +599,20 @@ class TranscriptionClient:
             logger.error(f"🌐 ОШИБКА ПОДКЛЮЧЕНИЯ: {e}")
             logger.error(f"Не удалось подключиться к {base_url}")
             logger.error("Проверьте интернет-соединение и доступность API")
-            logger.warning("⚠️ Возвращаем оригинальный текст без обработки")
+            logger.warning("⚠️ Пробрасываем исключение для уведомления пользователя")
             logger.error("=" * 80)
             # Пробросить исключение для уведомления пользователя
+            raise
+        
+        except AnthropicNotFoundError as e:
+            logger.error("=" * 80)
+            logger.error(f"🔍 ANTHROPIC МОДЕЛЬ НЕ НАЙДЕНА: {e}")
+            logger.error(f"Модель '{model}' не существует для Z.AI")
+            logger.error("Проверьте название модели в настройках")
+            logger.error("Доступные модели: GLM-4.7, GLM-4-Plus")
+            logger.warning("⚠️ Пробрасываем исключение для уведомления пользователя")
+            logger.error("=" * 80)
+            # Пробросить Anthropic исключение как есть
             raise
         
         except NotFoundError as e:
@@ -437,6 +625,15 @@ class TranscriptionClient:
             logger.error("=" * 80)
             # Пробросить исключение чтобы TranscriptionThread мог показать уведомление
             raise
+        
+        except AnthropicBadRequestError as e:
+            logger.error("=" * 80)
+            logger.error(f"❌ ANTHROPIC НЕВЕРНЫЙ ЗАПРОС: {e}")
+            logger.error(f"Возможно модель '{model}' недоступна или параметры запроса некорректны для Z.AI")
+            logger.error("Проверьте настройки постобработки")
+            logger.warning("⚠️ Возвращаем оригинальный текст без обработки")
+            logger.error("=" * 80)
+            return text
         
         except BadRequestError as e:
             logger.error("=" * 80)

@@ -8,7 +8,7 @@ A modern speech-to-text transcription application using Zhipu GLM API, inspired 
 - 🎨 **Modern Floating UI** - Minimalist pill-shaped window with frosted glass effect
 - 🌊 **Real-time Waveform** - Animated sound wave visualization during recording
 - 🤫 **Smart Silence Detection** - Automatically stops recording after pauses
-- ⚡ **Fast Transcription** - 1-2 second turnaround via AI APIs (Groq, OpenAI, GLM)
+- ⚡ **Fast Transcription** - 1-2 second turnaround via AI APIs (Groq, OpenAI, GLM, Z.AI)
 - 📋 **Auto-Copy** - Results instantly copied to clipboard
 - 🧵 **Multi-threaded** - Smooth UI with background processing
 - ⚙️ **Settings Window** - Easy configuration through graphical interface
@@ -27,6 +27,7 @@ A modern speech-to-text transcription application using Zhipu GLM API, inspired 
   - **Groq** (recommended, free): https://console.groq.com/keys
   - **OpenAI**: https://platform.openai.com/api-keys
   - **GLM**: https://open.bigmodel.cn/usercenter/apikeys
+  - **Z.AI** (uses GLM API key): https://api.z.ai
 
 ## Installation
 
@@ -136,9 +137,11 @@ All settings can be customized through the **Settings Window** (no restart requi
 #### Settings Categories
 
 **🤖 AI Provider**
-- Choose between Groq (free & fast), OpenAI, or GLM
+- Choose between Groq (free & fast), OpenAI, GLM, or Z.AI
 - Configure API keys for each provider
 - Groq is recommended for beginners (free tier available)
+- Z.AI uses the same API key as GLM (no separate key needed)
+- **Note**: Z.AI supports only post-processing and formatting, not audio transcription
 - Clickable links to get API keys
 
 **⚡ Application**

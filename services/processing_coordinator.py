@@ -216,6 +216,9 @@ IMPORTANT: Both steps are required. Output must be both corrected AND formatted.
                 api_key = config_loader.get("ai_provider.api_keys.openai")
             elif config.post_processing_provider == "glm":
                 api_key = config_loader.get("ai_provider.api_keys.glm")
+            elif config.post_processing_provider == "zai":
+                # Z.AI использует GLM_API_KEY
+                api_key = config_loader.get("ai_provider.api_keys.glm")
             elif config.post_processing_provider == "llm":
                 api_key = config.llm_api_key
             
@@ -283,6 +286,9 @@ IMPORTANT: Both steps are required. Output must be both corrected AND formatted.
             elif config.post_processing_provider == "openai":
                 api_key = config_loader.get("ai_provider.api_keys.openai")
             elif config.post_processing_provider == "glm":
+                api_key = config_loader.get("ai_provider.api_keys.glm")
+            elif config.post_processing_provider == "zai":
+                # Z.AI использует GLM_API_KEY
                 api_key = config_loader.get("ai_provider.api_keys.glm")
             elif config.post_processing_provider == "llm":
                 api_key = config.llm_api_key
@@ -360,6 +366,9 @@ IMPORTANT: Both steps are required. Output must be both corrected AND formatted.
             elif provider == "openai":
                 api_key = config_loader.get("ai_provider.api_keys.openai")
             elif provider == "glm":
+                api_key = config_loader.get("ai_provider.api_keys.glm")
+            elif provider == "zai":
+                # Z.AI использует GLM_API_KEY
                 api_key = config_loader.get("ai_provider.api_keys.glm")
             elif provider == "custom":
                 api_key = formatting_config.custom_api_key

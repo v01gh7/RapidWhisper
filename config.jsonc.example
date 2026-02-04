@@ -15,6 +15,12 @@
 {
   "ai_provider": {
     "provider": "groq",
+    // Supported providers: groq, openai, glm, custom, zai
+    // - groq: Fast Whisper transcription via Groq API
+    // - openai: OpenAI Whisper API
+    // - glm: Zhipu GLM API (Chinese provider)
+    // - zai: Z.AI proxy for GLM models via Anthropic API (text processing only, no transcription)
+    // - custom: Custom OpenAI-compatible API endpoint
     // API keys are stored in secrets.json (not in git)
     "custom": {
       "base_url": "http://localhost:1234/v1/",
