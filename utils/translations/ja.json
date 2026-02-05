@@ -304,7 +304,7 @@
       "welcome_message": "開始するには、APIキーを設定する必要があります。\n\nトレイアイコンをクリックして設定を開いてください。",
       "welcome_dialog_title": "👋 RapidWhisperへようこそ！",
       "welcome_dialog_text": "<h2>RapidWhisperへようこそ！</h2><p>開始するには、APIキーを設定する必要があります。</p>",
-      "welcome_dialog_info": "<b>APIキーの取得先:</b><br><br>• <b>Groq</b>（推奨 - 無料で高速）:<br>  <a href='https://console.groq.com/keys'>console.groq.com/keys</a><br><br>• <b>OpenAI</b>:<br>  <a href='https://platform.openai.com/api-keys'>platform.openai.com/api-keys</a><br><br>• <b>GLM</b>:<br>  <a href='https://open.bigmodel.cn/usercenter/apikeys'>open.bigmodel.cn/usercenter/apikeys</a><br><br><p>キーを取得したら、設定を開いて追加してください。</p>"
+      "welcome_dialog_info": "<b>APIキーの取得先:</b><br><br>• <b>Groq</b>（推奨 - 無料で高速）:<br>  <a href='https://console.groq.com/keys'>console.groq.com/keys</a><br><br>• <b>OpenAI</b>:<br>  <a href='https://platform.openai.com/api-keys'>platform.openai.com/api-keys</a><br><br>• <b>GLM</b>:<br>  <a href='https://open.bigmodel.cn/usercenter/apikeys'>open.bigmodel.cn/usercenter/apikeys</a><br><br>• <b>ZAI</b>:<br>  <a href='https://zai.chat'>zai.chat</a><br><br><p>キーを取得したら、設定を開いて追加してください。</p>"
     },
     "about_title": "RapidWhisperについて",
     "about_text": "RapidWhisper v1.0\n\nAI API（Groq、OpenAI、GLM）を使用した\nマイクからの高速音声文字起こし。\n\nホットキー: Ctrl+Space\n録音をキャンセル: ESC\n\n© 2026 RapidWhisper"

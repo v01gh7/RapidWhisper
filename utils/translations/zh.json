@@ -304,7 +304,7 @@
       "welcome_message": "要开始使用，您需要设置API密钥。\n\n单击托盘图标打开设置。",
       "welcome_dialog_title": "👋 欢迎使用RapidWhisper！",
       "welcome_dialog_text": "<h2>欢迎使用RapidWhisper！</h2><p>要开始使用，您需要设置API密钥。</p>",
-      "welcome_dialog_info": "<b>在哪里获取API密钥:</b><br><br>• <b>Groq</b>（推荐 - 免费且快速）:<br>  <a href='https://console.groq.com/keys'>console.groq.com/keys</a><br><br>• <b>OpenAI</b>:<br>  <a href='https://platform.openai.com/api-keys'>platform.openai.com/api-keys</a><br><br>• <b>GLM</b>:<br>  <a href='https://open.bigmodel.cn/usercenter/apikeys'>open.bigmodel.cn/usercenter/apikeys</a><br><br><p>获取密钥后，打开设置并添加它。</p>"
+      "welcome_dialog_info": "<b>在哪里获取API密钥:</b><br><br>• <b>Groq</b>（推荐 - 免费且快速）:<br>  <a href='https://console.groq.com/keys'>console.groq.com/keys</a><br><br>• <b>OpenAI</b>:<br>  <a href='https://platform.openai.com/api-keys'>platform.openai.com/api-keys</a><br><br>• <b>GLM</b>:<br>  <a href='https://open.bigmodel.cn/usercenter/apikeys'>open.bigmodel.cn/usercenter/apikeys</a><br><br>• <b>ZAI</b>:<br>  <a href='https://zai.chat'>zai.chat</a><br><br><p>获取密钥后，打开设置并添加它。</p>"
     },
     "about_title": "关于RapidWhisper",
     "about_text": "RapidWhisper v1.0\n\n使用AI API（Groq、OpenAI、GLM）\n从麦克风快速语音转录。\n\n热键: Ctrl+Space\n取消录音: ESC\n\n© 2026 RapidWhisper"

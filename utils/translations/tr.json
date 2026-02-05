@@ -304,7 +304,7 @@
       "welcome_message": "Başlamak için bir API anahtarı ayarlamanız gerekiyor.\n\nAyarları açmak için tepsi simgesine tıklayın.",
       "welcome_dialog_title": "👋 RapidWhisper'a Hoş Geldiniz!",
       "welcome_dialog_text": "<h2>RapidWhisper'a Hoş Geldiniz!</h2><p>Başlamak için bir API anahtarı ayarlamanız gerekiyor.</p>",
-      "welcome_dialog_info": "<b>API anahtarlarını nereden alabilirsiniz:</b><br><br>• <b>Groq</b> (önerilir - ücretsiz ve hızlı):<br>  <a href='https://console.groq.com/keys'>console.groq.com/keys</a><br><br>• <b>OpenAI</b>:<br>  <a href='https://platform.openai.com/api-keys'>platform.openai.com/api-keys</a><br><br>• <b>GLM</b>:<br>  <a href='https://open.bigmodel.cn/usercenter/apikeys'>open.bigmodel.cn/usercenter/apikeys</a><br><br><p>Anahtarı aldıktan sonra, Ayarları açın ve ekleyin.</p>"
+      "welcome_dialog_info": "<b>API anahtarlarını nereden alabilirsiniz:</b><br><br>• <b>Groq</b> (önerilir - ücretsiz ve hızlı):<br>  <a href='https://console.groq.com/keys'>console.groq.com/keys</a><br><br>• <b>OpenAI</b>:<br>  <a href='https://platform.openai.com/api-keys'>platform.openai.com/api-keys</a><br><br>• <b>GLM</b>:<br>  <a href='https://open.bigmodel.cn/usercenter/apikeys'>open.bigmodel.cn/usercenter/apikeys</a><br><br>• <b>ZAI</b>:<br>  <a href='https://zai.chat'>zai.chat</a><br><br><p>Anahtarı aldıktan sonra, Ayarları açın ve ekleyin.</p>"
     },
     "about_title": "RapidWhisper Hakkında",
     "about_text": "RapidWhisper v1.0\n\nMikrofondan hızlı konuşma transkripsiyonu\nAI API kullanarak (Groq, OpenAI, GLM).\n\nKısayol tuşu: Ctrl+Space\nKaydı iptal et: ESC\n\n© 2026 RapidWhisper"

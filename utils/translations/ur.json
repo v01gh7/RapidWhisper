@@ -304,7 +304,7 @@
       "welcome_message": "شروع کرنے کے لیے، آپ کو ایک API کلید سیٹ اپ کرنے کی ضرورت ہے۔\n\nترتیبات کھولنے کے لیے ٹرے آئیکن پر کلک کریں۔",
       "welcome_dialog_title": "👋 RapidWhisper میں خوش آمدید!",
       "welcome_dialog_text": "<h2>RapidWhisper میں خوش آمدید!</h2><p>شروع کرنے کے لیے، آپ کو ایک API کلید سیٹ اپ کرنے کی ضرورت ہے۔</p>",
-      "welcome_dialog_info": "<b>API کلیدیں کہاں سے حاصل کریں:</b><br><br>• <b>Groq</b> (تجویز کردہ - مفت اور تیز):<br>  <a href='https://console.groq.com/keys'>console.groq.com/keys</a><br><br>• <b>OpenAI</b>:<br>  <a href='https://platform.openai.com/api-keys'>platform.openai.com/api-keys</a><br><br>• <b>GLM</b>:<br>  <a href='https://open.bigmodel.cn/usercenter/apikeys'>open.bigmodel.cn/usercenter/apikeys</a><br><br><p>کلید حاصل کرنے کے بعد، ترتیبات کھولیں اور اسے شامل کریں۔</p>"
+      "welcome_dialog_info": "<b>API کلیدیں کہاں سے حاصل کریں:</b><br><br>• <b>Groq</b> (تجویز کردہ - مفت اور تیز):<br>  <a href='https://console.groq.com/keys'>console.groq.com/keys</a><br><br>• <b>OpenAI</b>:<br>  <a href='https://platform.openai.com/api-keys'>platform.openai.com/api-keys</a><br><br>• <b>GLM</b>:<br>  <a href='https://open.bigmodel.cn/usercenter/apikeys'>open.bigmodel.cn/usercenter/apikeys</a><br><br>• <b>ZAI</b>:<br>  <a href='https://zai.chat'>zai.chat</a><br><br><p>کلید حاصل کرنے کے بعد، ترتیبات کھولیں اور اسے شامل کریں۔</p>"
     },
     "about_title": "RapidWhisper کے بارے میں",
     "about_text": "RapidWhisper v1.0\n\nAI API (Groq، OpenAI، GLM) استعمال کرتے ہوئے\nمائیکروفون سے تیز رفتار تقریر کی نقل۔\n\nہاٹ کی: Ctrl+Space\nریکارڈنگ منسوخ کریں: ESC\n\n© 2026 RapidWhisper"

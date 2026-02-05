@@ -304,7 +304,7 @@
       "welcome_message": "Para comenzar, necesita configurar una clave API.\n\nHaga clic en el icono de la bandeja para abrir Configuración.",
       "welcome_dialog_title": "👋 ¡Bienvenido a RapidWhisper!",
       "welcome_dialog_text": "<h2>¡Bienvenido a RapidWhisper!</h2><p>Para comenzar, necesita configurar una clave API.</p>",
-      "welcome_dialog_info": "<b>Dónde obtener claves API:</b><br><br>• <b>Groq</b> (recomendado - gratuito y rápido):<br>  <a href='https://console.groq.com/keys'>console.groq.com/keys</a><br><br>• <b>OpenAI</b>:<br>  <a href='https://platform.openai.com/api-keys'>platform.openai.com/api-keys</a><br><br>• <b>GLM</b>:<br>  <a href='https://open.bigmodel.cn/usercenter/apikeys'>open.bigmodel.cn/usercenter/apikeys</a><br><br><p>Después de obtener la clave, abra Configuración y agréguela.</p>"
+      "welcome_dialog_info": "<b>Dónde obtener claves API:</b><br><br>• <b>Groq</b> (recomendado - gratuito y rápido):<br>  <a href='https://console.groq.com/keys'>console.groq.com/keys</a><br><br>• <b>OpenAI</b>:<br>  <a href='https://platform.openai.com/api-keys'>platform.openai.com/api-keys</a><br><br>• <b>GLM</b>:<br>  <a href='https://open.bigmodel.cn/usercenter/apikeys'>open.bigmodel.cn/usercenter/apikeys</a><br><br>• <b>ZAI</b>:<br>  <a href='https://zai.chat'>zai.chat</a><br><br><p>Después de obtener la clave, abra Configuración y agréguela.</p>"
     },
     "about_title": "Acerca de RapidWhisper",
     "about_text": "RapidWhisper v1.0\n\nTranscripción rápida de voz desde micrófono\nusando API de IA (Groq, OpenAI, GLM).\n\nTecla de acceso rápido: Ctrl+Espacio\nCancelar grabación: ESC\n\n© 2026 RapidWhisper"
