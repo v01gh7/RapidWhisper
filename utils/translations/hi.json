@@ -51,7 +51,9 @@
       "position_top_right": "ऊपर दाएं",
       "position_bottom_left": "नीचे बाएं",
       "position_bottom_right": "नीचे दाएं",
-      "position_custom": "कस्टम"
+      "position_custom": "कस्टम",
+      "manual_format_hotkey": "Manual Format Hotkey:",
+      "manual_format_hotkey_tooltip": "Press key combination to open manual formatting dialog (e.g.: Ctrl+Shift+Space)"
     },
     "audio": {
       "title": "ऑडियो",
@@ -339,5 +341,21 @@
     "format_selected_title": "फ़ॉर्मेट चुना गया",
     "format_selected_message": "चयनित फ़ॉर्मेट: {format}",
     "dialog_error": "फ़ॉर्मेट चयन संवाद दिखाने में विफल"
+  },
+  "manual_format": {
+    "title": "Manual Formatting",
+    "selected_format": "Selected format: {format}",
+    "input_label": "Input text",
+    "output_label": "Formatted text",
+    "format_button": "Format",
+    "formatting_button": "Formatting...",
+    "copy_button": "Copy",
+    "empty_input_message": "Please paste or type text to format.",
+    "no_output_message": "Nothing to copy yet.",
+    "no_api_key_message": "Formatting API key is missing for provider: {provider}.",
+    "format_error_message": "Formatting failed. Please check your settings and try again.",
+    "copy_success_message": "Copied to clipboard.",
+    "copy_failed_message": "Failed to copy to clipboard.",
+    "dialog_error": "Failed to show manual formatting dialog"
   }
 }

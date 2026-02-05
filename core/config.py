@@ -323,6 +323,7 @@ class Config:
         self.app_user_model_id: str = "RapidWhisper.VoiceTranscription.App.1.0"  # Windows App User Model ID
         self.hotkey: str = "ctrl+space"
         self.format_selection_hotkey: str = "ctrl+alt+space"  # Hotkey for format selection dialog
+        self.manual_format_hotkey: str = "ctrl+shift+space"  # Hotkey for manual text formatting dialog
         self.silence_threshold: float = 0.02
         self.silence_duration: float = 1.5
         self.auto_hide_delay: float = 2.5
@@ -790,6 +791,7 @@ BEGIN FORMATTING NOW. OUTPUT ONLY THE FORMATTED TEXT IN THE SAME LANGUAGE AS INP
         # Параметры приложения
         config.hotkey = config_loader.get("application.hotkey", "ctrl+space")
         config.format_selection_hotkey = config_loader.get("application.format_selection_hotkey", "ctrl+alt+space")
+        config.manual_format_hotkey = config_loader.get("application.manual_format_hotkey", "ctrl+shift+space")
         
         # Параметры аудио
         config.silence_threshold = config_loader.get("audio.silence_threshold", 0.02)

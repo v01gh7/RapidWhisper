@@ -95,7 +95,8 @@ def _create_minimal_config(config_path: Path):
         },
         "application": {
             "hotkey": "ctrl+space",
-            "format_selection_hotkey": "ctrl+alt+space"
+            "format_selection_hotkey": "ctrl+alt+space",
+            "manual_format_hotkey": "ctrl+shift+space"
         },
         "audio": {
             "silence_threshold": 0.02,

@@ -51,7 +51,9 @@
       "position_top_right": "উপরে ডান",
       "position_bottom_left": "নিচে বাম",
       "position_bottom_right": "নিচে ডান",
-      "position_custom": "কাস্টম"
+      "position_custom": "কাস্টম",
+      "manual_format_hotkey": "Manual Format Hotkey:",
+      "manual_format_hotkey_tooltip": "Press key combination to open manual formatting dialog (e.g.: Ctrl+Shift+Space)"
     },
     "audio": {
       "title": "অডিও",
@@ -339,5 +341,21 @@
     "format_selected_title": "ফর্ম্যাট নির্বাচিত",
     "format_selected_message": "নির্বাচিত ফর্ম্যাট: {format}",
     "dialog_error": "ফর্ম্যাট নির্বাচন ডায়ালগ দেখাতে ব্যর্থ"
+  },
+  "manual_format": {
+    "title": "Manual Formatting",
+    "selected_format": "Selected format: {format}",
+    "input_label": "Input text",
+    "output_label": "Formatted text",
+    "format_button": "Format",
+    "formatting_button": "Formatting...",
+    "copy_button": "Copy",
+    "empty_input_message": "Please paste or type text to format.",
+    "no_output_message": "Nothing to copy yet.",
+    "no_api_key_message": "Formatting API key is missing for provider: {provider}.",
+    "format_error_message": "Formatting failed. Please check your settings and try again.",
+    "copy_success_message": "Copied to clipboard.",
+    "copy_failed_message": "Failed to copy to clipboard.",
+    "dialog_error": "Failed to show manual formatting dialog"
   }
 }

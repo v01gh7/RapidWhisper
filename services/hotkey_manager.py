@@ -33,6 +33,7 @@ class HotkeyManager:
         self._is_registered: bool = False
         self._additional_hotkeys: dict = {}  # Дополнительные горячие клавиши
         self._format_selection_hotkey: Optional[str] = None  # Горячая клавиша выбора формата
+        self._manual_format_hotkey: Optional[str] = None  # Горячая клавиша ручного форматирования
     
     def register_hotkey(self, key: str = "F1", callback: Optional[Callable] = None) -> bool:
         """
@@ -125,6 +126,59 @@ class HotkeyManager:
             logger.warning("Продолжение работы без горячей клавиши выбора формата")
             return False
     
+    def register_manual_format_hotkey(self, key: str, callback: Callable) -> bool:
+        """
+        Регистрирует горячую клавишу для ручного форматирования текста.
+        
+        Args:
+            key: сочетание клавиш (например, "ctrl+shift+space")
+            callback: функция, вызываемая при нажатии
+        
+        Returns:
+            True если регистрация успешна, иначе False
+        
+        Requirements: 1.1, 1.2, 1.4
+        """
+        try:
+            # Удаляем предыдущую горячую клавишу ручного форматирования
+            if self._manual_format_hotkey:
+                keyboard.remove_hotkey(self._manual_format_hotkey)
+                if self._manual_format_hotkey in self._additional_hotkeys:
+                    del self._additional_hotkeys[self._manual_format_hotkey]
+                logger.info(
+                    f"Старая горячая клавиша ручного форматирования {self._manual_format_hotkey} отменена"
+                )
+            
+            # Регистрируем новую горячую клавишу
+            keyboard.add_hotkey(key, callback, suppress=False)
+            
+            self._manual_format_hotkey = key
+            self._additional_hotkeys[key] = callback
+            
+            logger.info(f"Горячая клавиша ручного форматирования {key} успешно зарегистрирована")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Ошибка регистрации горячей клавиши ручного форматирования {key}: {e}")
+            
+            # Попытка регистрации значения по умолчанию
+            default_key = "ctrl+shift+space"
+            if key != default_key:
+                logger.info(f"Попытка регистрации значения по умолчанию: {default_key}")
+                try:
+                    keyboard.add_hotkey(default_key, callback, suppress=False)
+                    self._manual_format_hotkey = default_key
+                    self._additional_hotkeys[default_key] = callback
+                    logger.info(
+                        f"Резервная горячая клавиша ручного форматирования {default_key} успешно зарегистрирована"
+                    )
+                    return True
+                except Exception as fallback_error:
+                    logger.error(f"Ошибка регистрации резервной горячей клавиши: {fallback_error}")
+            
+            logger.warning("Горячая клавиша для ручного форматирования недоступна")
+            return False
+    
     def unregister_hotkey(self) -> None:
         """
         Отменяет регистрацию всех горячих клавиш.
@@ -154,6 +208,17 @@ class HotkeyManager:
                 logger.error(f"Ошибка отмены регистрации клавиши выбора формата: {e}")
             finally:
                 self._format_selection_hotkey = None
+
+        if self._manual_format_hotkey:
+            try:
+                keyboard.remove_hotkey(self._manual_format_hotkey)
+                logger.info(f"Горячая клавиша ручного форматирования {self._manual_format_hotkey} отменена")
+                if self._manual_format_hotkey in self._additional_hotkeys:
+                    del self._additional_hotkeys[self._manual_format_hotkey]
+            except Exception as e:
+                logger.error(f"Ошибка при удалении горячей клавиши ручного форматирования: {e}")
+            finally:
+                self._manual_format_hotkey = None
         
         # Отменить дополнительные клавиши
         for key in list(self._additional_hotkeys.keys()):

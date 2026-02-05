@@ -51,7 +51,9 @@
       "position_top_right": "Superior direito",
       "position_bottom_left": "Inferior esquerdo",
       "position_bottom_right": "Inferior direito",
-      "position_custom": "Personalizado"
+      "position_custom": "Personalizado",
+      "manual_format_hotkey": "Manual Format Hotkey:",
+      "manual_format_hotkey_tooltip": "Press key combination to open manual formatting dialog (e.g.: Ctrl+Shift+Space)"
     },
     "audio": {
       "title": "Áudio",
@@ -339,5 +341,21 @@
     "format_selected_title": "Formato selecionado",
     "format_selected_message": "Formato selecionado: {format}",
     "dialog_error": "Falha ao mostrar diálogo de seleção de formato"
+  },
+  "manual_format": {
+    "title": "Manual Formatting",
+    "selected_format": "Selected format: {format}",
+    "input_label": "Input text",
+    "output_label": "Formatted text",
+    "format_button": "Format",
+    "formatting_button": "Formatting...",
+    "copy_button": "Copy",
+    "empty_input_message": "Please paste or type text to format.",
+    "no_output_message": "Nothing to copy yet.",
+    "no_api_key_message": "Formatting API key is missing for provider: {provider}.",
+    "format_error_message": "Formatting failed. Please check your settings and try again.",
+    "copy_success_message": "Copied to clipboard.",
+    "copy_failed_message": "Failed to copy to clipboard.",
+    "dialog_error": "Failed to show manual formatting dialog"
   }
 }

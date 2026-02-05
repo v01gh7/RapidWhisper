@@ -33,7 +33,11 @@
     // Hotkey for manual format selection dialog
     // Opens a dialog to choose formatting application before recording
     // Default: ctrl+alt+space
-    "format_selection_hotkey": "ctrl+alt+space"
+    "format_selection_hotkey": "ctrl+alt+space",
+    // Hotkey for manual text formatting dialog
+    // Opens a dialog to format any pasted text without recording
+    // Default: ctrl+shift+space
+    "manual_format_hotkey": "ctrl+shift+space"
   },
   "audio": {
     "silence_threshold": 0.02,

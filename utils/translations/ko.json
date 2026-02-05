@@ -51,7 +51,9 @@
       "position_top_right": "오른쪽 상단",
       "position_bottom_left": "왼쪽 하단",
       "position_bottom_right": "오른쪽 하단",
-      "position_custom": "사용자 정의"
+      "position_custom": "사용자 정의",
+      "manual_format_hotkey": "Manual Format Hotkey:",
+      "manual_format_hotkey_tooltip": "Press key combination to open manual formatting dialog (e.g.: Ctrl+Shift+Space)"
     },
     "audio": {
       "title": "오디오",
@@ -339,5 +341,21 @@
     "format_selected_title": "형식 선택됨",
     "format_selected_message": "선택한 형식: {format}",
     "dialog_error": "형식 선택 대화 상자를 표시하지 못했습니다"
+  },
+  "manual_format": {
+    "title": "Manual Formatting",
+    "selected_format": "Selected format: {format}",
+    "input_label": "Input text",
+    "output_label": "Formatted text",
+    "format_button": "Format",
+    "formatting_button": "Formatting...",
+    "copy_button": "Copy",
+    "empty_input_message": "Please paste or type text to format.",
+    "no_output_message": "Nothing to copy yet.",
+    "no_api_key_message": "Formatting API key is missing for provider: {provider}.",
+    "format_error_message": "Formatting failed. Please check your settings and try again.",
+    "copy_success_message": "Copied to clipboard.",
+    "copy_failed_message": "Failed to copy to clipboard.",
+    "dialog_error": "Failed to show manual formatting dialog"
   }
 }

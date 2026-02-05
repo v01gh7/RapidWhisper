@@ -51,7 +51,9 @@
       "position_top_right": "右上",
       "position_bottom_left": "左下",
       "position_bottom_right": "右下",
-      "position_custom": "カスタム"
+      "position_custom": "カスタム",
+      "manual_format_hotkey": "Manual Format Hotkey:",
+      "manual_format_hotkey_tooltip": "Press key combination to open manual formatting dialog (e.g.: Ctrl+Shift+Space)"
     },
     "audio": {
       "title": "オーディオ",
@@ -339,5 +341,21 @@
     "format_selected_title": "フォーマットが選択されました",
     "format_selected_message": "選択されたフォーマット: {format}",
     "dialog_error": "フォーマット選択ダイアログの表示に失敗しました"
+  },
+  "manual_format": {
+    "title": "Manual Formatting",
+    "selected_format": "Selected format: {format}",
+    "input_label": "Input text",
+    "output_label": "Formatted text",
+    "format_button": "Format",
+    "formatting_button": "Formatting...",
+    "copy_button": "Copy",
+    "empty_input_message": "Please paste or type text to format.",
+    "no_output_message": "Nothing to copy yet.",
+    "no_api_key_message": "Formatting API key is missing for provider: {provider}.",
+    "format_error_message": "Formatting failed. Please check your settings and try again.",
+    "copy_success_message": "Copied to clipboard.",
+    "copy_failed_message": "Failed to copy to clipboard.",
+    "dialog_error": "Failed to show manual formatting dialog"
   }
 }

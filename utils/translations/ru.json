@@ -51,7 +51,9 @@
       "position_top_right": "Правый верхний угол",
       "position_bottom_left": "Левый нижний угол",
       "position_bottom_right": "Правый нижний угол",
-      "position_custom": "Пользовательская"
+      "position_custom": "Пользовательская",
+      "manual_format_hotkey": "Горячая клавиша ручного форматирования:",
+      "manual_format_hotkey_tooltip": "Нажмите сочетание клавиш для открытия окна ручного форматирования (например: Ctrl+Shift+Space)"
     },
     "audio": {
       "title": "Аудио",
@@ -343,5 +345,21 @@
     "format_selected_title": "Формат выбран",
     "format_selected_message": "Выбран формат: {format}",
     "dialog_error": "Не удалось показать диалог выбора формата"
+  },
+  "manual_format": {
+    "title": "Ручное форматирование",
+    "selected_format": "Выбранный формат: {format}",
+    "input_label": "Исходный текст",
+    "output_label": "Отформатированный текст",
+    "format_button": "Форматировать",
+    "formatting_button": "Форматирование...",
+    "copy_button": "Копировать",
+    "empty_input_message": "Вставьте или введите текст для форматирования.",
+    "no_output_message": "Пока нечего копировать.",
+    "no_api_key_message": "API ключ для форматирования отсутствует (провайдер: {provider}).",
+    "format_error_message": "Не удалось отформатировать текст. Проверьте настройки и попробуйте снова.",
+    "copy_success_message": "Скопировано в буфер обмена.",
+    "copy_failed_message": "Не удалось скопировать в буфер обмена.",
+    "dialog_error": "Не удалось открыть окно ручного форматирования"
   }
 }

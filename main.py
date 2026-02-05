@@ -63,6 +63,7 @@ class RapidWhisperApp(QObject):
     
     # Сигнал для format selection hotkey
     _format_selection_hotkey_signal = pyqtSignal()
+    _manual_format_hotkey_signal = pyqtSignal()
     
     # Сигнал для отмены записи (ESC)
     _cancel_recording_signal = pyqtSignal()
@@ -96,6 +97,10 @@ class RapidWhisperApp(QObject):
         # Диалог выбора формата (единственный экземпляр)
         self.format_selection_dialog = None
         self._format_dialog_open = False
+        self.manual_format_selection_dialog = None
+        self._manual_format_selection_open = False
+        self.manual_format_dialog = None
+        self._manual_format_dialog_open = False
         
         # Флаг инициализации
         self._initialized = False
@@ -243,6 +248,7 @@ class RapidWhisperApp(QObject):
         
         # Подключаем сигнал format selection hotkey
         self._format_selection_hotkey_signal.connect(self._handle_format_selection_in_main_thread)
+        self._manual_format_hotkey_signal.connect(self._handle_manual_format_hotkey_in_main_thread)
         
         # Подключаем сигнал отмены записи
         self._cancel_recording_signal.connect(self._handle_cancel_recording)
@@ -264,6 +270,17 @@ class RapidWhisperApp(QObject):
             
             # Зарегистрировать ESC для отмены записи
             self.hotkey_manager.register_hotkey("esc", self._on_cancel_pressed)
+
+            manual_format_hotkey = self.config.manual_format_hotkey or "ctrl+shift+space"
+            manual_success = self.hotkey_manager.register_manual_format_hotkey(
+                manual_format_hotkey,
+                self._on_manual_format_hotkey
+            )
+
+            if manual_success:
+                self.logger.info(f"Manual formatting hotkey registered: {manual_format_hotkey}")
+            else:
+                self.logger.warning(f"Failed to register manual formatting hotkey: {manual_format_hotkey}")
             
             # Зарегистрировать горячую клавишу выбора формата (Requirements: 1.1, 1.2)
             format_hotkey = self.config.format_selection_hotkey or "ctrl+alt+space"
@@ -357,6 +374,13 @@ class RapidWhisperApp(QObject):
         """
         self.logger.info("Горячая клавиша выбора формата нажата")
         self._format_selection_hotkey_signal.emit()
+
+    def _on_manual_format_hotkey(self) -> None:
+        """
+        Handle manual formatting hotkey (keyboard thread).
+        """
+        self.logger.info("Manual formatting hotkey pressed")
+        self._manual_format_hotkey_signal.emit()
     
     def _handle_format_selection_in_main_thread(self) -> None:
         """
@@ -385,6 +409,18 @@ class RapidWhisperApp(QObject):
         
         # Show format selection dialog
         self._show_format_selection_dialog()
+
+    def _handle_manual_format_hotkey_in_main_thread(self) -> None:
+        """
+        Handle manual formatting hotkey in the Qt main thread.
+        """
+        self.logger.info("Handling manual formatting hotkey in main thread")
+        
+        if self.state_manager.current_state == AppState.RECORDING:
+            self.logger.info("Recording active - manual formatting ignored")
+            return
+        
+        self._show_manual_format_dialog()
     
     def _handle_hotkey_in_main_thread(self) -> None:
         """
@@ -1090,6 +1126,77 @@ class RapidWhisperApp(QObject):
                 duration=5000
             )
     
+    def _show_manual_format_dialog(self) -> None:
+        """
+        Show manual formatting dialog (format selection + text input).
+        """
+        try:
+            if self._manual_format_dialog_open and self.manual_format_dialog is not None:
+                self.logger.info("Manual formatting dialog already open, raising window")
+                self.manual_format_dialog.raise_()
+                self.manual_format_dialog.activateWindow()
+                return
+
+            if self._format_dialog_open and self.format_selection_dialog is not None:
+                self.logger.info("Format selection dialog already open, raising window")
+                self.format_selection_dialog.raise_()
+                self.format_selection_dialog.activateWindow()
+                return
+
+            if self._manual_format_selection_open and self.manual_format_selection_dialog is not None:
+                self.logger.info("Manual format selection dialog already open, raising window")
+                self.manual_format_selection_dialog.raise_()
+                self.manual_format_selection_dialog.activateWindow()
+                return
+
+            from ui.format_selection_dialog import FormatSelectionDialog
+            from ui.manual_format_dialog import ManualFormatDialog
+            from services.formatting_config import FormattingConfig
+            from core.config_loader import get_config_loader
+
+            formatting_config = FormattingConfig.from_config(get_config_loader())
+
+            dialog = FormatSelectionDialog(formatting_config, parent=None)
+            self.manual_format_selection_dialog = dialog
+            self._manual_format_selection_open = True
+
+            result = dialog.exec()
+
+            self._manual_format_selection_open = False
+            self.manual_format_selection_dialog = None
+
+            if result != dialog.DialogCode.Accepted:
+                self.logger.info("Manual formatting selection cancelled")
+                return
+
+            selected_format = dialog.get_selected_format()
+            if not selected_format:
+                self.logger.warning("Manual formatting selection accepted without a format")
+                return
+
+            manual_dialog = ManualFormatDialog(formatting_config, selected_format, parent=None)
+            self.manual_format_dialog = manual_dialog
+            self._manual_format_dialog_open = True
+            manual_dialog.exec()
+
+            self._manual_format_dialog_open = False
+            self.manual_format_dialog = None
+
+        except Exception as e:
+            self.logger.error(f"Manual formatting dialog failed: {e}")
+            import traceback
+            self.logger.error(traceback.format_exc())
+            self._manual_format_dialog_open = False
+            self._manual_format_selection_open = False
+            self.manual_format_dialog = None
+            self.manual_format_selection_dialog = None
+
+            self.tray_icon.show_message(
+                t("common.error"),
+                t("manual_format.dialog_error"),
+                duration=5000
+            )
+
     def _on_settings_window_closed(self) -> None:
         """Обработчик закрытия окна настроек."""
         self.logger.info("Окно настроек закрыто")
@@ -1219,6 +1326,14 @@ class RapidWhisperApp(QObject):
                     if success:
                         # Зарегистрировать ESC снова
                         self.hotkey_manager.register_hotkey("esc", self._on_cancel_pressed)
+                        self.hotkey_manager.register_format_selection_hotkey(
+                            new_config.format_selection_hotkey or "ctrl+alt+space",
+                            self._on_format_selection_hotkey
+                        )
+                        self.hotkey_manager.register_manual_format_hotkey(
+                            new_config.manual_format_hotkey or "ctrl+shift+space",
+                            self._on_manual_format_hotkey
+                        )
                         self.logger.info(f"Горячая клавиша обновлена: {new_config.hotkey}")
                         
                         # Обновить отображение горячей клавиши в info panel
@@ -1231,6 +1346,14 @@ class RapidWhisperApp(QObject):
                         self.hotkey_manager = HotkeyManager(self._on_hotkey_pressed)
                         self.hotkey_manager.register_hotkey(old_config.hotkey)
                         self.hotkey_manager.register_hotkey("esc", self._on_cancel_pressed)
+                        self.hotkey_manager.register_format_selection_hotkey(
+                            old_config.format_selection_hotkey or "ctrl+alt+space",
+                            self._on_format_selection_hotkey
+                        )
+                        self.hotkey_manager.register_manual_format_hotkey(
+                            old_config.manual_format_hotkey or "ctrl+shift+space",
+                            self._on_manual_format_hotkey
+                        )
                         self.config.hotkey = old_config.hotkey
                         
                         self.tray_icon.show_message(
@@ -1246,6 +1369,18 @@ class RapidWhisperApp(QObject):
                     self.logger.error(traceback.format_exc())
             
             # 3. Логировать изменения AI Provider
+            if old_config.format_selection_hotkey != new_config.format_selection_hotkey and self.hotkey_manager:
+                self.hotkey_manager.register_format_selection_hotkey(
+                    new_config.format_selection_hotkey or "ctrl+alt+space",
+                    self._on_format_selection_hotkey
+                )
+
+            if old_config.manual_format_hotkey != new_config.manual_format_hotkey and self.hotkey_manager:
+                self.hotkey_manager.register_manual_format_hotkey(
+                    new_config.manual_format_hotkey or "ctrl+shift+space",
+                    self._on_manual_format_hotkey
+                )
+
             if old_config.ai_provider != new_config.ai_provider:
                 self.logger.info(f"AI Provider изменен: {old_config.ai_provider} -> {new_config.ai_provider}")
             
