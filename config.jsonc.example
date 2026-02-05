@@ -69,7 +69,7 @@
     "provider": "groq",
     "model": "llama-3.3-70b-versatile",
     "custom_model": "",
-    "prompt": "You are a text editor. Your task: fix grammatical errors, add punctuation and improve text readability. Preserve the original meaning and style. Don't add anything extra. Return only the corrected text without comments.",
+    "prompt": "⚠️ CRITICAL: DO NOT TRANSLATE! Keep text in SAME LANGUAGE as input. You are a text editor. Your task: fix grammatical errors, add punctuation and improve text readability. Preserve the original meaning, style AND LANGUAGE. Don't add anything extra. If input is Russian, output MUST be Russian. If input is English, output MUST be English. Return only the corrected text without comments.",
     "glm_use_coding_plan": true,
     "llm": {
       "base_url": "http://localhost:1234/v1/",
