@@ -2801,8 +2801,9 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         # Установить кастомную модель
         self.post_processing_custom_model_edit.setText(self.config.post_processing_custom_model)
         
-        # Установить промпт
-        self.post_processing_prompt_edit.setPlainText(self.config.post_processing_prompt)
+        # Установить промпт (заменяем \n на реальные переносы строк для читаемости)
+        prompt_text = self.config.post_processing_prompt.replace('\\n', '\n')
+        self.post_processing_prompt_edit.setPlainText(prompt_text)
         
         # Обновить состояние полей
         self._on_post_processing_toggled(self.config.enable_post_processing)
