@@ -15,7 +15,7 @@ and distribution are prohibited without written permission.
 import sys
 from typing import Optional
 from PyQt6.QtWidgets import QApplication
-from PyQt6.QtCore import QObject, pyqtSignal, QTimer
+from PyQt6.QtCore import QObject, pyqtSignal, QTimer, Qt
 from pathlib import Path
 
 from core.config import Config, get_config_dir
@@ -962,9 +962,13 @@ class RapidWhisperApp(QObject):
         # Если окно уже существует и видимо - просто активируем его
         if self.settings_window is not None:
             if self.settings_window.isVisible():
-                # Окно уже открыто - активируем его
+                # Окно уже открыто - принудительно выводим на передний план
+                self.settings_window.setWindowState(
+                    self.settings_window.windowState() & ~Qt.WindowState.WindowMinimized | Qt.WindowState.WindowActive
+                )
                 self.settings_window.raise_()
                 self.settings_window.activateWindow()
+                self.settings_window.show()  # Повторный вызов show() для Windows
                 self.logger.info("Окно настроек уже открыто - активация")
                 return
             else:
