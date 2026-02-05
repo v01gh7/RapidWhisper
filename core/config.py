@@ -486,6 +486,7 @@ BEGIN FORMATTING NOW. OUTPUT ONLY THE FORMATTED TEXT."""
         self.font_size_floating_info: int = 11  # Размер шрифта инфопанели плавающего окна (8-16)
         self.font_size_settings_labels: int = 12  # Размер шрифта меток окна настроек (10-16)
         self.font_size_settings_titles: int = 24  # Размер шрифта заголовков окна настроек (16-32)
+        self.waveform_color: str = "#64AAFF"  # Цвет волны в формате HEX (по умолчанию синий)
     
     @staticmethod
     def load_from_env(env_path: Optional[str] = None) -> 'Config':
@@ -729,6 +730,11 @@ BEGIN FORMATTING NOW. OUTPUT ONLY THE FORMATTED TEXT."""
         except (ValueError, TypeError):
             pass
         
+        # Загрузить цвет волны
+        waveform_color = os.getenv("WAVEFORM_COLOR", config.waveform_color)
+        if waveform_color and waveform_color.startswith('#'):
+            config.waveform_color = waveform_color
+        
         return config
     
     @staticmethod
@@ -782,6 +788,7 @@ BEGIN FORMATTING NOW. OUTPUT ONLY THE FORMATTED TEXT."""
         config.font_size_floating_info = config_loader.get("window.font_sizes.floating_info", 11)
         config.font_size_settings_labels = config_loader.get("window.font_sizes.settings_labels", 12)
         config.font_size_settings_titles = config_loader.get("window.font_sizes.settings_titles", 24)
+        config.waveform_color = config_loader.get("window.waveform_color", "#64AAFF")
         
         # Параметры записи
         config.keep_recordings = config_loader.get("recording.keep_recordings", False)

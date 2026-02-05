@@ -1640,6 +1640,41 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         fonts_group.setLayout(fonts_layout)
         layout.addWidget(fonts_group)
         
+        # Группа: Цвет волны
+        waveform_group = QGroupBox(t("settings.ui_customization.waveform_color"))
+        waveform_layout = QHBoxLayout()
+        waveform_layout.setSpacing(12)
+        
+        # Метка с текущим цветом
+        waveform_color_label = QLabel(t("settings.ui_customization.waveform_color_label"))
+        waveform_layout.addWidget(waveform_color_label)
+        
+        # Кнопка выбора цвета
+        from PyQt6.QtWidgets import QColorDialog
+        self.waveform_color_button = QPushButton()
+        self.waveform_color_button.setFixedSize(80, 30)
+        self.waveform_color_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.waveform_color_button.setToolTip(t("settings.ui_customization.waveform_color_tooltip"))
+        
+        # Установить текущий цвет
+        current_color = getattr(self.config, 'waveform_color', '#64AAFF')
+        self.waveform_color_button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {current_color};
+                border: 2px solid #555555;
+                border-radius: 4px;
+            }}
+            QPushButton:hover {{
+                border: 2px solid #0078d4;
+            }}
+        """)
+        self.waveform_color_button.clicked.connect(self._on_waveform_color_clicked)
+        waveform_layout.addWidget(self.waveform_color_button)
+        
+        waveform_layout.addStretch()
+        waveform_group.setLayout(waveform_layout)
+        layout.addWidget(waveform_group)
+        
         # Кнопка сброса на значения по умолчанию
         reset_btn = QPushButton(t("settings.ui_customization.reset_defaults"))
         reset_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -1672,6 +1707,19 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         self.font_settings_labels_spin.setValue(12)
         self.font_settings_titles_spin.setValue(24)
         
+        # Сбросить цвет волны
+        default_color = "#64AAFF"
+        self.waveform_color_button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {default_color};
+                border: 2px solid #555555;
+                border-radius: 4px;
+            }}
+            QPushButton:hover {{
+                border: 2px solid #0078d4;
+            }}
+        """)
+        
         # Записать значения в config.jsonc
         config_saver = get_config_saver()
         config_saver.update_multiple_values({
@@ -1679,7 +1727,8 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             "window.font_sizes.floating_main": 14,
             "window.font_sizes.floating_info": 11,
             "window.font_sizes.settings_labels": 12,
-            "window.font_sizes.settings_titles": 24
+            "window.font_sizes.settings_titles": 24,
+            "window.waveform_color": default_color
         })
         
         # Обновить конфиг в памяти
@@ -1688,10 +1737,25 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         self.config.font_size_floating_info = 11
         self.config.font_size_settings_labels = 12
         self.config.font_size_settings_titles = 24
+        self.config.waveform_color = default_color
+        
+        # Получить FloatingWindow через tray_icon
+        floating_window = None
+        if self.tray_icon and hasattr(self.tray_icon, 'parent') and self.tray_icon.parent():
+            floating_window = self.tray_icon.parent()
         
         # Обновить FloatingWindow если доступно (для live preview opacity)
-        if self.parent() and hasattr(self.parent(), 'set_opacity'):
-            self.parent().set_opacity(150)
+        if floating_window and hasattr(floating_window, 'set_opacity'):
+            floating_window.set_opacity(150)
+        
+        # Обновить цвет волны в FloatingWindow
+        if floating_window and hasattr(floating_window, 'get_waveform_widget'):
+            waveform_widget = floating_window.get_waveform_widget()
+            if waveform_widget:
+                waveform_widget.set_waveform_color(default_color)
+            # Обновить конфиг FloatingWindow
+            if hasattr(floating_window, 'config'):
+                floating_window.config.waveform_color = default_color
         
         logger.info("UI customization settings reset to defaults")
     
@@ -1823,6 +1887,89 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         # Обновить стиль окна настроек
         self._apply_style()
         logger.debug(f"Font size settings titles changed to {value}")
+    
+    def _on_waveform_color_clicked(self):
+        """
+        Обработчик клика по кнопке выбора цвета волны.
+        Открывает диалог выбора цвета и применяет изменения с live preview.
+        """
+        from PyQt6.QtWidgets import QColorDialog
+        from PyQt6.QtGui import QColor
+        from core.config_saver import get_config_saver
+        
+        # Получить текущий цвет
+        current_color = getattr(self.config, 'waveform_color', '#64AAFF')
+        initial_color = QColor(current_color)
+        
+        # Получить FloatingWindow через tray_icon
+        floating_window = None
+        if self.tray_icon and hasattr(self.tray_icon, 'parent') and self.tray_icon.parent():
+            floating_window = self.tray_icon.parent()
+        
+        # Создать диалог выбора цвета с опцией live preview
+        dialog = QColorDialog(initial_color, self)
+        dialog.setWindowTitle(t("settings.ui_customization.waveform_color_dialog"))
+        dialog.setOption(QColorDialog.ColorDialogOption.ShowAlphaChannel, False)
+        
+        # Подключить live preview при изменении цвета
+        def on_color_changed(color):
+            if color.isValid():
+                hex_color = color.name()
+                # Обновить стиль кнопки
+                self.waveform_color_button.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: {hex_color};
+                        border: 2px solid #555555;
+                        border-radius: 4px;
+                    }}
+                    QPushButton:hover {{
+                        border: 2px solid #0078d4;
+                    }}
+                """)
+                # Применить к волне (live preview)
+                if floating_window and hasattr(floating_window, 'get_waveform_widget'):
+                    waveform_widget = floating_window.get_waveform_widget()
+                    if waveform_widget:
+                        waveform_widget.set_waveform_color(hex_color)
+                        # Обновить конфиг в памяти FloatingWindow
+                        if hasattr(floating_window, 'config'):
+                            floating_window.config.waveform_color = hex_color
+        
+        dialog.currentColorChanged.connect(on_color_changed)
+        
+        # Показать диалог
+        if dialog.exec() == QColorDialog.DialogCode.Accepted:
+            color = dialog.selectedColor()
+            if color.isValid():
+                hex_color = color.name()
+                
+                # Сохранить значение в config.jsonc
+                config_saver = get_config_saver()
+                config_saver.update_value("window.waveform_color", hex_color)
+                
+                # Обновить конфиг в памяти SettingsWindow
+                self.config.waveform_color = hex_color
+                
+                logger.info(f"Waveform color changed to {hex_color}")
+        else:
+            # Если отменили - вернуть старый цвет
+            self.waveform_color_button.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {current_color};
+                    border: 2px solid #555555;
+                    border-radius: 4px;
+                }}
+                QPushButton:hover {{
+                    border: 2px solid #0078d4;
+                }}
+            """)
+            if floating_window and hasattr(floating_window, 'get_waveform_widget'):
+                waveform_widget = floating_window.get_waveform_widget()
+                if waveform_widget:
+                    waveform_widget.set_waveform_color(current_color)
+                    # Вернуть старый цвет в конфиг FloatingWindow
+                    if hasattr(floating_window, 'config'):
+                        floating_window.config.waveform_color = current_color
     
     def _create_recordings_page(self) -> QWidget:
         """Создает страницу управления записями."""
@@ -3453,6 +3600,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                 "window.font_sizes.floating_info": int(self.font_floating_info_spin.value()),
                 "window.font_sizes.settings_labels": int(self.font_settings_labels_spin.value()),
                 "window.font_sizes.settings_titles": int(self.font_settings_titles_spin.value()),
+                "window.waveform_color": getattr(self.config, 'waveform_color', '#64AAFF'),
                 "recording.keep_recordings": self.keep_recordings_check.isChecked(),
                 "post_processing.enabled": self.enable_post_processing_check.isChecked(),
                 "post_processing.provider": self.post_processing_provider_combo.currentText(),

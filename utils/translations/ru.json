@@ -181,6 +181,10 @@
       "font_settings_labels_tooltip": "Размер шрифта для меток в настройках (10-16px)",
       "font_settings_titles": "Окно настроек - Заголовки:",
       "font_settings_titles_tooltip": "Размер шрифта для заголовков секций (16-32px)",
+      "waveform_color": "Цвет волны",
+      "waveform_color_label": "Цвет волны:",
+      "waveform_color_tooltip": "Нажмите, чтобы выбрать цвет волны",
+      "waveform_color_dialog": "Выберите цвет волны",
       "reset_defaults": "Сбросить на значения по умолчанию",
       "reset_defaults_tooltip": "Сбросить все настройки интерфейса на значения по умолчанию"
     },

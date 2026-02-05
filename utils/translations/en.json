@@ -181,6 +181,10 @@
       "font_settings_labels_tooltip": "Font size for labels in settings (10-16px)",
       "font_settings_titles": "Settings Window - Titles:",
       "font_settings_titles_tooltip": "Font size for section titles (16-32px)",
+      "waveform_color": "Waveform Color",
+      "waveform_color_label": "Wave Color:",
+      "waveform_color_tooltip": "Click to choose waveform color",
+      "waveform_color_dialog": "Choose Waveform Color",
       "reset_defaults": "Reset to Defaults",
       "reset_defaults_tooltip": "Reset all UI customization settings to default values"
     },

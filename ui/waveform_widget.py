@@ -30,20 +30,29 @@ class WaveformWidget(QWidget):
     Requirements: 4.1, 4.2, 4.4, 4.6, 7.1, 7.2, 7.3
     """
     
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, config=None):
         """
         Инициализирует виджет визуализации.
         
         Args:
             parent: Родительский виджет
+            config: Объект конфигурации для получения цвета волны
         """
         super().__init__(parent)
+        
+        # Сохранить конфигурацию
+        self.config = config
         
         # Параметры визуализации
         self.rms_values: List[float] = []
         self.max_bars: int = 50
         self.smoothed_rms: float = 0.0
         self.smoothing_factor: float = 0.3  # Для exponential smoothing
+        
+        # Цвет волны (по умолчанию синий)
+        self._waveform_color = "#64AAFF"
+        if config and hasattr(config, 'waveform_color'):
+            self._waveform_color = config.waveform_color
         
         # Состояние анимации
         self.animation_state: AnimationState = AnimationState.IDLE
@@ -60,6 +69,16 @@ class WaveformWidget(QWidget):
         # Настройка виджета
         self.setMinimumSize(300, 80)
         self.setMaximumHeight(100)
+    
+    def set_waveform_color(self, color: str) -> None:
+        """
+        Устанавливает цвет волны.
+        
+        Args:
+            color: Цвет в формате HEX (например, "#64AAFF")
+        """
+        self._waveform_color = color
+        self.update()  # Перерисовать виджет
     
     def update_rms(self, rms: float) -> None:
         """
@@ -175,7 +194,7 @@ class WaveformWidget(QWidget):
         Рисует звуковую волну из RMS значений.
         
         Отрисовывает вертикальные бары с высотой пропорциональной
-        RMS значениям. Использует градиент цвета для эстетики.
+        RMS значениям. Использует градиент оттенка и яркости от базового цвета.
         
         Args:
             painter: QPainter для отрисовки
@@ -199,6 +218,14 @@ class WaveformWidget(QWidget):
         if max_rms < 0.01:
             max_rms = 0.01  # Избегаем деления на ноль
         
+        # Парсим базовый цвет из HEX
+        base_color = QColor(self._waveform_color)
+        
+        # Получаем HSV компоненты базового цвета
+        base_h = base_color.hue()
+        base_s = base_color.saturation()
+        base_v = base_color.value()
+        
         # Отрисовываем бары
         for i, rms in enumerate(self.rms_values):
             # Нормализуем высоту (0.0 - 1.0)
@@ -211,10 +238,21 @@ class WaveformWidget(QWidget):
             x = i * bar_width
             y = center_y - bar_height / 2
             
-            # Цвет с градиентом от синего к зеленому
-            # В зависимости от громкости
-            hue = 200 - (normalized * 80)  # 200 (синий) -> 120 (зеленый)
-            color = QColor.fromHsv(int(hue), 200, 255)
+            # Создаем градиент оттенка и яркости от базового цвета
+            # Диапазон изменения оттенка: ±40 градусов от базового
+            # При низкой громкости - сдвиг в одну сторону (темнее)
+            # При высокой громкости - сдвиг в другую сторону (ярче)
+            hue_shift = int((normalized - 0.5) * 80)  # От -40 до +40
+            new_h = (base_h + hue_shift) % 360  # Оборачиваем по кругу (0-359)
+            
+            # Также меняем яркость для большей выразительности
+            # При низкой громкости - 60% яркости, при высокой - 100%
+            brightness_factor = 0.6 + (normalized * 0.4)  # От 0.6 до 1.0
+            new_v = int(base_v * brightness_factor)
+            new_v = max(0, min(255, new_v))  # Ограничиваем диапазон
+            
+            # Создаем цвет с новым оттенком и яркостью
+            color = QColor.fromHsv(new_h, base_s, new_v)
             
             # Рисуем бар
             painter.setPen(Qt.PenStyle.NoPen)

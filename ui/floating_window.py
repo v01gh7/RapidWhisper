@@ -109,7 +109,7 @@ class FloatingWindow(QWidget):
         layout.setSpacing(5)
         
         # Виджет визуализации волны - ФИКСИРОВАННАЯ ВЫСОТА
-        self.waveform_widget = WaveformWidget(self)
+        self.waveform_widget = WaveformWidget(self, self.config)
         self.waveform_widget.setFixedHeight(50)  # Фиксированная высота для волны
         layout.addWidget(self.waveform_widget)
         
