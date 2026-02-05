@@ -208,6 +208,15 @@ class FloatingWindow(QWidget):
             logger = get_logger()
             logger.error(f"Failed to initialize window monitor and info panel: {e}")
     
+    def get_info_panel(self) -> Optional[InfoPanelWidget]:
+        """
+        Возвращает виджет информационной панели.
+        
+        Returns:
+            InfoPanelWidget или None если не инициализирован
+        """
+        return self.info_panel
+    
     def show_info_panel(self) -> None:
         """Показывает info panel."""
         if self.info_panel and not self.info_panel.isVisible():

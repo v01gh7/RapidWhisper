@@ -183,6 +183,12 @@ class RapidWhisperApp(QObject):
         # Установить конфигурацию для инициализации window monitor и info panel
         self.floating_window.set_config(self.config)
         
+        # Подключить сигнал отмены из info panel
+        info_panel = self.floating_window.get_info_panel()
+        if info_panel:
+            info_panel.cancel_clicked.connect(self._on_cancel_pressed)
+            self.logger.info("Сигнал cancel_clicked из info_panel подключен")
+        
         # Tray Icon - передаем floating_window как parent
         self.tray_icon = TrayIcon(parent=self.floating_window)
         self.tray_icon.show_settings.connect(self._show_settings)
@@ -299,6 +305,12 @@ class RapidWhisperApp(QObject):
         if self.state_manager.current_state == AppState.RECORDING:
             self.logger.info("Отмена записи по ESC")
             
+            # Сбросить активную кнопку
+            info_panel = self.floating_window.get_info_panel()
+            if info_panel:
+                info_panel.set_active_button(None)
+                self.logger.info("Активная кнопка сброшена")
+            
             # Остановить поток записи БЕЗ сохранения файла
             if self.recording_thread and self.recording_thread.isRunning():
                 self.recording_thread.cancel()  # Используем cancel вместо stop
@@ -410,6 +422,12 @@ class RapidWhisperApp(QObject):
             # Если идет запись - останавливаем её
             self.logger.info("Остановка записи по нажатию горячей клавиши")
             
+            # Сбросить активную кнопку
+            info_panel = self.floating_window.get_info_panel()
+            if info_panel:
+                info_panel.set_active_button(None)
+                self.logger.info("Активная кнопка сброшена")
+            
             # СРАЗУ СКРЫТЬ ОКНО
             self._hide_window_signal.emit()
             
@@ -467,6 +485,12 @@ class RapidWhisperApp(QObject):
             
             # Показать info panel при начале записи
             self.floating_window.show_info_panel()
+            
+            # Установить кнопку "Запись" как активную (подчеркнутую и некликабельную)
+            info_panel = self.floating_window.get_info_panel()
+            if info_panel:
+                info_panel.set_active_button("record")
+                self.logger.info("Кнопка 'Запись' установлена как активная")
             
             # Показать окно через сигнал (безопасно для потоков)
             self.logger.info("Отправка сигнала показа окна...")

@@ -7,8 +7,8 @@
 """
 
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel
-from PyQt6.QtCore import Qt, pyqtSlot
-from PyQt6.QtGui import QPixmap, QFont
+from PyQt6.QtCore import Qt, pyqtSlot, pyqtSignal
+from PyQt6.QtGui import QPixmap, QFont, QCursor
 from typing import Optional
 from utils.hotkey_formatter import HotkeyFormatter
 from utils.i18n import t
@@ -24,6 +24,9 @@ class InfoPanelWidget(QWidget):
     
     Requirements: 1.1, 1.3, 1.4, 3.1, 3.2, 3.3, 5.1-5.8, 6.1-6.5
     """
+    
+    # Сигналы для кликов по кнопкам
+    cancel_clicked = pyqtSignal()  # Сигнал при клике на "Отменить"
     
     def __init__(self, config, parent=None):
         """
@@ -101,11 +104,15 @@ class InfoPanelWidget(QWidget):
         # Кнопка записи
         self._record_hotkey_label = QLabel()
         self._record_hotkey_label.setFont(QFont("Segoe UI", font_size))
+        self._record_hotkey_label.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self._record_hotkey_label.mousePressEvent = self._on_record_clicked
         self._update_record_hotkey()
         
         # Кнопка отмены
         self._close_hotkey_label = QLabel(t("common.cancel_esc"))
         self._close_hotkey_label.setFont(QFont("Segoe UI", font_size))
+        self._close_hotkey_label.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self._close_hotkey_label.mousePressEvent = self._on_cancel_clicked
         
         main_layout.addWidget(self._record_hotkey_label)
         main_layout.addWidget(self._close_hotkey_label)
@@ -230,3 +237,49 @@ class InfoPanelWidget(QWidget):
         Requirements: 1.3
         """
         self._default_icon = icon
+    
+    def _on_record_clicked(self, event) -> None:
+        """
+        Обработчик клика по кнопке "Запись".
+        
+        Пока не делает ничего, так как кнопка должна быть некликабельной
+        когда она активна (подчеркнута).
+        """
+        # Если кнопка активна (подчеркнута), игнорируем клик
+        if "text-decoration: underline" in self._record_hotkey_label.styleSheet():
+            return
+    
+    def _on_cancel_clicked(self, event) -> None:
+        """
+        Обработчик клика по кнопке "Отменить".
+        
+        Отправляет сигнал cancel_clicked для отмены записи.
+        """
+        self.cancel_clicked.emit()
+    
+    def set_active_button(self, button_name: str) -> None:
+        """
+        Устанавливает активную кнопку (подчеркивает её и делает некликабельной).
+        
+        Args:
+            button_name: Название кнопки ("record" или "cancel" или None для сброса)
+        """
+        # Сбросить стили обеих кнопок
+        self._record_hotkey_label.setStyleSheet("color: #FFFFFF;")
+        self._close_hotkey_label.setStyleSheet("color: #FFFFFF;")
+        
+        # Восстановить курсоры
+        self._record_hotkey_label.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self._close_hotkey_label.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        
+        # Установить активную кнопку
+        if button_name == "record":
+            self._record_hotkey_label.setStyleSheet(
+                "color: #FFFFFF; text-decoration: underline; font-weight: bold;"
+            )
+            self._record_hotkey_label.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
+        elif button_name == "cancel":
+            self._close_hotkey_label.setStyleSheet(
+                "color: #FFFFFF; text-decoration: underline; font-weight: bold;"
+            )
+            self._close_hotkey_label.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
