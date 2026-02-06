@@ -1415,6 +1415,9 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         self.hooks_list.setDefaultDropAction(Qt.DropAction.MoveAction)
         self.hooks_list.setDragEnabled(True)
         self.hooks_list.setDropIndicatorShown(True)
+        self.hooks_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.hooks_list.customContextMenuRequested.connect(self._on_hooks_context_menu)
+        self.hooks_list.itemDoubleClicked.connect(self._on_hook_item_double_clicked)
         self.hooks_list.setStyleSheet("""
             QListWidget {
                 background-color: #2d2d2d;
@@ -1572,6 +1575,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             hook_manager = get_hook_manager()
             hook_manager.refresh_hooks()
             self.available_hooks_by_event = hook_manager.get_available_hooks_by_event()
+            self.available_hooks_meta = hook_manager.get_hooks_meta()
         except Exception as e:
             logger.error(f"Failed to load hooks settings: {e}")
             self.hooks_config = {
@@ -1583,6 +1587,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                 "log": {"enabled": True, "max_entries": 500}
             }
             self.available_hooks_by_event = {event: [] for event in ["before_recording", "after_recording", "transcription_received", "formatting_step", "post_formatting_step", "task_completed"]}
+            self.available_hooks_meta = {}
 
         # Всегда показывать все хуки при открытии настроек
         if hasattr(self, "hooks_event_combo"):
@@ -1601,6 +1606,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             hook_manager = get_hook_manager()
             hook_manager.refresh_hooks()
             self.available_hooks_by_event = hook_manager.get_available_hooks_by_event()
+            self.available_hooks_meta = hook_manager.get_hooks_meta()
         except Exception as e:
             logger.error(f"Failed to reload hooks: {e}")
         event_key = self._get_selected_hook_event()
@@ -1652,6 +1658,12 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             item = QListWidgetItem()
             item.setData(Qt.ItemDataRole.UserRole, name)
             item.setData(Qt.ItemDataRole.UserRole + 1, event_key)
+            path_value = ""
+            if hasattr(self, "available_hooks_meta"):
+                meta = self.available_hooks_meta.get(name)
+                if meta and getattr(meta, "path", None):
+                    path_value = str(meta.path)
+            item.setData(Qt.ItemDataRole.UserRole + 2, path_value)
 
             row_widget = QWidget()
             row_layout = QHBoxLayout(row_widget)
@@ -1698,6 +1710,70 @@ class SettingsWindow(QDialog, StyledWindowMixin):
 
             self.hooks_list.addItem(item)
             self.hooks_list.setItemWidget(item, row_widget)
+
+    def _get_hook_path_from_item(self, item: QListWidgetItem) -> str:
+        if not item:
+            return ""
+        path_value = item.data(Qt.ItemDataRole.UserRole + 2)
+        if isinstance(path_value, str) and path_value:
+            return path_value
+        name = item.data(Qt.ItemDataRole.UserRole)
+        if hasattr(self, "available_hooks_meta"):
+            meta = self.available_hooks_meta.get(name)
+            if meta and getattr(meta, "path", None):
+                return str(meta.path)
+        return ""
+
+    def _open_hook_folder(self, file_path: str) -> None:
+        try:
+            if not file_path or not os.path.exists(file_path):
+                QMessageBox.warning(self, t("common.error"), t("settings.hooks.context.file_not_found"))
+                return
+            folder = os.path.dirname(file_path)
+            if folder:
+                os.startfile(folder)
+        except Exception as e:
+            QMessageBox.warning(self, t("common.error"), t("settings.hooks.context.open_failed", error=str(e)))
+
+    def _open_hook_default(self, file_path: str) -> None:
+        try:
+            if not file_path or not os.path.exists(file_path):
+                QMessageBox.warning(self, t("common.error"), t("settings.hooks.context.file_not_found"))
+                return
+            os.startfile(file_path)
+        except Exception as e:
+            QMessageBox.warning(self, t("common.error"), t("settings.hooks.context.open_failed", error=str(e)))
+
+    def _open_hook_notepad(self, file_path: str) -> None:
+        try:
+            if not file_path or not os.path.exists(file_path):
+                QMessageBox.warning(self, t("common.error"), t("settings.hooks.context.file_not_found"))
+                return
+            import subprocess
+            subprocess.Popen(["notepad.exe", file_path])
+        except Exception as e:
+            QMessageBox.warning(self, t("common.error"), t("settings.hooks.context.open_failed", error=str(e)))
+
+    def _on_hook_item_double_clicked(self, item: QListWidgetItem) -> None:
+        file_path = self._get_hook_path_from_item(item)
+        self._open_hook_folder(file_path)
+
+    def _on_hooks_context_menu(self, pos: QPoint) -> None:
+        item = self.hooks_list.itemAt(pos)
+        if not item:
+            return
+        file_path = self._get_hook_path_from_item(item)
+        menu = QMenu(self)
+        open_folder_action = menu.addAction(t("settings.hooks.context.open_folder"))
+        open_editor_action = menu.addAction(t("settings.hooks.context.open_editor"))
+        open_notepad_action = menu.addAction(t("settings.hooks.context.open_notepad"))
+        action = menu.exec(self.hooks_list.mapToGlobal(pos))
+        if action == open_folder_action:
+            self._open_hook_folder(file_path)
+        elif action == open_editor_action:
+            self._open_hook_default(file_path)
+        elif action == open_notepad_action:
+            self._open_hook_notepad(file_path)
 
     def _sync_hooks_order_from_list(self, event_key: str) -> None:
         if event_key == "all":

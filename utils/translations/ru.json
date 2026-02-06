@@ -154,6 +154,13 @@
           "duration": "Длительность",
           "summary": "Сводка"
         }
+      },
+      "context": {
+        "open_folder": "Открыть папку хука",
+        "open_editor": "Открыть в редакторе по умолчанию",
+        "open_notepad": "Открыть в блокноте",
+        "file_not_found": "Файл хука не найден.",
+        "open_failed": "Не удалось открыть файл: {error}"
       }
     },
     "languages": {

@@ -154,6 +154,13 @@
           "duration": "Duration",
           "summary": "Summary"
         }
+      },
+      "context": {
+        "open_folder": "Open hook folder",
+        "open_editor": "Open in default editor",
+        "open_notepad": "Open in Notepad",
+        "file_not_found": "Hook file not found.",
+        "open_failed": "Failed to open file: {error}"
       }
     },
     "languages": {

@@ -135,6 +135,9 @@ class HookManager:
             result[event].sort()
         return result
 
+    def get_hooks_meta(self) -> Dict[str, HookMeta]:
+        return dict(self.hooks)
+
     def _discover_hooks(self, paths: List[Path], max_depth: int = 5) -> Dict[str, HookMeta]:
         hooks: Dict[str, HookMeta] = {}
         for base in paths:
