@@ -1423,9 +1423,9 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                 padding: 8px;
             }
             QListWidget::item {
-                padding: 6px;
+                padding: 0px;
                 border-radius: 4px;
-                margin: 2px 0px;
+                margin: 0px;
             }
             QListWidget::item:selected {
                 background-color: #0078d4;
@@ -1688,7 +1688,10 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             row_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
             row_layout.activate()
             row_widget.adjustSize()
-            item.setSizeHint(row_widget.sizeHint())
+            size_hint = row_widget.sizeHint()
+            height = size_hint.height() + 6
+            row_widget.setMinimumHeight(height)
+            item.setSizeHint(QSize(size_hint.width(), height))
 
             self.hooks_list.addItem(item)
             self.hooks_list.setItemWidget(item, row_widget)
