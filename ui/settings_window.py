@@ -3606,6 +3606,10 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             
             # Получить промпт как есть - JSON сам правильно экранирует переносы строк
             post_processing_prompt = self.post_processing_prompt_edit.toPlainText()
+            # If the UI is showing the translated "default prompt" placeholder, keep the actual config prompt.
+            prompt_default_text = t("settings.processing.prompt_default")
+            if post_processing_prompt.strip() == prompt_default_text.strip():
+                post_processing_prompt = self.config.post_processing_prompt
             
             # Подготовить обновления для config.jsonc
             config_updates = {
