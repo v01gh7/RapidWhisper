@@ -87,17 +87,22 @@ class ProcessingCoordinator:
         # CRITICAL: Both steps are MANDATORY and MUST be applied
         # Step 1: Fix grammar and punctuation
         # Step 2: Apply formatting to the corrected text (THIS IS REQUIRED!)
-        combined = f"""CRITICAL: You MUST complete BOTH steps below. Do not skip step 2!
+        combined = f"""CRITICAL: You MUST complete BOTH steps below internally. Output ONLY the final result after Step 2.
+DO NOT include step labels, explanations, separators, or the intermediate Step 1 version.
+DO NOT output the original text or any unformatted version.
 
-STEP 1 - Grammar and Punctuation Correction:
+STEP 1 - Grammar and Punctuation Correction (INTERNAL ONLY - do not output):
 {post_prompt}
 
-STEP 2 - Formatting (MANDATORY - DO NOT SKIP THIS STEP):
-After correcting grammar and punctuation in step 1, you MUST apply the following formatting rules to the corrected text:
+STEP 2 - Formatting (MANDATORY):
+After correcting grammar and punctuation in step 1, apply the following formatting rules to the corrected text:
 
 {format_prompt}
 
-IMPORTANT: Both steps are required. Output must be both corrected AND formatted."""
+OUTPUT RULES (HIGHEST PRIORITY):
+- Output EXACTLY ONE version: the final corrected + formatted text.
+- No separators (e.g., "***", "---"), no headings like "Step 1" or "Step 2".
+- If any rules conflict, Step 2 formatting rules override Step 1 output-format rules."""
         
         logger.debug(f"Combined prompt length: {len(combined)} characters")
         return combined
