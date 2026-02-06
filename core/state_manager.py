@@ -135,6 +135,16 @@ class StateManager(QObject):
             # IDLE → RECORDING
             # Start a new recording session
             self.start_recording_session()
+            try:
+                from services.hooks_manager import get_hook_manager, build_hook_options
+                options = build_hook_options(
+                    "before_recording",
+                    session_id=self._current_session_id,
+                    data={}
+                )
+                get_hook_manager().run_event("before_recording", options)
+            except Exception as e:
+                logger.error(f"Hook before_recording failed: {e}")
             if self._on_show_window:
                 self._on_show_window()
             if self._on_start_recording:
@@ -191,11 +201,23 @@ class StateManager(QObject):
         logger.info(f"Транскрипция завершена в состоянии {self.current_state.value}")
         
         if self.current_state == AppState.PROCESSING:
+            session_id = self._current_session_id
             # End the recording session (clears manual format selection)
             self.end_recording_session()
             
             # PROCESSING → DISPLAYING
             if self._on_display_result:
+                try:
+                    from services.hooks_manager import get_hook_manager, build_hook_options
+                    options = build_hook_options(
+                        "task_completed",
+                        session_id=session_id,
+                        data={"text": text}
+                    )
+                    options = get_hook_manager().run_event("task_completed", options)
+                    text = options.get("data", {}).get("text", text)
+                except Exception as e:
+                    logger.error(f"Hook task_completed failed: {e}")
                 self._on_display_result(text)
             self.transition_to(AppState.DISPLAYING)
     

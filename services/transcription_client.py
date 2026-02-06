@@ -786,6 +786,17 @@ class TranscriptionThread(QThread):
             # Use ProcessingCoordinator to handle combined operations
             from services.window_monitor import WindowMonitor
             from core.config_loader import get_config_loader
+            try:
+                from services.hooks_manager import get_hook_manager, build_hook_options
+                options = build_hook_options(
+                    "transcription_received",
+                    session_id=self.state_manager.get_current_session_id() if self.state_manager else None,
+                    data={"text": transcribed_text, "audio_file_path": self.audio_file_path}
+                )
+                options = get_hook_manager().run_event("transcription_received", options)
+                transcribed_text = options.get("data", {}).get("text", transcribed_text)
+            except Exception as e:
+                logger.error(f"Hook transcription_received failed: {e}")
             
             # Load formatting configuration
             formatting_config = FormattingConfig.from_config(get_config_loader())

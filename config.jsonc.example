@@ -239,5 +239,39 @@
       "bbcode": "config/prompts/bbcode.txt",
       "whatsapp": "config/prompts/whatsapp.txt"
     }
+  },
+  "hooks": {
+    "enabled": true,
+    "paths": [
+      "config/hooks"
+    ],
+    "order": {
+      "before_recording": [],
+      "after_recording": [],
+      "transcription_received": [],
+      "formatting_step": [],
+      "post_formatting_step": [],
+      "task_completed": []
+    },
+    "disabled": {
+      "before_recording": [],
+      "after_recording": [],
+      "transcription_received": [],
+      "formatting_step": [],
+      "post_formatting_step": [],
+      "task_completed": []
+    },
+    "background": {
+      "before_recording": [],
+      "after_recording": [],
+      "transcription_received": [],
+      "formatting_step": [],
+      "post_formatting_step": [],
+      "task_completed": []
+    },
+    "log": {
+      "enabled": true,
+      "max_entries": 500
+    }
   }
 }

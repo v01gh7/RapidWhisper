@@ -106,6 +106,23 @@ OUTPUT RULES (HIGHEST PRIORITY):
         
         logger.debug(f"Combined prompt length: {len(combined)} characters")
         return combined
+
+    def _run_hook_event(self, event: str, text: str, format_type: Optional[str] = None, combined: bool = False) -> str:
+        try:
+            from services.hooks_manager import get_hook_manager, build_hook_options
+            options = build_hook_options(
+                event,
+                data={
+                    "text": text,
+                    "format_type": format_type,
+                    "combined": combined
+                }
+            )
+            options = get_hook_manager().run_event(event, options)
+            return options.get("data", {}).get("text", text)
+        except Exception as e:
+            logger.error(f"Hook {event} failed: {e}")
+            return text
     
     def process_transcription(
         self,
@@ -146,6 +163,7 @@ OUTPUT RULES (HIGHEST PRIORITY):
             format_type = self.formatting_module.get_active_application_format()
             if format_type:
                 logger.info("FORMATTING ONLY MODE: Applying formatting")
+                text = self._run_hook_event("formatting_step", text, format_type=format_type)
                 return self.formatting_module.process(text)
             else:
                 logger.info("No format match - applying fallback formatting")
@@ -183,6 +201,8 @@ OUTPUT RULES (HIGHEST PRIORITY):
             str: Processed text
         """
         try:
+            text = self._run_hook_event("formatting_step", text, format_type=format_type, combined=True)
+            text = self._run_hook_event("post_formatting_step", text, format_type=format_type, combined=True)
             # Get format prompt (either app-specific or fallback)
             if format_type == "fallback":
                 format_prompt = self.formatting_module.config.get_prompt_for_app("_fallback")
@@ -272,6 +292,7 @@ OUTPUT RULES (HIGHEST PRIORITY):
             str: Processed text
         """
         try:
+            text = self._run_hook_event("post_formatting_step", text)
             # Determine which model to use
             model_to_use = (
                 config.post_processing_custom_model 
@@ -347,6 +368,7 @@ OUTPUT RULES (HIGHEST PRIORITY):
             str: Formatted text
         """
         try:
+            text = self._run_hook_event("formatting_step", text, format_type="fallback")
             logger.info("FALLBACK FORMATTING MODE: Applying universal formatting")
             
             # Get fallback prompt from configuration (editable by user)

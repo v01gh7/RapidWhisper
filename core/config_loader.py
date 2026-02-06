@@ -28,6 +28,7 @@ def create_default_configs():
     config_path = config_dir / "config.jsonc"
     secrets_path = config_dir / "secrets.json"
     prompts_dir = config_dir / "config" / "prompts"
+    hooks_dir = config_dir / "config" / "hooks"
     
     # Создать config.jsonc если его нет
     if not config_path.exists():
@@ -74,6 +75,8 @@ def create_default_configs():
     
     # Создать промпты если их нет или они пустые
     _ensure_prompts_exist(prompts_dir)
+    # Создать директорию для хуков если нет
+    hooks_dir.mkdir(parents=True, exist_ok=True)
 
 
 def _create_minimal_config(config_path: Path):
@@ -196,6 +199,40 @@ def _create_minimal_config(config_path: Path):
                 "api_key": "",
                 "base_url": "http://localhost:1234/v1/",
                 "model": "llama-3.3-70b-versatile"
+            }
+        },
+        "hooks": {
+            "enabled": True,
+            "paths": [
+                "config/hooks"
+            ],
+            "order": {
+                "before_recording": [],
+                "after_recording": [],
+                "transcription_received": [],
+                "formatting_step": [],
+                "post_formatting_step": [],
+                "task_completed": []
+            },
+            "disabled": {
+                "before_recording": [],
+                "after_recording": [],
+                "transcription_received": [],
+                "formatting_step": [],
+                "post_formatting_step": [],
+                "task_completed": []
+            },
+            "background": {
+                "before_recording": [],
+                "after_recording": [],
+                "transcription_received": [],
+                "formatting_step": [],
+                "post_formatting_step": [],
+                "task_completed": []
+            },
+            "log": {
+                "enabled": True,
+                "max_entries": 500
             }
         },
         "localization": {

@@ -120,6 +120,42 @@
       "prompt_placeholder": "Enter system prompt for text processing...",
       "prompt_default": "You are a text editor. Your task: fix grammatical errors, add punctuation and improve text readability. Preserve the original meaning and style. Don't add anything extra. Return only the corrected text without comments."
     },
+    "hooks": {
+      "title": "Hooks",
+      "enable": "Enable hooks",
+      "enable_tooltip": "Enable Python hook scripts during processing",
+      "info": "Hooks allow running custom Python scripts at each pipeline step.",
+      "event_label": "Event:",
+      "list_label": "Hooks for selected event:",
+      "enabled_label": "Enabled",
+      "background_label": "Background",
+      "move_up": "Up",
+      "move_down": "Down",
+      "sort": "Sort A-Z",
+      "reload": "Reload hooks",
+      "events": {
+        "all": "All",
+        "before_recording": "Before recording",
+        "after_recording": "After recording",
+        "transcription_received": "Transcription received",
+        "formatting_step": "Formatting step",
+        "post_formatting_step": "Post-formatting step",
+        "task_completed": "Task completed"
+      },
+      "logs": {
+        "title": "Hooks Logs",
+        "refresh": "Refresh",
+        "background": "background",
+        "columns": {
+          "time": "Time",
+          "event": "Event",
+          "hook": "Hook",
+          "status": "Status",
+          "duration": "Duration",
+          "summary": "Summary"
+        }
+      }
+    },
     "languages": {
       "title": "Languages",
       "interface_language": "Interface language",

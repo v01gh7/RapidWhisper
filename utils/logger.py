@@ -6,9 +6,25 @@ Provides centralized logging configuration and error logging functionality.
 
 import logging
 import os
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, Any
+
+
+MAX_LOG_BYTES = 5 * 1024 * 1024  # 5 MB
+
+
+def rotate_file_if_too_large(path: Path, max_bytes: int = MAX_LOG_BYTES) -> None:
+    """
+    Delete log file if it exceeds max size.
+    """
+    try:
+        if path.exists() and path.stat().st_size > max_bytes:
+            path.unlink()
+    except Exception:
+        # Avoid raising during logging setup
+        pass
 
 
 class RapidWhisperLogger:
@@ -68,10 +84,16 @@ class RapidWhisperLogger:
         
         # File handler - detailed logging
         try:
-            file_handler = logging.FileHandler(log_file, encoding='utf-8')
+            log_path = Path(log_file)
+            rotate_file_if_too_large(log_path)
+            self._log_path = log_path
+            self._last_rotate_check = 0.0
+            self._file_formatter = detailed_formatter
+            file_handler = logging.FileHandler(log_path, encoding='utf-8')
             file_handler.setLevel(logging.DEBUG)
             file_handler.setFormatter(detailed_formatter)
             self.logger.addHandler(file_handler)
+            self._file_handler = file_handler
         except Exception as e:
             print(f"Warning: Could not create log file: {e}")
         
@@ -85,23 +107,63 @@ class RapidWhisperLogger:
     
     def debug(self, message: str, **kwargs):
         """Log debug message."""
+        self._maybe_rotate_log()
         self.logger.debug(message, extra=kwargs)
     
     def info(self, message: str, **kwargs):
         """Log info message."""
+        self._maybe_rotate_log()
         self.logger.info(message, extra=kwargs)
     
     def warning(self, message: str, **kwargs):
         """Log warning message."""
+        self._maybe_rotate_log()
         self.logger.warning(message, extra=kwargs)
     
     def error(self, message: str, **kwargs):
         """Log error message."""
+        self._maybe_rotate_log()
         self.logger.error(message, extra=kwargs)
     
     def critical(self, message: str, **kwargs):
         """Log critical message."""
+        self._maybe_rotate_log()
         self.logger.critical(message, extra=kwargs)
+
+    def _maybe_rotate_log(self) -> None:
+        try:
+            log_path = getattr(self, "_log_path", None)
+            if not log_path:
+                return
+            now = time.time()
+            last_check = getattr(self, "_last_rotate_check", 0.0)
+            if now - last_check < 60.0:
+                return
+            self._last_rotate_check = now
+            if Path(log_path).exists() and Path(log_path).stat().st_size > MAX_LOG_BYTES:
+                self._rotate_log_file()
+        except Exception:
+            pass
+
+    def _rotate_log_file(self) -> None:
+        try:
+            log_path = getattr(self, "_log_path", None)
+            if not log_path:
+                return
+            file_handler = getattr(self, "_file_handler", None)
+            if file_handler:
+                self.logger.removeHandler(file_handler)
+                file_handler.close()
+            rotate_file_if_too_large(Path(log_path))
+            formatter = getattr(self, "_file_formatter", None)
+            new_handler = logging.FileHandler(Path(log_path), encoding='utf-8')
+            new_handler.setLevel(logging.DEBUG)
+            if formatter:
+                new_handler.setFormatter(formatter)
+            self.logger.addHandler(new_handler)
+            self._file_handler = new_handler
+        except Exception:
+            pass
     
     def log_error(self, error: Exception, context: Optional[Dict[str, Any]] = None):
         """
@@ -184,6 +246,48 @@ def get_logger() -> RapidWhisperLogger:
     if _logger_instance is None:
         _logger_instance = RapidWhisperLogger()
     return _logger_instance
+
+
+_hooks_logger_instance: Optional[logging.Logger] = None
+
+
+def get_hooks_logger() -> logging.Logger:
+    """
+    Get a dedicated hooks logger that writes to hooks.log.
+    """
+    global _hooks_logger_instance
+    if _hooks_logger_instance is None:
+        try:
+            from core.config_loader import get_config_loader
+            config_loader = get_config_loader()
+            log_file = config_loader.get('logging.file', 'rapidwhisper.log')
+        except:
+            log_file = 'rapidwhisper.log'
+
+        hooks_log_path = Path(log_file).with_name("hooks.log")
+        rotate_file_if_too_large(hooks_log_path)
+
+        logger = logging.getLogger('RapidWhisperHooks')
+        logger.setLevel(logging.INFO)
+
+        if not logger.handlers:
+            formatter = logging.Formatter(
+                '%(asctime)s - %(levelname)s - %(message)s',
+                datefmt='%Y-%m-%d %H:%M:%S'
+            )
+            try:
+                file_handler = logging.FileHandler(hooks_log_path, encoding='utf-8')
+                file_handler.setLevel(logging.INFO)
+                file_handler.setFormatter(formatter)
+                logger.addHandler(file_handler)
+                logger.file_handler = file_handler
+                logger.file_formatter = formatter
+            except Exception as e:
+                print(f"Warning: Could not create hooks log file: {e}")
+        logger.log_path = hooks_log_path
+
+        _hooks_logger_instance = logger
+    return _hooks_logger_instance
 
 
 # Convenience functions for direct logging

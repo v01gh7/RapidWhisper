@@ -609,6 +609,20 @@ class RapidWhisperApp(QObject):
         
         # Сохранить путь для транскрипции
         self._audio_file_path = audio_file_path
+
+        try:
+            from services.hooks_manager import get_hook_manager, build_hook_options
+            options = build_hook_options(
+                "after_recording",
+                session_id=self.state_manager.get_current_session_id() if self.state_manager else None,
+                data={"audio_file_path": self._audio_file_path}
+            )
+            options = get_hook_manager().run_event("after_recording", options)
+            new_path = options.get("data", {}).get("audio_file_path")
+            if new_path:
+                self._audio_file_path = new_path
+        except Exception as e:
+            self.logger.error(f"Hook after_recording failed: {e}")
         
         # Track recording statistics
         try:

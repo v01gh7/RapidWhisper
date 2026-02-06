@@ -9,9 +9,10 @@ from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout,
     QLabel, QLineEdit, QComboBox, QDoubleSpinBox, QSpinBox,
     QPushButton, QGroupBox, QMessageBox, QWidget, QListWidget, QStackedWidget, QListWidgetItem,
-    QScrollArea, QApplication, QCheckBox, QTextEdit, QGridLayout, QMenu
+    QScrollArea, QApplication, QCheckBox, QTextEdit, QGridLayout, QMenu,
+    QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QSizePolicy
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QPoint
+from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QSize
 from PyQt6.QtGui import QFont, QIcon, QScreen, QPainter, QPainterPath, QRegion
 from core.config import Config
 from core.statistics_manager import StatisticsManager
@@ -423,6 +424,8 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             (f"⚡ {t('settings.app.title')}", "app"),
             (f"🎤 {t('settings.audio.title')}", "audio"),
             (f"✨ {t('settings.processing.title')}", "processing"),
+            (f"🪝 {t('settings.hooks.title')}", "hooks"),
+            (f"🧾 {t('settings.hooks.logs.title')}", "hooks_logs"),
             (f"🌍 {t('settings.languages.title')}", "languages"),
             (f"🎨 {t('settings.ui_customization.title')}", "ui_customization"),
             (f"🎙️ {t('settings.recordings.title')}", "recordings"),
@@ -477,6 +480,8 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_app_page()))
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_audio_page()))
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_processing_page()))
+        self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_hooks_page()))
+        self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_hooks_logs_page()))
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_languages_page()))
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_ui_customization_page()))
         self.content_stack.addWidget(self._wrap_in_scroll_area(self._create_recordings_page()))
@@ -545,14 +550,9 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                 
                 # Сохранить текущий индекс как последний выбранный (не Discord)
                 self._last_selected_index = index
-                
-                # Теперь sidebar и content_stack имеют одинаковое количество элементов (10)
-                # Discord на позиции 9, about page тоже на позиции 9 в content_stack
-                # Прямое соответствие индексов
-                content_index = index
-                
-                # Переключить страницу
-                self.content_stack.setCurrentIndex(content_index)
+
+                # Для всех обычных пунктов sidebar индекс соответствует content_stack
+                self.content_stack.setCurrentIndex(index)
                 # Убедиться что элемент остается выделенным
                 self.sidebar.setCurrentRow(index)
     
@@ -1369,6 +1369,442 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         widget.setLayout(layout)
         return widget
+
+    def _create_hooks_page(self) -> QWidget:
+        """Создает страницу управления хуками."""
+        widget = QWidget()
+        layout = QVBoxLayout()
+        layout.setSpacing(20)
+
+        title = QLabel(t("settings.hooks.title"))
+        title.setObjectName("pageTitle")
+        layout.addWidget(title)
+
+        hooks_group = QGroupBox(t("settings.hooks.title"))
+        hooks_layout = QVBoxLayout()
+        hooks_layout.setSpacing(12)
+
+        self.hooks_enabled_check = QCheckBox(t("settings.hooks.enable"))
+        self.hooks_enabled_check.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.hooks_enabled_check.setToolTip(t("settings.hooks.enable_tooltip"))
+        self.hooks_enabled_check.toggled.connect(self._on_hooks_enabled_toggled)
+        hooks_layout.addWidget(self.hooks_enabled_check)
+
+        info_label = QLabel(t("settings.hooks.info"))
+        info_label.setWordWrap(True)
+        hooks_layout.addWidget(info_label)
+
+        event_layout = QHBoxLayout()
+        event_label = QLabel(t("settings.hooks.event_label"))
+        self.hooks_event_combo = NoScrollComboBox()
+        self._populate_hooks_event_combo()
+        self.hooks_event_combo.currentIndexChanged.connect(self._on_hook_event_changed)
+        event_layout.addWidget(event_label)
+        event_layout.addWidget(self.hooks_event_combo, 1)
+        hooks_layout.addLayout(event_layout)
+
+        list_label = QLabel(t("settings.hooks.list_label"))
+        hooks_layout.addWidget(list_label)
+
+        self.hooks_list = QListWidget()
+        self.hooks_list.setMinimumHeight(260)
+        self.hooks_list.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.hooks_list.setUniformItemSizes(False)
+        self.hooks_list.setSpacing(6)
+        self.hooks_list.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
+        self.hooks_list.setDefaultDropAction(Qt.DropAction.MoveAction)
+        self.hooks_list.setDragEnabled(True)
+        self.hooks_list.setDropIndicatorShown(True)
+        self.hooks_list.setStyleSheet("""
+            QListWidget {
+                background-color: #2d2d2d;
+                border: 1px solid #3d3d3d;
+                border-radius: 6px;
+                padding: 8px;
+            }
+            QListWidget::item {
+                padding: 6px;
+                border-radius: 4px;
+                margin: 2px 0px;
+            }
+            QListWidget::item:selected {
+                background-color: #0078d4;
+            }
+            QListWidget::item:hover:!selected {
+                background-color: #3d3d3d;
+            }
+        """)
+        self.hooks_list.model().rowsMoved.connect(self._on_hooks_rows_moved)
+        hooks_layout.addWidget(self.hooks_list)
+
+        buttons_layout = QHBoxLayout()
+        self.hooks_move_up_btn = QPushButton(t("settings.hooks.move_up"))
+        self.hooks_move_up_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.hooks_move_up_btn.clicked.connect(lambda: self._move_hook_item(-1))
+        self.hooks_move_down_btn = QPushButton(t("settings.hooks.move_down"))
+        self.hooks_move_down_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.hooks_move_down_btn.clicked.connect(lambda: self._move_hook_item(1))
+        self.hooks_sort_btn = QPushButton(t("settings.hooks.sort"))
+        self.hooks_sort_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.hooks_sort_btn.clicked.connect(self._sort_hooks_by_name)
+        self.hooks_reload_btn = QPushButton(t("settings.hooks.reload"))
+        self.hooks_reload_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.hooks_reload_btn.clicked.connect(self._reload_hooks_list)
+        buttons_layout.addWidget(self.hooks_move_up_btn)
+        buttons_layout.addWidget(self.hooks_move_down_btn)
+        buttons_layout.addWidget(self.hooks_sort_btn)
+        buttons_layout.addStretch()
+        buttons_layout.addWidget(self.hooks_reload_btn)
+        hooks_layout.addLayout(buttons_layout)
+
+        hooks_group.setLayout(hooks_layout)
+        layout.addWidget(hooks_group)
+
+        layout.addStretch()
+        widget.setLayout(layout)
+        return widget
+
+    def _create_hooks_logs_page(self) -> QWidget:
+        """Создает страницу логов хуков."""
+        widget = QWidget()
+        layout = QVBoxLayout()
+        layout.setSpacing(20)
+
+        title = QLabel(t("settings.hooks.logs.title"))
+        title.setObjectName("pageTitle")
+        layout.addWidget(title)
+
+        logs_group = QGroupBox(t("settings.hooks.logs.title"))
+        logs_layout = QVBoxLayout()
+        logs_layout.setSpacing(12)
+
+        self.hooks_log_table = QTableWidget(0, 6)
+        self.hooks_log_table.setHorizontalHeaderLabels([
+            t("settings.hooks.logs.columns.time"),
+            t("settings.hooks.logs.columns.event"),
+            t("settings.hooks.logs.columns.hook"),
+            t("settings.hooks.logs.columns.status"),
+            t("settings.hooks.logs.columns.duration"),
+            t("settings.hooks.logs.columns.summary"),
+        ])
+        self.hooks_log_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.hooks_log_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.hooks_log_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.hooks_log_table.setAlternatingRowColors(True)
+        self.hooks_log_table.setMinimumHeight(300)
+        self.hooks_log_table.setStyleSheet("""
+            QTableWidget {
+                background-color: #2d2d2d;
+                color: #ffffff;
+                gridline-color: #3d3d3d;
+                border: 1px solid #3d3d3d;
+                border-radius: 6px;
+            }
+            QHeaderView::section {
+                background-color: #3d3d3d;
+                color: #ffffff;
+                padding: 6px;
+                border: none;
+            }
+        """)
+        logs_layout.addWidget(self.hooks_log_table)
+
+        logs_buttons_layout = QHBoxLayout()
+        self.hooks_logs_refresh_btn = QPushButton(t("settings.hooks.logs.refresh"))
+        self.hooks_logs_refresh_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.hooks_logs_refresh_btn.clicked.connect(self._refresh_hooks_logs)
+        logs_buttons_layout.addStretch()
+        logs_buttons_layout.addWidget(self.hooks_logs_refresh_btn)
+        logs_layout.addLayout(logs_buttons_layout)
+
+        logs_group.setLayout(logs_layout)
+        layout.addWidget(logs_group)
+        layout.addStretch()
+        widget.setLayout(layout)
+        return widget
+
+    def _populate_hooks_event_combo(self) -> None:
+        self.hooks_event_combo.clear()
+        events = [
+            ("all", t("settings.hooks.events.all")),
+            ("before_recording", t("settings.hooks.events.before_recording")),
+            ("after_recording", t("settings.hooks.events.after_recording")),
+            ("transcription_received", t("settings.hooks.events.transcription_received")),
+            ("formatting_step", t("settings.hooks.events.formatting_step")),
+            ("post_formatting_step", t("settings.hooks.events.post_formatting_step")),
+            ("task_completed", t("settings.hooks.events.task_completed")),
+        ]
+        for key, label in events:
+            self.hooks_event_combo.addItem(label, key)
+
+    def _get_selected_hook_event(self) -> Optional[str]:
+        return self.hooks_event_combo.currentData()
+
+    def _on_hooks_enabled_toggled(self, checked: bool) -> None:
+        if hasattr(self, "hooks_config"):
+            self.hooks_config["enabled"] = checked
+        if hasattr(self, "hooks_list"):
+            self.hooks_list.setEnabled(checked)
+        if hasattr(self, "hooks_event_combo"):
+            self.hooks_event_combo.setEnabled(checked)
+        if hasattr(self, "hooks_sort_btn"):
+            self.hooks_sort_btn.setEnabled(checked)
+        if hasattr(self, "hooks_move_up_btn") or hasattr(self, "hooks_move_down_btn"):
+            event_key = self._get_selected_hook_event() or ""
+            self._set_hooks_reorder_enabled(checked and event_key != "all")
+        if hasattr(self, "hooks_reload_btn"):
+            self.hooks_reload_btn.setEnabled(checked)
+
+    def _on_hook_event_changed(self, index: int) -> None:
+        event_key = self._get_selected_hook_event()
+        if event_key:
+            self._refresh_hooks_list_for_event(event_key)
+            self._set_hooks_reorder_enabled(event_key != "all")
+
+    def _load_hooks_settings(self) -> None:
+        try:
+            from core.config_loader import get_config_loader
+            from services.hooks_manager import HookManager, get_hook_manager
+            config_loader = get_config_loader()
+            self.hooks_config = HookManager.normalize_config(config_loader.get("hooks", {}))
+            self.hooks_enabled_check.setChecked(self.hooks_config.get("enabled", True))
+
+            hook_manager = get_hook_manager()
+            hook_manager.refresh_hooks()
+            self.available_hooks_by_event = hook_manager.get_available_hooks_by_event()
+        except Exception as e:
+            logger.error(f"Failed to load hooks settings: {e}")
+            self.hooks_config = {
+                "enabled": True,
+                "paths": ["config/hooks"],
+                "order": {event: [] for event in ["before_recording", "after_recording", "transcription_received", "formatting_step", "post_formatting_step", "task_completed"]},
+                "disabled": {event: [] for event in ["before_recording", "after_recording", "transcription_received", "formatting_step", "post_formatting_step", "task_completed"]},
+                "background": {event: [] for event in ["before_recording", "after_recording", "transcription_received", "formatting_step", "post_formatting_step", "task_completed"]},
+                "log": {"enabled": True, "max_entries": 500}
+            }
+            self.available_hooks_by_event = {event: [] for event in ["before_recording", "after_recording", "transcription_received", "formatting_step", "post_formatting_step", "task_completed"]}
+
+        # Всегда показывать все хуки при открытии настроек
+        if hasattr(self, "hooks_event_combo"):
+            index_all = self.hooks_event_combo.findData("all")
+            if index_all >= 0:
+                self.hooks_event_combo.setCurrentIndex(index_all)
+
+        event_key = self._get_selected_hook_event()
+        if event_key:
+            self._refresh_hooks_list_for_event(event_key)
+            self._set_hooks_reorder_enabled(event_key != "all")
+
+    def _reload_hooks_list(self) -> None:
+        try:
+            from services.hooks_manager import get_hook_manager
+            hook_manager = get_hook_manager()
+            hook_manager.refresh_hooks()
+            self.available_hooks_by_event = hook_manager.get_available_hooks_by_event()
+        except Exception as e:
+            logger.error(f"Failed to reload hooks: {e}")
+        event_key = self._get_selected_hook_event()
+        if event_key:
+            self._refresh_hooks_list_for_event(event_key)
+
+    def _refresh_hooks_list_for_event(self, event_key: str) -> None:
+        if not hasattr(self, "hooks_config"):
+            return
+        self._hooks_updating = True
+        self.hooks_list.clear()
+
+        events_order = [
+            "before_recording",
+            "after_recording",
+            "transcription_received",
+            "formatting_step",
+            "post_formatting_step",
+            "task_completed",
+        ]
+
+        if event_key == "all":
+            for ev in events_order:
+                self._append_hooks_for_event(ev, show_event_label=True)
+        else:
+            self._append_hooks_for_event(event_key, show_event_label=False)
+
+        self._hooks_updating = False
+
+    def _append_hooks_for_event(self, event_key: str, show_event_label: bool) -> None:
+        available = []
+        if hasattr(self, "available_hooks_by_event"):
+            available = self.available_hooks_by_event.get(event_key, [])
+
+        order = [name for name in self.hooks_config.get("order", {}).get(event_key, []) if name in available]
+        for name in available:
+            if name not in order:
+                order.append(name)
+        self.hooks_config["order"][event_key] = order
+
+        disabled = set(self.hooks_config.get("disabled", {}).get(event_key, []))
+        background = set(self.hooks_config.get("background", {}).get(event_key, []))
+        disabled = {name for name in disabled if name in available}
+        background = {name for name in background if name in available}
+        self.hooks_config["disabled"][event_key] = list(disabled)
+        self.hooks_config["background"][event_key] = list(background)
+
+        for name in order:
+            item = QListWidgetItem()
+            item.setData(Qt.ItemDataRole.UserRole, name)
+            item.setData(Qt.ItemDataRole.UserRole + 1, event_key)
+
+            row_widget = QWidget()
+            row_layout = QHBoxLayout(row_widget)
+            row_layout.setContentsMargins(8, 6, 8, 6)
+            row_layout.setSpacing(12)
+
+            name_label = QLabel(name)
+            name_label.setToolTip(name)
+            name_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+            row_layout.addWidget(name_label, 1)
+
+            if show_event_label:
+                event_label = QLabel(t(f"settings.hooks.events.{event_key}"))
+                event_label.setStyleSheet(
+                    "color: #b0b0b0; font-size: 10px; padding: 2px 6px; "
+                    "border: 1px solid #3d3d3d; border-radius: 6px;"
+                )
+                row_layout.addWidget(event_label)
+
+            enabled_check = QCheckBox(t("settings.hooks.enabled_label"))
+            enabled_check.setChecked(name not in disabled)
+            enabled_check.stateChanged.connect(
+                lambda state, n=name, ev=event_key: self._set_hook_enabled(ev, n, state == Qt.CheckState.Checked)
+            )
+            row_layout.addWidget(enabled_check)
+
+            background_check = QCheckBox(t("settings.hooks.background_label"))
+            background_check.setChecked(name in background)
+            background_check.stateChanged.connect(
+                lambda state, n=name, ev=event_key: self._set_hook_background(ev, n, state == Qt.CheckState.Checked)
+            )
+            row_layout.addWidget(background_check)
+
+            row_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+            row_layout.activate()
+            row_widget.adjustSize()
+            item.setSizeHint(row_widget.sizeHint())
+
+            self.hooks_list.addItem(item)
+            self.hooks_list.setItemWidget(item, row_widget)
+
+    def _sync_hooks_order_from_list(self, event_key: str) -> None:
+        if event_key == "all":
+            return
+        order: List[str] = []
+        for i in range(self.hooks_list.count()):
+            item = self.hooks_list.item(i)
+            name = item.data(Qt.ItemDataRole.UserRole)
+            if name:
+                order.append(name)
+        self.hooks_config["order"][event_key] = order
+
+    def _on_hooks_rows_moved(self, *args) -> None:
+        if getattr(self, "_hooks_updating", False):
+            return
+        event_key = self._get_selected_hook_event()
+        if event_key and event_key != "all":
+            self._sync_hooks_order_from_list(event_key)
+
+    def _sort_hooks_by_name(self) -> None:
+        if not hasattr(self, "hooks_config"):
+            return
+        event_key = self._get_selected_hook_event()
+        if not event_key:
+            return
+        if event_key == "all":
+            for ev in ["before_recording", "after_recording", "transcription_received", "formatting_step", "post_formatting_step", "task_completed"]:
+                order = sorted(self.hooks_config.get("order", {}).get(ev, []), key=str.lower)
+                self.hooks_config["order"][ev] = order
+            self._refresh_hooks_list_for_event(event_key)
+            return
+        order = sorted(self.hooks_config.get("order", {}).get(event_key, []), key=str.lower)
+        self.hooks_config["order"][event_key] = order
+        self._refresh_hooks_list_for_event(event_key)
+
+    def _set_hooks_reorder_enabled(self, enabled: bool) -> None:
+        if hasattr(self, "hooks_list"):
+            mode = QAbstractItemView.DragDropMode.InternalMove if enabled else QAbstractItemView.DragDropMode.NoDragDrop
+            self.hooks_list.setDragDropMode(mode)
+            self.hooks_list.setDragEnabled(enabled)
+            self.hooks_list.setDropIndicatorShown(enabled)
+        if hasattr(self, "hooks_move_up_btn"):
+            self.hooks_move_up_btn.setEnabled(enabled and self.hooks_enabled_check.isChecked())
+        if hasattr(self, "hooks_move_down_btn"):
+            self.hooks_move_down_btn.setEnabled(enabled and self.hooks_enabled_check.isChecked())
+
+    def _move_hook_item(self, direction: int) -> None:
+        if not hasattr(self, "hooks_config"):
+            return
+        event_key = self._get_selected_hook_event()
+        if event_key == "all":
+            return
+        current_row = self.hooks_list.currentRow()
+        if current_row < 0:
+            return
+        new_row = current_row + direction
+        if new_row < 0 or new_row >= self.hooks_list.count():
+            return
+        item = self.hooks_list.item(current_row)
+        widget = self.hooks_list.itemWidget(item)
+        item = self.hooks_list.takeItem(current_row)
+        self.hooks_list.insertItem(new_row, item)
+        if widget:
+            self.hooks_list.setItemWidget(item, widget)
+        self.hooks_list.setCurrentRow(new_row)
+
+        if event_key:
+            self._sync_hooks_order_from_list(event_key)
+
+    def _set_hook_enabled(self, event_key: str, hook_name: str, enabled: bool) -> None:
+        if getattr(self, "_hooks_updating", False):
+            return
+        disabled = set(self.hooks_config.get("disabled", {}).get(event_key, []))
+        if enabled:
+            disabled.discard(hook_name)
+        else:
+            disabled.add(hook_name)
+        self.hooks_config["disabled"][event_key] = list(disabled)
+
+    def _set_hook_background(self, event_key: str, hook_name: str, background: bool) -> None:
+        if getattr(self, "_hooks_updating", False):
+            return
+        background_set = set(self.hooks_config.get("background", {}).get(event_key, []))
+        if background:
+            background_set.add(hook_name)
+        else:
+            background_set.discard(hook_name)
+        self.hooks_config["background"][event_key] = list(background_set)
+
+    def _refresh_hooks_logs(self) -> None:
+        try:
+            from utils.hooks_log_store import HookLogStore
+            entries = HookLogStore().get_entries()
+        except Exception:
+            entries = []
+
+        self.hooks_log_table.setRowCount(len(entries))
+        for row, entry in enumerate(entries):
+            time_str = entry.get("time", "")
+            event = entry.get("event", "")
+            hook = entry.get("hook", "")
+            status = entry.get("status", "")
+            duration = entry.get("duration_ms", "")
+            summary = entry.get("error", "")
+            if not summary and entry.get("background"):
+                summary = t("settings.hooks.logs.background")
+
+            self.hooks_log_table.setItem(row, 0, QTableWidgetItem(str(time_str)))
+            self.hooks_log_table.setItem(row, 1, QTableWidgetItem(str(event)))
+            self.hooks_log_table.setItem(row, 2, QTableWidgetItem(str(hook)))
+            self.hooks_log_table.setItem(row, 3, QTableWidgetItem(str(status)))
+            self.hooks_log_table.setItem(row, 4, QTableWidgetItem(f"{duration} ms"))
+            self.hooks_log_table.setItem(row, 5, QTableWidgetItem(str(summary)))
     
     def _create_languages_page(self) -> QWidget:
         """Создает страницу выбора языка интерфейса."""
@@ -2865,6 +3301,12 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             default_button = self.language_button_group.button(8)  # RU
             if default_button:
                 default_button.setChecked(True)
+
+        # Hooks
+        if hasattr(self, "hooks_enabled_check"):
+            self._load_hooks_settings()
+        if hasattr(self, "hooks_log_table"):
+            self._refresh_hooks_logs()
     
     def _on_remember_position_changed(self, checked: bool):
         """
@@ -3350,11 +3792,13 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             (f"⚡ {t('settings.app.title')}", 2),
             (f"🎤 {t('settings.audio.title')}", 3),
             (f"✨ {t('settings.processing.title')}", 4),
-            (f"🌍 {t('settings.languages.title')}", 5),
-            (f"🎨 {t('settings.ui_customization.title')}", 6),
-            (f"🎙️ {t('settings.recordings.title')}", 7),
-            (f"📊 {t('settings.statistics.title')}", 8),
-            (f"ℹ️ {t('settings.about.title')}", 9)
+            (f"🪝 {t('settings.hooks.title')}", 5),
+            (f"🧾 {t('settings.hooks.logs.title')}", 6),
+            (f"🌍 {t('settings.languages.title')}", 7),
+            (f"🎨 {t('settings.ui_customization.title')}", 8),
+            (f"🎙️ {t('settings.recordings.title')}", 9),
+            (f"📊 {t('settings.statistics.title')}", 10),
+            ("Discord", 11)
         ]
         
         for text, index in sidebar_items:
@@ -3398,19 +3842,25 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         self.content_stack.insertWidget(4, self._wrap_in_scroll_area(self._create_processing_page()))
         
         self.content_stack.removeWidget(self.content_stack.widget(5))
-        self.content_stack.insertWidget(5, self._wrap_in_scroll_area(self._create_languages_page()))
+        self.content_stack.insertWidget(5, self._wrap_in_scroll_area(self._create_hooks_page()))
         
         self.content_stack.removeWidget(self.content_stack.widget(6))
-        self.content_stack.insertWidget(6, self._wrap_in_scroll_area(self._create_ui_customization_page()))
+        self.content_stack.insertWidget(6, self._wrap_in_scroll_area(self._create_hooks_logs_page()))
         
         self.content_stack.removeWidget(self.content_stack.widget(7))
-        self.content_stack.insertWidget(7, self._wrap_in_scroll_area(self._create_recordings_page()))
+        self.content_stack.insertWidget(7, self._wrap_in_scroll_area(self._create_languages_page()))
+        
+        self.content_stack.removeWidget(self.content_stack.widget(8))
+        self.content_stack.insertWidget(8, self._wrap_in_scroll_area(self._create_ui_customization_page()))
+        
+        self.content_stack.removeWidget(self.content_stack.widget(9))
+        self.content_stack.insertWidget(9, self._wrap_in_scroll_area(self._create_recordings_page()))
         
         # Statistics tab
-        self.content_stack.removeWidget(self.content_stack.widget(8))
+        self.content_stack.removeWidget(self.content_stack.widget(10))
         if self.statistics_manager:
             self.statistics_tab = StatisticsTab(self.statistics_manager)
-            self.content_stack.insertWidget(8, self._wrap_in_scroll_area(self.statistics_tab))
+            self.content_stack.insertWidget(10, self._wrap_in_scroll_area(self.statistics_tab))
         else:
             placeholder = QWidget()
             placeholder_layout = QVBoxLayout()
@@ -3418,10 +3868,10 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             placeholder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             placeholder_layout.addWidget(placeholder_label)
             placeholder.setLayout(placeholder_layout)
-            self.content_stack.insertWidget(8, self._wrap_in_scroll_area(placeholder))
+            self.content_stack.insertWidget(10, self._wrap_in_scroll_area(placeholder))
         
-        self.content_stack.removeWidget(self.content_stack.widget(9))
-        self.content_stack.insertWidget(9, self._wrap_in_scroll_area(self._create_about_page()))
+        self.content_stack.removeWidget(self.content_stack.widget(11))
+        self.content_stack.insertWidget(11, self._wrap_in_scroll_area(self._create_about_page()))
         
         # Восстановить текущую страницу
         self.content_stack.setCurrentIndex(current_index)
@@ -3431,6 +3881,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
     
     def _get_current_values(self):
         """Сохраняет текущие значения всех полей."""
+        import copy
         return {
             'provider': self.provider_combo.currentText(),
             'groq_key': self.groq_key_edit.text(),
@@ -3458,6 +3909,8 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             'post_processing_custom_model': self.post_processing_custom_model_edit.text(),
             'post_processing_max_tokens': self.post_processing_max_tokens_spin.value(),
             'post_processing_prompt': self.post_processing_prompt_edit.toPlainText(),
+            'hooks_config': copy.deepcopy(getattr(self, "hooks_config", None)),
+            'hooks_event_index': self.hooks_event_combo.currentIndex() if hasattr(self, "hooks_event_combo") else 0,
             'glm_coding_plan': self.glm_coding_plan_check.isChecked(),
             'llm_base_url': self.llm_base_url_edit.text(),
             'llm_api_key': self.llm_api_key_edit.text(),
@@ -3525,6 +3978,18 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             if button.property("language_code") == current_language:
                 button.setChecked(True)
                 break
+
+        # Restore hooks UI state
+        if values.get('hooks_config') is not None and hasattr(self, "hooks_enabled_check"):
+            self.hooks_config = values.get('hooks_config')
+            self.hooks_enabled_check.setChecked(self.hooks_config.get("enabled", True))
+            if hasattr(self, "hooks_event_combo"):
+                self.hooks_event_combo.setCurrentIndex(values.get('hooks_event_index', 0))
+                event_key = self._get_selected_hook_event()
+                if event_key:
+                    self._refresh_hooks_list_for_event(event_key)
+            if hasattr(self, "hooks_log_table"):
+                self._refresh_hooks_logs()
         
         # Обновить состояния
         self._on_remember_position_changed(values['remember_position'])
@@ -3647,6 +4112,9 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                 "post_processing.llm.api_key": self.llm_api_key_edit.text(),
                 "localization.language": selected_language,
             }
+
+            if hasattr(self, "hooks_config"):
+                config_updates["hooks"] = self.hooks_config
             
             # Подготовить обновления для secrets.json (API ключи)
             secret_updates = {

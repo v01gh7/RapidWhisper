@@ -17,6 +17,7 @@ A modern speech-to-text transcription application using Zhipu GLM API, inspired 
 - 🌍 **Multi-language Support** - Interface available in 15 languages with automatic detection
 - ✨ **Smart Text Formatting** - Automatically formats text based on active application
 - 🌐 **Web Apps Support** - Detects Google Docs, Notion, Office Online, and 20+ web applications in browsers
+- 🪝 **Hook Scripts (Python)** - Extend the pipeline with your own event hooks
 
 ## Requirements
 
@@ -198,6 +199,26 @@ RapidWhisper can automatically format transcribed text based on the active appli
 - 💼 **Microsoft Office Online**: Word, Excel, PowerPoint, Office 365
 - 🤝 **Collaboration Tools**: Dropbox Paper, Quip, Coda.io, Airtable
 - 📊 **Zoho Office**: Writer, Sheet, Show
+
+## Hooks (Extensions)
+
+RapidWhisper supports **Python hook scripts** that run at specific pipeline events (recording, transcription, formatting, etc.).  
+Hooks are managed in the Settings UI and stored in `config/hooks`.
+
+### Minimal Example
+
+```python
+HOOK_EVENT = "transcription_received"
+
+def hookHandler(options):
+    data = options.get("data") or {}
+    text = data.get("text", "")
+    data["text"] = text.strip()
+    options["data"] = data
+    return options
+```
+
+See `docs/hooks_guide.md` for a detailed guide, full event list, and a prompt template to generate new hooks.
 - 📔 **Note-Taking**: Notion, Obsidian Publish
 - ✍️ **Markdown Editors**: HackMD, StackEdit, GitHub.dev, GitLab, Gitpod
 
