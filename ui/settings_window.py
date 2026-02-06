@@ -412,7 +412,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         # Левая панель навигации
         self.sidebar = QListWidget()
-        self.sidebar.setFixedWidth(210)  # Увеличена ширина с 200 до 210 для предотвращения горизонтальной прокрутки
+        self.sidebar.setFixedWidth(260)  # Увеличена ширина для предотвращения горизонтальной прокрутки
         self.sidebar.setSpacing(0)
         self.sidebar.setCursor(Qt.CursorShape.PointingHandCursor)  # Курсор "рука" для всего списка
         self.sidebar.setFocusPolicy(Qt.FocusPolicy.NoFocus)  # Не терять выделение при потере фокуса
@@ -1666,8 +1666,11 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             if show_event_label:
                 event_label = QLabel(t(f"settings.hooks.events.{event_key}"))
                 event_label.setStyleSheet(
-                    "color: #b0b0b0; font-size: 10px; padding: 2px 6px; "
-                    "border: 1px solid #3d3d3d; border-radius: 6px;"
+                    "color: #ffffff; font-size: 10px; font-weight: bold; "
+                    "padding: 2px 6px; "
+                    "background-color: rgba(255, 255, 255, 0.18); "
+                    "border: 1px solid rgba(255, 255, 255, 0.85); "
+                    "border-radius: 6px;"
                 )
                 row_layout.addWidget(event_label)
 
