@@ -6,7 +6,7 @@
 части плавающего окна RapidWhisper.
 """
 
-from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel, QVBoxLayout, QFrame
+from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel, QVBoxLayout, QFrame, QSizePolicy
 from PyQt6.QtCore import Qt, pyqtSlot, pyqtSignal
 from PyQt6.QtGui import QPixmap, QFont, QCursor
 from typing import Optional, List
@@ -145,6 +145,8 @@ class InfoPanelWidget(QWidget):
         self._record_chip.setObjectName("recordChip")
         self._record_chip.setFont(QFont("Segoe UI", font_size))
         self._record_chip.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self._record_chip.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
+        self._record_chip.setMouseTracking(True)
         self._record_chip.mousePressEvent = self._on_record_clicked
         
         # Контейнер с клавишами записи
@@ -165,6 +167,8 @@ class InfoPanelWidget(QWidget):
         self._cancel_chip.setObjectName("cancelChip")
         self._cancel_chip.setFont(QFont("Segoe UI", font_size))
         self._cancel_chip.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self._cancel_chip.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
+        self._cancel_chip.setMouseTracking(True)
         self._cancel_chip.mousePressEvent = self._on_cancel_clicked
         
         # Клавиша Esc
@@ -180,6 +184,8 @@ class InfoPanelWidget(QWidget):
         
         # Установить фиксированную высоту
         self.setFixedHeight(44)
+        # Растягиваться по ширине контейнера
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
     
     def _apply_styles(self) -> None:
         """
@@ -216,10 +222,20 @@ class InfoPanelWidget(QWidget):
                 padding: 2px 8px;
                 letter-spacing: 1px;
             }
+            QLabel#recordChip:hover {
+                background-color: rgba(80, 160, 255, 0.35);
+                border: 1px solid rgba(140, 210, 255, 0.75);
+                color: #EAF6FF;
+            }
             QLabel#recordChip[active="true"] {
                 background-color: rgba(90, 170, 255, 0.4);
                 border: 1px solid rgba(130, 200, 255, 0.7);
                 color: #EAF6FF;
+            }
+            QLabel#recordChip[active="true"]:hover {
+                background-color: rgba(110, 185, 255, 0.55);
+                border: 1px solid rgba(170, 225, 255, 0.9);
+                color: #FFFFFF;
             }
             QLabel#cancelChip {
                 background-color: rgba(255, 90, 90, 0.2);
@@ -229,10 +245,20 @@ class InfoPanelWidget(QWidget):
                 padding: 2px 8px;
                 letter-spacing: 1px;
             }
+            QLabel#cancelChip:hover {
+                background-color: rgba(255, 120, 120, 0.35);
+                border: 1px solid rgba(255, 165, 165, 0.75);
+                color: #FFE2E2;
+            }
             QLabel#cancelChip[active="true"] {
                 background-color: rgba(255, 100, 100, 0.32);
                 border: 1px solid rgba(255, 140, 140, 0.7);
                 color: #FFE2E2;
+            }
+            QLabel#cancelChip[active="true"]:hover {
+                background-color: rgba(255, 130, 130, 0.45);
+                border: 1px solid rgba(255, 180, 180, 0.9);
+                color: #FFFFFF;
             }
             QLabel[role="keycap"] {
                 border: 1px solid rgba(255, 255, 255, 0.2);

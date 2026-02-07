@@ -257,6 +257,7 @@ class FloatingWindow(QWidget):
             
             # Пересчитать ширину окна
             self._update_window_width()
+            self._sync_info_panel_width()
             
         except Exception as e:
             # Логировать ошибку, но не прерывать работу
@@ -319,6 +320,7 @@ class FloatingWindow(QWidget):
         # Установить новую ширину
         self.window_width = final_width
         self.setFixedWidth(final_width)
+        self._sync_info_panel_width()
     
     def show_at_center(self, use_saved_position: bool = True) -> None:
         """
@@ -425,6 +427,11 @@ class FloatingWindow(QWidget):
         
         # Запустить мониторинг активного окна
         self._start_window_monitoring()
+
+    def resizeEvent(self, event) -> None:
+        """Синхронизирует ширину инфопанели с доступной шириной окна."""
+        super().resizeEvent(event)
+        self._sync_info_panel_width()
     
     def hide_with_animation(self) -> None:
         """
@@ -706,6 +713,15 @@ class FloatingWindow(QWidget):
         """Устанавливает фиксированную высоту и сохраняет значение."""
         self.window_height = height
         self.setFixedHeight(height)
+
+    def _sync_info_panel_width(self) -> None:
+        """Принудительно растягивает info panel на доступную ширину."""
+        if not self.info_panel or not self._main_layout:
+            return
+        margins = self._main_layout.contentsMargins()
+        available_width = max(0, self.width() - margins.left() - margins.right())
+        if self.info_panel.width() != available_width:
+            self.info_panel.setFixedWidth(available_width)
 
     def _set_recording_header_visible(self, visible: bool) -> None:
         """Показывает/скрывает верхнюю строку записи и переключает основной статус."""
