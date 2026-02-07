@@ -99,6 +99,8 @@
       "title": "Processing",
       "enable": "Enable additional text processing",
       "enable_tooltip": "After transcription, text will be sent for additional processing\nto fix errors, add punctuation and improve readability",
+      "combine_with_formatting": "Combine post-processing and formatting (single request)",
+      "combine_with_formatting_tooltip": "When enabled, post-processing and formatting run in one request.\nWhen disabled, they run in two steps: post-processing then formatting.",
       "info": "💡 <b>What post-processing does:</b><br>• Fixes grammatical errors<br>• Adds punctuation<br>• Improves text structure<br>• Preserves meaning and content<br><br>✅ <b>Groq</b> - free and fast (recommended)<br>⚠️ <b>OpenAI</b> - paid, high quality<br>⚠️ <b>GLM</b> - regular API (requires balance) or Coding Plan<br>🖥️ <b>LLM</b> - local models (LM Studio, Ollama, etc.)",
       "provider": "Provider:",
       "provider_tooltip": "AI provider for text processing\n\n💡 Groq - free and fast (recommended)\n⚠️ OpenAI - paid, high quality\n⚠️ GLM - regular API or Coding Plan (checkbox below)\n🖥️ LLM - local models (LM Studio, Ollama)",

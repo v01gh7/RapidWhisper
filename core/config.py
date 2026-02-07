@@ -367,6 +367,7 @@ class Config:
         self.post_processing_provider: str = "groq"  # Провайдер для постобработки (groq, openai, glm, llm)
         self.post_processing_model: str = "llama-3.3-70b-versatile"  # Модель для постобработки (по умолчанию Groq)
         self.post_processing_custom_model: str = ""  # Кастомная модель для постобработки (если не пустая, используется вместо post_processing_model)
+        self.combine_post_processing_with_formatting: bool = True  # Совмещать постобработку и форматирование в один запрос
         
         # Дефолтный промпт - используем ужесточенный промпт из _fallback.txt
         self.post_processing_prompt: str = """⚠️ CRITICAL SYSTEM DIRECTIVE ⚠️
@@ -823,6 +824,10 @@ BEGIN FORMATTING NOW. OUTPUT ONLY THE FORMATTED TEXT IN THE SAME LANGUAGE AS INP
         config.post_processing_provider = config_loader.get("post_processing.provider", "groq")
         config.post_processing_model = config_loader.get("post_processing.model", "llama-3.3-70b-versatile")
         config.post_processing_custom_model = config_loader.get("post_processing.custom_model", "")
+        config.combine_post_processing_with_formatting = config_loader.get(
+            "post_processing.combine_with_formatting",
+            True
+        )
         config.post_processing_prompt = config_loader.get("post_processing.prompt", config.post_processing_prompt)
         config.post_processing_max_tokens = config_loader.get("post_processing.max_tokens", 16000)
         config.glm_use_coding_plan = config_loader.get("post_processing.glm_use_coding_plan", False)

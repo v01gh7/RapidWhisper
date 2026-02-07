@@ -57,6 +57,10 @@ class ProcessingCoordinator:
         if not config.enable_post_processing:
             logger.debug("Post-processing disabled, cannot combine operations")
             return False, None
+
+        if not getattr(config, "combine_post_processing_with_formatting", True):
+            logger.info("Combined mode disabled in config")
+            return False, None
         
         # Check if active application matches a format
         format_type = self.formatting_module.get_active_application_format()
@@ -90,7 +94,8 @@ class ProcessingCoordinator:
         combined = f"""CRITICAL: Do BOTH actions internally, in this order: fix grammar/punctuation, then apply formatting.
 Output ONLY the final corrected + formatted text.
 NEVER output steps, outlines, explanations, examples, or code blocks.
-DO NOT add any new words that were not present in the original input.
+Do NOT add new facts, examples, or content that isn't in the input.
+You MAY replace words to fix errors, remove repetition, and improve clarity WITHOUT adding new meaning.
 
 Grammar & punctuation rules:
 {post_prompt}
@@ -101,10 +106,22 @@ Formatting rules (apply AFTER grammar fixes):
 OUTPUT RULES (HIGHEST PRIORITY):
 - Output EXACTLY ONE final version (no intermediate text).
 - No separators, no "Step" labels, no headings like "Step 1".
-- If any rules conflict, formatting rules override output-format rules."""
+- If any rules conflict, follow these output rules."""
         
         logger.debug(f"Combined prompt length: {len(combined)} characters")
         return combined
+
+    def _build_post_processing_prompt(self, base_prompt: str) -> str:
+        """
+        Build a post-processing prompt that allows replacements but forbids new content.
+        """
+        return (
+            "CRITICAL OVERRIDE:\n"
+            "- You MAY replace words to fix errors, remove repetition, and improve clarity.\n"
+            "- You MUST NOT add new facts, examples, code, or instructions.\n"
+            "- If any rule conflicts with this override, follow the override.\n\n"
+            f"{base_prompt}"
+        )
 
     def _run_hook_event(self, event: str, text: str, format_type: Optional[str] = None, combined: bool = False) -> str:
         try:
@@ -156,6 +173,25 @@ OUTPUT RULES (HIGHEST PRIORITY):
         if should_combine:
             logger.info("COMBINED MODE: Formatting + Post-processing in single API call")
             return self._process_combined(text, format_type, transcription_client, config)
+
+        if (
+            self.formatting_module.should_format()
+            and config.enable_post_processing
+            and not getattr(config, "combine_post_processing_with_formatting", True)
+        ):
+            logger.info("SEQUENTIAL MODE: Post-processing then formatting")
+            # Step 1: post-processing
+            text = self._process_post_processing_only(text, transcription_client, config)
+
+            # Step 2: formatting
+            format_type = self.formatting_module.get_active_application_format()
+            if format_type:
+                logger.info("FORMATTING STEP: Applying formatting after post-processing")
+                text = self._run_hook_event("formatting_step", text, format_type=format_type)
+                return self.formatting_module.format_text(text, format_type)
+
+            logger.info("No format match after post-processing - applying fallback formatting")
+            return self._process_fallback_formatting(text, transcription_client, config)
         
         # Check if only formatting is enabled
         if self.formatting_module.should_format():
@@ -212,7 +248,7 @@ OUTPUT RULES (HIGHEST PRIORITY):
             
             # Combine prompts
             combined_prompt = self.combine_prompts(
-                config.post_processing_prompt,
+                self._build_post_processing_prompt(config.post_processing_prompt),
                 format_prompt
             )
             
@@ -259,9 +295,6 @@ OUTPUT RULES (HIGHEST PRIORITY):
             
             # Check if processing actually worked (not just returned original text)
             if processed_text != text:
-                if processed_text and has_extra_tokens(text, processed_text):
-                    logger.warning("⚠️ Combined output contains new words - returning original text")
-                    return text
                 logger.info("✅ Combined processing completed successfully")
                 logger.info(f"Result preview: {processed_text[:100]}...")
                 return processed_text
@@ -326,7 +359,7 @@ OUTPUT RULES (HIGHEST PRIORITY):
                 text=text,
                 provider=config.post_processing_provider,
                 model=model_to_use,
-                system_prompt=config.post_processing_prompt,
+                system_prompt=self._build_post_processing_prompt(config.post_processing_prompt),
                 api_key=api_key,
                 base_url=config.llm_base_url if config.post_processing_provider == "llm" else None,
                 use_coding_plan=config.glm_use_coding_plan if config.post_processing_provider == "glm" else False,

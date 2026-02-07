@@ -132,6 +132,7 @@ def _create_minimal_config(config_path: Path):
             "provider": "groq",
             "model": "llama-3.3-70b-versatile",
             "custom_model": "",
+            "combine_with_formatting": True,
             "prompt": "You are a text editor. Your task: fix grammatical errors, add punctuation and improve text readability. Preserve the original meaning and style. Don't add anything extra. Return only the corrected text without comments.",
             "glm_use_coding_plan": False,
             "llm": {

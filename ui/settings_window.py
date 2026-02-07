@@ -1111,6 +1111,12 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         self.enable_post_processing_check.setToolTip(t("settings.processing.enable_tooltip"))
         self.enable_post_processing_check.toggled.connect(self._on_post_processing_toggled)
         post_processing_layout.addWidget(self.enable_post_processing_check)
+
+        # Чекбокс комбинирования постобработки и форматирования
+        self.combine_post_processing_check = QCheckBox(t("settings.processing.combine_with_formatting"))
+        self.combine_post_processing_check.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.combine_post_processing_check.setToolTip(t("settings.processing.combine_with_formatting_tooltip"))
+        post_processing_layout.addWidget(self.combine_post_processing_check)
         
         # Описание
         info_label = QLabel(t("settings.processing.info"))
@@ -3317,6 +3323,9 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         # Постобработка
         self.enable_post_processing_check.setChecked(self.config.enable_post_processing)
+        self.combine_post_processing_check.setChecked(
+            getattr(self.config, "combine_post_processing_with_formatting", True)
+        )
         self.post_processing_provider_combo.setCurrentText(self.config.post_processing_provider)
         self.post_processing_max_tokens_spin.setValue(self.config.post_processing_max_tokens)
         
@@ -3483,6 +3492,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
     
     def _on_post_processing_toggled(self, checked: bool):
         """Обработчик включения/выключения постобработки."""
+        self.combine_post_processing_check.setEnabled(checked)
         self.post_processing_provider_combo.setEnabled(checked)
         self.post_processing_model_combo.setEnabled(checked)
         self.post_processing_custom_model_edit.setEnabled(checked)
@@ -3986,6 +3996,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             'silence_padding': self.silence_padding_spin.value(),
             'keep_recordings': self.keep_recordings_check.isChecked(),
             'enable_post_processing': self.enable_post_processing_check.isChecked(),
+            'combine_post_processing_with_formatting': self.combine_post_processing_check.isChecked(),
             'post_processing_provider': self.post_processing_provider_combo.currentText(),
             'post_processing_model': self.post_processing_model_combo.currentText(),
             'post_processing_custom_model': self.post_processing_custom_model_edit.text(),
@@ -4026,6 +4037,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         self.silence_padding_spin.setValue(values['silence_padding'])
         self.keep_recordings_check.setChecked(values['keep_recordings'])
         self.enable_post_processing_check.setChecked(values['enable_post_processing'])
+        self.combine_post_processing_check.setChecked(values.get('combine_post_processing_with_formatting', True))
         self.post_processing_provider_combo.setCurrentText(values['post_processing_provider'])
         self.post_processing_model_combo.setCurrentText(values['post_processing_model'])
         self.post_processing_custom_model_edit.setText(values['post_processing_custom_model'])
@@ -4184,6 +4196,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                 "window.waveform_color": getattr(self.config, 'waveform_color', '#64AAFF'),
                 "recording.keep_recordings": self.keep_recordings_check.isChecked(),
                 "post_processing.enabled": self.enable_post_processing_check.isChecked(),
+                "post_processing.combine_with_formatting": self.combine_post_processing_check.isChecked(),
                 "post_processing.provider": self.post_processing_provider_combo.currentText(),
                 "post_processing.model": self.post_processing_model_combo.currentText(),
                 "post_processing.custom_model": self.post_processing_custom_model_edit.text(),
