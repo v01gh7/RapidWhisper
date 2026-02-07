@@ -16,6 +16,7 @@ from services.window_monitor import WindowMonitor
 from utils.i18n import t
 from typing import Optional
 
+INTERBAL_WINDOW_BORDER_RADIUS = 18.0
 
 class FloatingWindow(QWidget):
     """
@@ -531,7 +532,7 @@ class FloatingWindow(QWidget):
             float(rect.y()),
             float(rect.width()),
             float(rect.height()),
-            18.0, 18.0
+            INTERBAL_WINDOW_BORDER_RADIUS, INTERBAL_WINDOW_BORDER_RADIUS
         )  # border-radius: 18px
         
         # Заполнить фон градиентом с текущей прозрачностью

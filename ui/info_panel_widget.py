@@ -65,16 +65,18 @@ class InfoPanelWidget(QWidget):
         from PyQt6.QtGui import QPainter, QColor
         
         # Создать серую иконку 20x20
-        icon = QPixmap(20, 20)
+        icon = QPixmap(30, 30)
         icon.fill(Qt.GlobalColor.transparent)
         
         painter = QPainter(icon)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
-        # Нарисовать серый квадрат с закругленными углами
+        # Нарисовать серый квадрат с закругленными углами (по центру)
         painter.setBrush(QColor("#555555"))
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.drawRoundedRect(2, 2, 16, 16, 4, 4)
+        square_size = 16
+        square_offset = (icon.width() - square_size) // 2
+        painter.drawRoundedRect(square_offset, square_offset, square_size, square_size, 4, 4)
         
         painter.end()
         
@@ -96,7 +98,7 @@ class InfoPanelWidget(QWidget):
         
         # Главный layout
         main_layout = QHBoxLayout(self)
-        main_layout.setContentsMargins(12, 6, 12, 6)
+        main_layout.setContentsMargins(0, 6, 0, 6)
         main_layout.setSpacing(10)
         
         # Левая часть: иконка + название приложения + подпись
@@ -107,8 +109,9 @@ class InfoPanelWidget(QWidget):
         
         self._app_icon_label = QLabel()
         self._app_icon_label.setObjectName("appIcon")
-        self._app_icon_label.setFixedSize(20, 20)
-        self._app_icon_label.setScaledContents(True)
+        self._app_icon_label.setFixedSize(30, 30)
+        self._app_icon_label.setScaledContents(False)
+        self._app_icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
         text_container = QWidget(self)
         text_layout = QVBoxLayout(text_container)
@@ -182,10 +185,10 @@ class InfoPanelWidget(QWidget):
         
         main_layout.addWidget(right_container)
         
-        # Установить фиксированную высоту
-        self.setFixedHeight(44)
-        # Растягиваться по ширине контейнера
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        # Адаптивная высота (до 200px)
+        self.setMaximumHeight(200)
+        # Растягиваться по ширине контейнера, высота по содержимому
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
     
     def _apply_styles(self) -> None:
         """
@@ -219,7 +222,7 @@ class InfoPanelWidget(QWidget):
                 border: 1px solid rgba(105, 185, 255, 0.5);
                 color: #7FD3FF;
                 border-radius: 9px;
-                padding: 2px 8px;
+                padding: 2px 5px;
                 letter-spacing: 1px;
             }
             QLabel#recordChip:hover {
@@ -242,7 +245,7 @@ class InfoPanelWidget(QWidget):
                 border: 1px solid rgba(255, 120, 120, 0.55);
                 color: #FF6B6B;
                 border-radius: 9px;
-                padding: 2px 8px;
+                padding: 2px 5px;
                 letter-spacing: 1px;
             }
             QLabel#cancelChip:hover {
@@ -264,7 +267,7 @@ class InfoPanelWidget(QWidget):
                 border: 1px solid rgba(255, 255, 255, 0.2);
                 background: rgba(255, 255, 255, 0.09);
                 border-radius: 6px;
-                padding: 2px 7px;
+                padding: 2px 5px;
                 color: #E6EAF2;
             }
             QFrame#hotkeyDivider {
@@ -346,7 +349,7 @@ class InfoPanelWidget(QWidget):
         if window_info.icon:
             # Масштабировать иконку до 20x20
             scaled_icon = window_info.icon.scaled(
-                20, 20,
+                25, 25,
                 Qt.AspectRatioMode.KeepAspectRatio,
                 Qt.TransformationMode.SmoothTransformation
             )
