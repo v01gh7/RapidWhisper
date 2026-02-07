@@ -38,6 +38,7 @@
     "opacity": 150,
     "auto_hide_delay": 2.5,
     "remember_position": false,
+    // position_preset options: center, top_left, top_center, top_right, center_left, center_right, bottom_left, bottom_center, bottom_right, custom
     "position_preset": "center",
     "position_x": null,
     "position_y": null,

@@ -150,6 +150,8 @@ All settings can be customized through the **Settings Window** (no restart requi
 - `SILENCE_THRESHOLD` - Sensitivity for silence detection (default: 0.02)
 - `SILENCE_DURATION` - How long to wait before stopping (default: 1.5 seconds)
 - `AUTO_HIDE_DELAY` - Window auto-hide delay (default: 2.5 seconds)
+- `WINDOW_POSITION_PRESET` - Window preset position  
+  Available: `center`, `top_left`, `top_center`, `top_right`, `center_left`, `center_right`, `bottom_left`, `bottom_center`, `bottom_right`, `custom`
 
 **🎤 Audio**
 - `SAMPLE_RATE` - Audio sample rate (default: 16000 Hz, recommended for speech)

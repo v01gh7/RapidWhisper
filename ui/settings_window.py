@@ -971,8 +971,12 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         self.window_position_combo.addItems([
             t("settings.app.position_center"),
             t("settings.app.position_top_left"),
+            t("settings.app.position_top_center"),
             t("settings.app.position_top_right"),
+            t("settings.app.position_center_left"),
+            t("settings.app.position_center_right"),
             t("settings.app.position_bottom_left"),
+            t("settings.app.position_bottom_center"),
             t("settings.app.position_bottom_right"),
             t("settings.app.position_custom")
         ])
@@ -3300,10 +3304,14 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         position_map = {
             'center': 0,
             'top_left': 1,
-            'top_right': 2,
-            'bottom_left': 3,
-            'bottom_right': 4,
-            'custom': 5
+            'top_center': 2,
+            'top_right': 3,
+            'center_left': 4,
+            'center_right': 5,
+            'bottom_left': 6,
+            'bottom_center': 7,
+            'bottom_right': 8,
+            'custom': 9
         }
         self.window_position_combo.setCurrentIndex(position_map.get(position_preset, 0))
         
@@ -4149,7 +4157,18 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             
             # Получить новые значения
             position_index = self.window_position_combo.currentIndex()
-            position_presets = ['center', 'top_left', 'top_right', 'bottom_left', 'bottom_right', 'custom']
+            position_presets = [
+                'center',
+                'top_left',
+                'top_center',
+                'top_right',
+                'center_left',
+                'center_right',
+                'bottom_left',
+                'bottom_center',
+                'bottom_right',
+                'custom'
+            ]
             
             # Получить выбранный язык интерфейса
             selected_language = "ru"  # По умолчанию русский

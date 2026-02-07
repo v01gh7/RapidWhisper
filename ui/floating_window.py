@@ -316,11 +316,23 @@ class FloatingWindow(QWidget):
                 elif preset == 'top_left':
                     x = geometry.left() + margin
                     y = geometry.top() + margin
+                elif preset == 'top_center':
+                    x = geometry.center().x() - self.window_width // 2
+                    y = geometry.top() + margin
                 elif preset == 'top_right':
                     x = geometry.right() - self.window_width - margin
                     y = geometry.top() + margin
+                elif preset == 'center_left':
+                    x = geometry.left() + margin
+                    y = geometry.center().y() - self.window_height // 2
+                elif preset == 'center_right':
+                    x = geometry.right() - self.window_width - margin
+                    y = geometry.center().y() - self.window_height // 2
                 elif preset == 'bottom_left':
                     x = geometry.left() + margin
+                    y = geometry.bottom() - self.window_height - margin
+                elif preset == 'bottom_center':
+                    x = geometry.center().x() - self.window_width // 2
                     y = geometry.bottom() - self.window_height - margin
                 elif preset == 'bottom_right':
                     x = geometry.right() - self.window_width - margin

@@ -351,7 +351,7 @@ class Config:
         
         # Позиция окна
         self.remember_window_position: bool = True
-        self.window_position_preset: str = "center"  # center, top_left, top_right, bottom_left, bottom_right, custom
+        self.window_position_preset: str = "center"  # center, top_left, top_center, top_right, center_left, center_right, bottom_left, bottom_center, bottom_right, custom
         self.window_position_x: Optional[int] = None
         self.window_position_y: Optional[int] = None
         
