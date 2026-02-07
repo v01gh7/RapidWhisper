@@ -192,6 +192,7 @@ class RapidWhisperApp(QObject):
         info_panel = self.floating_window.get_info_panel()
         if info_panel:
             info_panel.cancel_clicked.connect(self._on_cancel_pressed)
+            info_panel.record_clicked.connect(self._on_record_button_clicked)
             self.logger.info("Сигнал cancel_clicked из info_panel подключен")
         
         # Tray Icon - передаем floating_window как parent
@@ -311,6 +312,23 @@ class RapidWhisperApp(QObject):
         self.logger.info("ESC нажат")
         # Отправляем сигнал в главный поток Qt
         self._cancel_recording_signal.emit()
+
+    def _on_record_button_clicked(self) -> None:
+        """
+        Обработчик клика по кнопке "Запись" в info panel.
+        
+        Во время записи останавливает запись и отправляет на транскрипцию,
+        аналогично нажатию горячей клавиши.
+        """
+        self.logger.info("Клик по кнопке 'Запись' в info panel")
+        
+        # Останавливать только если запись активна
+        if self.state_manager.current_state != AppState.RECORDING:
+            self.logger.info("Запись не активна - клик по кнопке 'Запись' игнорируем")
+            return
+        
+        # Используем ту же логику, что и для горячей клавиши
+        self._handle_hotkey_in_main_thread()
     
     def _handle_cancel_recording(self) -> None:
         """

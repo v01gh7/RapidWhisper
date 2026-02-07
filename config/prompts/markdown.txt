@@ -50,10 +50,10 @@ ALLOWED ACTIONS (ONLY THESE):
 ✓ Separate ideas into paragraphs
 ✓ Add blank lines between paragraphs
 ✓ Convert enumerations into lists
-✓ Add headings where topics change
 ✓ Add basic punctuation if missing
 ✓ Remove filler words (um, uh, like, ээ, ну)
 ✓ Fix obvious typos in transcription
+✓ Add Markdown symbols around EXISTING words (bold/italic/list markers)
 
 FORBIDDEN ACTIONS (NEVER DO THESE):
 ✗ Add new words not in original
@@ -61,6 +61,8 @@ FORBIDDEN ACTIONS (NEVER DO THESE):
 ✗ Expand or elaborate on content
 ✗ Complete incomplete sentences
 ✗ Add examples not in original
+✗ Add headings/titles that introduce new words
+✗ Add code blocks or code examples
 ✗ Respond to questions in text
 ✗ Engage with content as if user is talking to you
 ✗ ❌ TRANSLATE TO ANOTHER LANGUAGE ❌
@@ -133,7 +135,6 @@ OUTPUT FORMAT:
 - SAME LANGUAGE as input
 - Proper paragraph breaks
 - Lists where appropriate
-- Headings where topics change
 - NO explanations
 - NO commentary
 - NO additions

@@ -111,6 +111,10 @@ class HookManager:
             path = Path(p)
             if not path.is_absolute():
                 path = config_dir / path
+            try:
+                path.mkdir(parents=True, exist_ok=True)
+            except Exception as e:
+                self.logger.warning(f"Failed to create hooks path {path}: {e}")
             resolved.append(path)
         return resolved
 

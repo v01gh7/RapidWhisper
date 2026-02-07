@@ -10,6 +10,7 @@ from typing import Optional, Tuple
 from services.formatting_module import FormattingModule
 from services.formatting_config import FormattingConfig
 from utils.logger import get_logger
+from utils.text_guard import has_extra_tokens
 
 logger = get_logger()
 
@@ -84,25 +85,23 @@ class ProcessingCoordinator:
         Returns:
             str: Combined system prompt with correct order
         """
-        # CRITICAL: Both steps are MANDATORY and MUST be applied
-        # Step 1: Fix grammar and punctuation
-        # Step 2: Apply formatting to the corrected text (THIS IS REQUIRED!)
-        combined = f"""CRITICAL: You MUST complete BOTH steps below internally. Output ONLY the final result after Step 2.
-DO NOT include step labels, explanations, separators, or the intermediate Step 1 version.
-DO NOT output the original text or any unformatted version.
+        # CRITICAL: Both steps are MANDATORY and MUST be applied.
+        # The model must output ONLY the final corrected + formatted text.
+        combined = f"""CRITICAL: Do BOTH actions internally, in this order: fix grammar/punctuation, then apply formatting.
+Output ONLY the final corrected + formatted text.
+NEVER output steps, outlines, explanations, examples, or code blocks.
+DO NOT add any new words that were not present in the original input.
 
-STEP 1 - Grammar and Punctuation Correction (INTERNAL ONLY - do not output):
+Grammar & punctuation rules:
 {post_prompt}
 
-STEP 2 - Formatting (MANDATORY):
-After correcting grammar and punctuation in step 1, apply the following formatting rules to the corrected text:
-
+Formatting rules (apply AFTER grammar fixes):
 {format_prompt}
 
 OUTPUT RULES (HIGHEST PRIORITY):
-- Output EXACTLY ONE version: the final corrected + formatted text.
-- No separators (e.g., "***", "---"), no headings like "Step 1" or "Step 2".
-- If any rules conflict, Step 2 formatting rules override Step 1 output-format rules."""
+- Output EXACTLY ONE final version (no intermediate text).
+- No separators, no "Step" labels, no headings like "Step 1".
+- If any rules conflict, formatting rules override output-format rules."""
         
         logger.debug(f"Combined prompt length: {len(combined)} characters")
         return combined
@@ -260,6 +259,9 @@ OUTPUT RULES (HIGHEST PRIORITY):
             
             # Check if processing actually worked (not just returned original text)
             if processed_text != text:
+                if processed_text and has_extra_tokens(text, processed_text):
+                    logger.warning("⚠️ Combined output contains new words - returning original text")
+                    return text
                 logger.info("✅ Combined processing completed successfully")
                 logger.info(f"Result preview: {processed_text[:100]}...")
                 return processed_text
@@ -415,6 +417,9 @@ OUTPUT RULES (HIGHEST PRIORITY):
             
             # Check if formatting actually worked
             if formatted_text != text:
+                if formatted_text and has_extra_tokens(text, formatted_text):
+                    logger.warning("⚠️ Fallback formatting added new words - returning original text")
+                    return text
                 logger.info("✅ Fallback formatting completed successfully")
                 logger.info(f"Result preview: {formatted_text[:100]}...")
                 return formatted_text

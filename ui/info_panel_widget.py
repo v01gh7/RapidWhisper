@@ -27,6 +27,7 @@ class InfoPanelWidget(QWidget):
     
     # Сигналы для кликов по кнопкам
     cancel_clicked = pyqtSignal()  # Сигнал при клике на "Отменить"
+    record_clicked = pyqtSignal()  # Сигнал при клике на "Запись"
     
     def __init__(self, config, parent=None):
         """
@@ -241,13 +242,10 @@ class InfoPanelWidget(QWidget):
     def _on_record_clicked(self, event) -> None:
         """
         Обработчик клика по кнопке "Запись".
-        
-        Пока не делает ничего, так как кнопка должна быть некликабельной
-        когда она активна (подчеркнута).
+
+        Отправляет сигнал record_clicked для остановки записи.
         """
-        # Если кнопка активна (подчеркнута), игнорируем клик
-        if "text-decoration: underline" in self._record_hotkey_label.styleSheet():
-            return
+        self.record_clicked.emit()
     
     def _on_cancel_clicked(self, event) -> None:
         """
@@ -277,9 +275,9 @@ class InfoPanelWidget(QWidget):
             self._record_hotkey_label.setStyleSheet(
                 "color: #FFFFFF; text-decoration: underline; font-weight: bold;"
             )
-            self._record_hotkey_label.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
+            self._record_hotkey_label.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         elif button_name == "cancel":
             self._close_hotkey_label.setStyleSheet(
                 "color: #FFFFFF; text-decoration: underline; font-weight: bold;"
             )
-            self._close_hotkey_label.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
+            self._close_hotkey_label.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
