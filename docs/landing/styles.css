@@ -51,6 +51,14 @@ h3 {
   letter-spacing: 0.12em;
 }
 
+h4 {
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-family: "Unbounded", "Segoe UI", sans-serif;
+}
+
 p {
   margin: 0 0 18px;
   color: var(--muted);
@@ -200,6 +208,37 @@ button {
   background: rgba(255, 255, 255, 0.02);
   font-size: 0.78rem;
   color: var(--muted);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 18px;
+  padding: 18px 20px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(13, 16, 26, 0.55);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.3);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stat-value {
+  font-family: "Unbounded", sans-serif;
+  font-size: 1.6rem;
+  color: var(--accent);
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .hero-window {
@@ -365,8 +404,9 @@ button {
 
 .feature-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 24px;
+  align-items: stretch;
 }
 
 .glass-card {
@@ -383,6 +423,78 @@ button {
   grid-template-columns: minmax(260px, 1fr) minmax(300px, 1fr);
   gap: 32px;
   align-items: start;
+}
+
+.providers {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(320px, 1.2fr);
+  gap: 32px;
+  align-items: start;
+}
+
+.providers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+}
+
+.provider-card {
+  padding: 20px 22px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(16px);
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.tag {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hooks {
+  display: flex;
+  justify-content: center;
+}
+
+.hooks-card {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(260px, 1fr);
+  gap: 24px;
+  padding: 28px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(135deg, rgba(90, 209, 255, 0.12), rgba(18, 24, 38, 0.85));
+  box-shadow: var(--shadow);
+}
+
+.hook-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-content: center;
+}
+
+.hook-pill {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(90, 209, 255, 0.14);
+  color: var(--accent);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid rgba(90, 209, 255, 0.25);
 }
 
 .workflow-steps {
@@ -463,6 +575,14 @@ button {
   }
 
   .workflow {
+    grid-template-columns: 1fr;
+  }
+
+  .providers {
+    grid-template-columns: 1fr;
+  }
+
+  .hooks-card {
     grid-template-columns: 1fr;
   }
 

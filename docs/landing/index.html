@@ -19,6 +19,7 @@
       <a href="#features">Features</a>
       <a href="#workflow">Workflow</a>
       <a href="#compat">Apps</a>
+      <a href="#providers">AI</a>
     </nav>
     <button class="ghost">Open Settings</button>
   </header>
@@ -122,25 +123,81 @@
       </div>
     </section>
 
+    <section class="stats">
+      <div class="stat">
+        <div class="stat-value">1-2s</div>
+        <div class="stat-label">Средняя задержка транскрипции</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">15</div>
+        <div class="stat-label">Языков интерфейса</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">20+</div>
+        <div class="stat-label">Веб-приложений в детекте</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">0</div>
+        <div class="stat-label">Фокус не перехватывается</div>
+      </div>
+    </section>
+
     <section id="features" class="feature-grid">
       <article class="glass-card">
+        <h3>Global Hotkey</h3>
+        <p>Ctrl+Space запускает и останавливает запись из любого приложения.</p>
+      </article>
+      <article class="glass-card">
+        <h3>Cancel Safe</h3>
+        <p>Esc мгновенно отменяет запись без транскрипции.</p>
+      </article>
+      <article class="glass-card">
         <h3>Frosted UI</h3>
-        <p>
-          Прозрачная поверхность, тонкие контуры и мягкий свет — как
-          встроенное окно Windows 11.
-        </p>
+        <p>Пилюля на экране с эффектом стекла и мягкими контурами.</p>
+      </article>
+      <article class="glass-card">
+        <h3>Live Waveform</h3>
+        <p>Волна реагирует на голос в реальном времени.</p>
       </article>
       <article class="glass-card">
         <h3>Smart Silence</h3>
-        <p>
-          Остановка по паузам речи и гибкие горячие клавиши, без прерывания фокуса.
-        </p>
+        <p>Автостоп по паузам речи с настраиваемой чувствительностью.</p>
       </article>
       <article class="glass-card">
-        <h3>Instant Context</h3>
-        <p>
-          Инфопанель показывает активное приложение и подсказки по управлению.
-        </p>
+        <h3>Auto Copy</h3>
+        <p>Готовый текст сразу попадает в буфер обмена.</p>
+      </article>
+      <article class="glass-card">
+        <h3>System Tray</h3>
+        <p>Работает в фоне и сообщает о результате уведомлением.</p>
+      </article>
+      <article class="glass-card">
+        <h3>Smart Formatting</h3>
+        <p>Форматирование под активное приложение: markdown, notion, word.</p>
+      </article>
+      <article class="glass-card">
+        <h3>Web Apps</h3>
+        <p>Автодетект Google Docs, Notion, Office Online и других веб-приложений.</p>
+      </article>
+      <article class="glass-card">
+        <h3>Hot Reload</h3>
+        <p>Большинство настроек применяются без перезапуска.</p>
+      </article>
+      <article class="glass-card">
+        <h3>Hooks</h3>
+        <p>Python-хуки для этапов пайплайна и фоновых задач.</p>
+      </article>
+      <article class="glass-card">
+        <h3>Custom Providers</h3>
+        <p>Любые OpenAI-совместимые API, локальные модели и серверы.</p>
+      </article>
+      <article class="glass-card">
+        <h3>Multilingual</h3>
+        <p>Интерфейс на 15 языках с авто-детектом.</p>
+      </article>
+      <article class="glass-card">
+        <h3>Multi-threaded</h3>
+        <p>UI не зависает: запись, сеть и форматирование разделены.</p>
       </article>
     </section>
 
@@ -149,7 +206,7 @@
         <h2>Процесс без лишних шагов</h2>
         <p>
           Запустите запись, говорите, остановите по Ctrl+Space или дождитесь
-          авто-детекта тишины. Всё остальное сделает RapidWhisper.
+          авто-детекта тишины. RapidWhisper сам выберет формат и скопирует результат.
         </p>
       </div>
       <div class="workflow-steps">
@@ -164,15 +221,68 @@
           <div class="step-number">02</div>
           <div>
             <h4>Фиксация</h4>
-            <p>Инфопанель держит контекст и напоминает комбинации управления.</p>
+            <p>Инфопанель держит контекст и подсказки управления.</p>
           </div>
         </div>
         <div class="step">
           <div class="step-number">03</div>
           <div>
             <h4>Отправка</h4>
-            <p>Текст уходит в нужный формат и копируется без лишних окон.</p>
+            <p>Текст формируется под приложение и копируется без окон.</p>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="providers" class="providers">
+      <div class="providers-text">
+        <h2>AI провайдеры и локальные модели</h2>
+        <p>
+          Работайте с облачными сервисами или подключайте локальные модели
+          через OpenAI-совместимые API.
+        </p>
+      </div>
+      <div class="providers-grid">
+        <div class="provider-card">
+          <h4>Встроенные</h4>
+          <div class="tag-list">
+            <span class="tag">Groq</span>
+            <span class="tag">OpenAI</span>
+            <span class="tag">GLM</span>
+            <span class="tag">Z.AI</span>
+          </div>
+          <p>Выбор в UI, ключи хранятся в .env, смена без перезапуска.</p>
+        </div>
+        <div class="provider-card">
+          <h4>Кастомные</h4>
+          <div class="tag-list">
+            <span class="tag">LM Studio</span>
+            <span class="tag">Ollama</span>
+            <span class="tag">vLLM</span>
+            <span class="tag">LocalAI</span>
+            <span class="tag">FastWhisper</span>
+          </div>
+          <p>Любой OpenAI-совместимый endpoint, включая локальные серверы.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="hooks">
+      <div class="hooks-card">
+        <div>
+          <h2>Hooks & Automation</h2>
+          <p>
+            Подключайте Python-хуки на каждом шаге пайплайна: до записи, после
+            записи, перед форматированием и перед выдачей результата.
+          </p>
+        </div>
+        <div class="hook-tags">
+          <span class="hook-pill">before_recording</span>
+          <span class="hook-pill">after_recording</span>
+          <span class="hook-pill">transcription_received</span>
+          <span class="hook-pill">formatting_step</span>
+          <span class="hook-pill">post_formatting_step</span>
+          <span class="hook-pill">task_completed</span>
         </div>
       </div>
     </section>
@@ -189,8 +299,10 @@
           <span class="badge">Obsidian</span>
           <span class="badge">VS Code</span>
           <span class="badge">Google Docs</span>
+          <span class="badge">Office Online</span>
           <span class="badge">LibreOffice</span>
           <span class="badge">Telegram</span>
+          <span class="badge">Markdown</span>
         </div>
       </div>
     </section>
