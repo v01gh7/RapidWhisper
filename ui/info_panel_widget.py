@@ -94,12 +94,12 @@ class InfoPanelWidget(QWidget):
         # Получить размер шрифта из конфигурации
         font_size = self._config.font_size_floating_info if self._config else 11
         sub_font_size = max(8, font_size - 2)
-        self._hotkey_font_size = font_size
+        self._hotkey_font_size = max(9, font_size - 1)
         
         # Главный layout
         main_layout = QHBoxLayout(self)
         main_layout.setContentsMargins(0, 6, 0, 6)
-        main_layout.setSpacing(10)
+        main_layout.setSpacing(8)
         
         # Левая часть: иконка + название приложения + подпись
         left_container = QWidget(self)
@@ -121,7 +121,7 @@ class InfoPanelWidget(QWidget):
         self._app_name_label = QLabel(t("common.no_active_window"))
         self._app_name_label.setObjectName("appName")
         self._app_name_label.setFont(QFont("Segoe UI", font_size))
-        self._app_name_label.setMaximumWidth(260)  # Ограничить максимальную ширину
+        self._app_name_label.setMaximumWidth(245)  # Ограничить максимальную ширину (минус 15px)
         
         self._app_sub_label = QLabel(t("common.active_application"))
         self._app_sub_label.setObjectName("appSub")
@@ -141,7 +141,7 @@ class InfoPanelWidget(QWidget):
         right_container = QWidget(self)
         right_layout = QHBoxLayout(right_container)
         right_layout.setContentsMargins(0, 0, 0, 0)
-        right_layout.setSpacing(6)
+        right_layout.setSpacing(5)
         
         # Чип "Запись"
         self._record_chip = QLabel(self._chip_text(t("common.record")))
@@ -156,7 +156,7 @@ class InfoPanelWidget(QWidget):
         self._record_keys_container = QWidget(self)
         self._record_keys_layout = QHBoxLayout(self._record_keys_container)
         self._record_keys_layout.setContentsMargins(0, 0, 0, 0)
-        self._record_keys_layout.setSpacing(4)
+        self._record_keys_layout.setSpacing(3)
         self._update_record_hotkey()
         
         # Разделитель
@@ -222,8 +222,10 @@ class InfoPanelWidget(QWidget):
                 border: 1px solid rgba(105, 185, 255, 0.5);
                 color: #7FD3FF;
                 border-radius: 9px;
-                padding: 2px 5px;
-                letter-spacing: 1px;
+                padding: 1px 6px;
+                min-height: 22px;
+                max-height: 22px;
+                letter-spacing: 0px;
             }
             QLabel#recordChip:hover {
                 background-color: rgba(80, 160, 255, 0.35);
@@ -245,8 +247,10 @@ class InfoPanelWidget(QWidget):
                 border: 1px solid rgba(255, 120, 120, 0.55);
                 color: #FF6B6B;
                 border-radius: 9px;
-                padding: 2px 5px;
-                letter-spacing: 1px;
+                padding: 1px 6px;
+                min-height: 22px;
+                max-height: 22px;
+                letter-spacing: 0px;
             }
             QLabel#cancelChip:hover {
                 background-color: rgba(255, 120, 120, 0.35);
@@ -267,7 +271,9 @@ class InfoPanelWidget(QWidget):
                 border: 1px solid rgba(255, 255, 255, 0.2);
                 background: rgba(255, 255, 255, 0.09);
                 border-radius: 6px;
-                padding: 2px 5px;
+                padding: 1px 5px;
+                min-height: 22px;
+                max-height: 22px;
                 color: #E6EAF2;
             }
             QFrame#hotkeyDivider {
