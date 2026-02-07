@@ -3834,7 +3834,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             config.set_prompt_for_app(app_name, prompt)
             
             # Save config
-            config.save_to_config()
+            config.save_to_config(preserve_web_keywords_if_empty=False)
             
             # Save prompt to file
             config_saver = get_config_saver()

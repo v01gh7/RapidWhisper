@@ -282,7 +282,7 @@ class FormattingConfig:
             use_fixed_format=use_fixed_format
         )
     
-    def save_to_config(self) -> None:
+    def save_to_config(self, preserve_web_keywords_if_empty: bool = True) -> None:
         """
         Save configuration to config.jsonc and secrets.json.
         
@@ -313,7 +313,11 @@ class FormattingConfig:
             # Note: api_key is NOT saved here - it goes to secrets.json below
             
             # Update web app keywords
-            config["formatting"]["web_app_keywords"] = self.web_app_keywords
+            existing_keywords = config.get("formatting", {}).get("web_app_keywords", {})
+            if preserve_web_keywords_if_empty and not self.web_app_keywords and existing_keywords:
+                config["formatting"]["web_app_keywords"] = existing_keywords
+            else:
+                config["formatting"]["web_app_keywords"] = self.web_app_keywords
             
             # Update use_fixed_format setting
             config["formatting"]["use_fixed_format"] = self.use_fixed_format
