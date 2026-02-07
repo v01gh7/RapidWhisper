@@ -383,7 +383,9 @@
     "error": "❌ Ошибка",
     "warning": "⚠️ Ошибка",
     "no_active_window": "Нет активного окна",
+    "active_application": "Активное приложение",
     "record": "Запись",
+    "cancel_action": "Отменить",
     "cancel_esc": "Отменить Esc"
   },
   "format_selection": {

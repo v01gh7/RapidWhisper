@@ -6,11 +6,10 @@
 части плавающего окна RapidWhisper.
 """
 
-from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel
+from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel, QVBoxLayout, QFrame
 from PyQt6.QtCore import Qt, pyqtSlot, pyqtSignal
 from PyQt6.QtGui import QPixmap, QFont, QCursor
-from typing import Optional
-from utils.hotkey_formatter import HotkeyFormatter
+from typing import Optional, List
 from utils.i18n import t
 
 
@@ -24,6 +23,18 @@ class InfoPanelWidget(QWidget):
     
     Requirements: 1.1, 1.3, 1.4, 3.1, 3.2, 3.3, 5.1-5.8, 6.1-6.5
     """
+
+    _KEYCAP_LABELS = {
+        "ctrl": "CTRL",
+        "control": "CTRL",
+        "alt": "ALT",
+        "shift": "SHIFT",
+        "space": "SPACE",
+        "esc": "ESC",
+        "escape": "ESC",
+        "enter": "ENTER",
+        "tab": "TAB",
+    }
     
     # Сигналы для кликов по кнопкам
     cancel_clicked = pyqtSignal()  # Сигнал при клике на "Отменить"
@@ -63,7 +74,7 @@ class InfoPanelWidget(QWidget):
         # Нарисовать серый квадрат с закругленными углами
         painter.setBrush(QColor("#555555"))
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.drawRoundedRect(2, 2, 16, 16, 3, 3)
+        painter.drawRoundedRect(2, 2, 16, 16, 4, 4)
         
         painter.end()
         
@@ -80,46 +91,95 @@ class InfoPanelWidget(QWidget):
         """
         # Получить размер шрифта из конфигурации
         font_size = self._config.font_size_floating_info if self._config else 11
+        sub_font_size = max(8, font_size - 2)
+        self._hotkey_font_size = font_size
         
         # Главный layout
         main_layout = QHBoxLayout(self)
-        main_layout.setContentsMargins(8, 6, 8, 6)
-        main_layout.setSpacing(8)  # Увеличиваем spacing между элементами
+        main_layout.setContentsMargins(12, 6, 12, 6)
+        main_layout.setSpacing(10)
         
-        # Левая часть: иконка + название приложения
+        # Левая часть: иконка + название приложения + подпись
+        left_container = QWidget(self)
+        left_layout = QHBoxLayout(left_container)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+        left_layout.setSpacing(8)
+        
         self._app_icon_label = QLabel()
+        self._app_icon_label.setObjectName("appIcon")
         self._app_icon_label.setFixedSize(20, 20)
         self._app_icon_label.setScaledContents(True)
         
-        self._app_name_label = QLabel(t("common.no_active_window"))
-        self._app_name_label.setFont(QFont("Segoe UI", font_size))
-        self._app_name_label.setMaximumWidth(300)  # Ограничить максимальную ширину
+        text_container = QWidget(self)
+        text_layout = QVBoxLayout(text_container)
+        text_layout.setContentsMargins(0, 0, 0, 0)
+        text_layout.setSpacing(0)
         
-        main_layout.addWidget(self._app_icon_label)
-        main_layout.addWidget(self._app_name_label)
+        self._app_name_label = QLabel(t("common.no_active_window"))
+        self._app_name_label.setObjectName("appName")
+        self._app_name_label.setFont(QFont("Segoe UI", font_size))
+        self._app_name_label.setMaximumWidth(260)  # Ограничить максимальную ширину
+        
+        self._app_sub_label = QLabel(t("common.active_application"))
+        self._app_sub_label.setObjectName("appSub")
+        self._app_sub_label.setFont(QFont("Segoe UI", sub_font_size))
+        
+        text_layout.addWidget(self._app_name_label)
+        text_layout.addWidget(self._app_sub_label)
+        
+        left_layout.addWidget(self._app_icon_label)
+        left_layout.addWidget(text_container)
+        main_layout.addWidget(left_container)
         
         # Добавить stretch между левой и правой частями
         main_layout.addStretch()
         
-        # Правая часть: горячие клавиши
-        # Кнопка записи
-        self._record_hotkey_label = QLabel()
-        self._record_hotkey_label.setFont(QFont("Segoe UI", font_size))
-        self._record_hotkey_label.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self._record_hotkey_label.mousePressEvent = self._on_record_clicked
+        # Правая часть: горячие клавиши в виде чипов и keycap
+        right_container = QWidget(self)
+        right_layout = QHBoxLayout(right_container)
+        right_layout.setContentsMargins(0, 0, 0, 0)
+        right_layout.setSpacing(6)
+        
+        # Чип "Запись"
+        self._record_chip = QLabel(self._chip_text(t("common.record")))
+        self._record_chip.setObjectName("recordChip")
+        self._record_chip.setFont(QFont("Segoe UI", font_size))
+        self._record_chip.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self._record_chip.mousePressEvent = self._on_record_clicked
+        
+        # Контейнер с клавишами записи
+        self._record_keys_container = QWidget(self)
+        self._record_keys_layout = QHBoxLayout(self._record_keys_container)
+        self._record_keys_layout.setContentsMargins(0, 0, 0, 0)
+        self._record_keys_layout.setSpacing(4)
         self._update_record_hotkey()
         
-        # Кнопка отмены
-        self._close_hotkey_label = QLabel(t("common.cancel_esc"))
-        self._close_hotkey_label.setFont(QFont("Segoe UI", font_size))
-        self._close_hotkey_label.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self._close_hotkey_label.mousePressEvent = self._on_cancel_clicked
+        # Разделитель
+        divider = QFrame(self)
+        divider.setObjectName("hotkeyDivider")
+        divider.setFixedWidth(1)
+        divider.setFixedHeight(16)
         
-        main_layout.addWidget(self._record_hotkey_label)
-        main_layout.addWidget(self._close_hotkey_label)
+        # Чип "Отменить"
+        self._cancel_chip = QLabel(self._chip_text(t("common.cancel_action")))
+        self._cancel_chip.setObjectName("cancelChip")
+        self._cancel_chip.setFont(QFont("Segoe UI", font_size))
+        self._cancel_chip.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self._cancel_chip.mousePressEvent = self._on_cancel_clicked
+        
+        # Клавиша Esc
+        self._cancel_key_label = self._create_keycap_label("ESC")
+        
+        right_layout.addWidget(self._record_chip)
+        right_layout.addWidget(self._record_keys_container)
+        right_layout.addWidget(divider)
+        right_layout.addWidget(self._cancel_chip)
+        right_layout.addWidget(self._cancel_key_label)
+        
+        main_layout.addWidget(right_container)
         
         # Установить фиксированную высоту
-        self.setFixedHeight(40)
+        self.setFixedHeight(44)
     
     def _apply_styles(self) -> None:
         """
@@ -130,21 +190,93 @@ class InfoPanelWidget(QWidget):
         
         Requirements: 5.1, 5.2, 5.6, 5.7, 5.8
         """
-        # Стиль панели
         self.setStyleSheet("""
             InfoPanelWidget {
-                background-color: rgba(26, 26, 26, 150);
-                border-top: 1px solid #333333;
+                background-color: rgba(16, 22, 34, 175);
+                border-top: 1px solid rgba(255, 255, 255, 35);
+            }
+            QLabel#appName {
+                color: #EAF1FF;
+                font-weight: 600;
+            }
+            QLabel#appSub {
+                color: #9AA4B2;
+            }
+            QLabel#appIcon {
+                background-color: rgba(255, 255, 255, 0.08);
+                border: 1px solid rgba(255, 255, 255, 0.18);
+                border-radius: 5px;
+                padding: 2px;
+            }
+            QLabel#recordChip {
+                background-color: rgba(58, 140, 255, 0.22);
+                border: 1px solid rgba(105, 185, 255, 0.5);
+                color: #7FD3FF;
+                border-radius: 9px;
+                padding: 2px 8px;
+                letter-spacing: 1px;
+            }
+            QLabel#recordChip[active="true"] {
+                background-color: rgba(90, 170, 255, 0.4);
+                border: 1px solid rgba(130, 200, 255, 0.7);
+                color: #EAF6FF;
+            }
+            QLabel#cancelChip {
+                background-color: rgba(255, 90, 90, 0.2);
+                border: 1px solid rgba(255, 120, 120, 0.55);
+                color: #FF6B6B;
+                border-radius: 9px;
+                padding: 2px 8px;
+                letter-spacing: 1px;
+            }
+            QLabel#cancelChip[active="true"] {
+                background-color: rgba(255, 100, 100, 0.32);
+                border: 1px solid rgba(255, 140, 140, 0.7);
+                color: #FFE2E2;
+            }
+            QLabel[role="keycap"] {
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                background: rgba(255, 255, 255, 0.09);
+                border-radius: 6px;
+                padding: 2px 7px;
+                color: #E6EAF2;
+            }
+            QFrame#hotkeyDivider {
+                background-color: rgba(255, 255, 255, 0.18);
             }
         """)
-        
-        # Стиль текста приложения
-        self._app_name_label.setStyleSheet("color: #E0E0E0;")
-        
-        # Стиль горячих клавиш - белый цвет
-        hotkey_style = "color: #FFFFFF;"
-        self._record_hotkey_label.setStyleSheet(hotkey_style)
-        self._close_hotkey_label.setStyleSheet(hotkey_style)
+
+    def _chip_text(self, text: str) -> str:
+        """Возвращает текст для чипа в верхнем регистре."""
+        return text.upper() if text else ""
+
+    def _format_hotkey_parts(self, hotkey: str) -> List[str]:
+        """Разбивает горячую клавишу на части для keycap."""
+        if not hotkey:
+            return []
+        parts = [part.strip().lower() for part in hotkey.split("+") if part.strip()]
+        labels: List[str] = []
+        for part in parts:
+            labels.append(self._KEYCAP_LABELS.get(part, part.upper()))
+        return labels
+
+    def _create_keycap_label(self, text: str) -> QLabel:
+        """Создает label-ключ в стиле keycap."""
+        label = QLabel(text)
+        label.setProperty("role", "keycap")
+        label.setFont(QFont("Segoe UI", getattr(self, "_hotkey_font_size", 11)))
+        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        return label
+
+    def _set_keycaps(self, layout: QHBoxLayout, keys: List[str]) -> None:
+        """Обновляет набор keycap-лейблов в контейнере."""
+        while layout.count():
+            item = layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+        for key in keys:
+            layout.addWidget(self._create_keycap_label(key))
     
     def _update_record_hotkey(self) -> None:
         """
@@ -155,9 +287,9 @@ class InfoPanelWidget(QWidget):
         
         Requirements: 3.2, 4.1-4.6
         """
-        hotkey = self._config.hotkey
-        formatted = HotkeyFormatter.format_hotkey(hotkey)
-        self._record_hotkey_label.setText(f"{t('common.record')} {formatted}")
+        hotkey = self._config.hotkey if self._config else ""
+        keys = self._format_hotkey_parts(hotkey)
+        self._set_keycaps(self._record_keys_layout, keys)
     
     @pyqtSlot(object)
     def update_app_info(self, window_info) -> None:
@@ -218,11 +350,13 @@ class InfoPanelWidget(QWidget):
         Вызывается при смене языка интерфейса для обновления
         всех текстовых элементов.
         """
-        # Обновить текст кнопки записи
+        # Обновить чипы и горячие клавиши
+        self._record_chip.setText(self._chip_text(t("common.record")))
+        self._cancel_chip.setText(self._chip_text(t("common.cancel_action")))
         self._update_record_hotkey()
         
-        # Обновить текст кнопки отмены
-        self._close_hotkey_label.setText(t("common.cancel_esc"))
+        # Обновить подпись
+        self._app_sub_label.setText(t("common.active_application"))
         
         # Обновить текст "Нет активного окна" если он отображается
         if not self._app_name_label.text() or self._app_name_label.text() in ["No active window", "Нет активного окна"]:
@@ -262,22 +396,17 @@ class InfoPanelWidget(QWidget):
         Args:
             button_name: Название кнопки ("record" или "cancel" или None для сброса)
         """
-        # Сбросить стили обеих кнопок
-        self._record_hotkey_label.setStyleSheet("color: #FFFFFF;")
-        self._close_hotkey_label.setStyleSheet("color: #FFFFFF;")
-        
-        # Восстановить курсоры
-        self._record_hotkey_label.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self._close_hotkey_label.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        # Сбросить активные состояния
+        self._record_chip.setProperty("active", False)
+        self._cancel_chip.setProperty("active", False)
         
         # Установить активную кнопку
         if button_name == "record":
-            self._record_hotkey_label.setStyleSheet(
-                "color: #FFFFFF; text-decoration: underline; font-weight: bold;"
-            )
-            self._record_hotkey_label.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+            self._record_chip.setProperty("active", True)
         elif button_name == "cancel":
-            self._close_hotkey_label.setStyleSheet(
-                "color: #FFFFFF; text-decoration: underline; font-weight: bold;"
-            )
-            self._close_hotkey_label.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+            self._cancel_chip.setProperty("active", True)
+        
+        # Переприменить стиль
+        for widget in (self._record_chip, self._cancel_chip):
+            widget.style().unpolish(widget)
+            widget.style().polish(widget)

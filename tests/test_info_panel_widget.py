@@ -49,10 +49,10 @@ class TestInfoPanelInitialization:
         """Тест фиксированной высоты панели"""
         panel = InfoPanelWidget(mock_config)
         
-        # Панель должна иметь фиксированную высоту 40px
-        assert panel.height() == 40
-        assert panel.minimumHeight() == 40
-        assert panel.maximumHeight() == 40
+        # Панель должна иметь фиксированную высоту 44px
+        assert panel.height() == 44
+        assert panel.minimumHeight() == 44
+        assert panel.maximumHeight() == 44
     
     def test_has_app_icon_label(self, qapp, mock_config):
         """Тест наличия метки иконки приложения"""
@@ -73,10 +73,12 @@ class TestInfoPanelInitialization:
         """Тест наличия меток горячих клавиш"""
         panel = InfoPanelWidget(mock_config)
         
-        assert hasattr(panel, '_record_hotkey_label')
-        assert hasattr(panel, '_close_hotkey_label')
-        assert "Запись" in panel._record_hotkey_label.text()
-        assert "Отменить Esc" in panel._close_hotkey_label.text()
+        assert hasattr(panel, '_record_chip')
+        assert hasattr(panel, '_cancel_chip')
+        assert hasattr(panel, '_record_keys_layout')
+        assert hasattr(panel, '_cancel_key_label')
+        assert "ЗАПИСЬ" in panel._record_chip.text()
+        assert "ОТМЕНИТЬ" in panel._cancel_chip.text()
 
 
 class TestStyling:
@@ -88,7 +90,7 @@ class TestStyling:
         
         # Проверяем что стили применены
         stylesheet = panel.styleSheet()
-        assert "#1a1a1a" in stylesheet
+        assert "rgba(16, 22, 34" in stylesheet
         assert "border-top" in stylesheet
     
     def test_text_colors(self, qapp, mock_config):
@@ -96,12 +98,9 @@ class TestStyling:
         panel = InfoPanelWidget(mock_config)
         
         # Основной текст должен быть #E0E0E0
-        app_name_style = panel._app_name_label.styleSheet()
-        assert "#E0E0E0" in app_name_style
-        
-        # Вторичный текст (горячие клавиши) должен быть #FFFFFF (белый)
-        hotkey_style = panel._record_hotkey_label.styleSheet()
-        assert "#FFFFFF" in hotkey_style
+        stylesheet = panel.styleSheet()
+        assert "#EAF1FF" in stylesheet
+        assert "#9AA4B2" in stylesheet
 
 
 class TestAppInfoUpdate:
@@ -203,9 +202,13 @@ class TestHotkeyDisplay:
         mock_config.hotkey = "ctrl+space"
         panel = InfoPanelWidget(mock_config)
         
-        # Горячая клавиша должна быть отформатирована
-        assert "Запись" in panel._record_hotkey_label.text()
-        assert "Ctrl" in panel._record_hotkey_label.text()
+        # Горячая клавиша должна быть разбита на keycap
+        keys = [
+            panel._record_keys_layout.itemAt(i).widget().text()
+            for i in range(panel._record_keys_layout.count())
+        ]
+        assert "CTRL" in keys
+        assert "SPACE" in keys
     
     def test_update_hotkey_display(self, qapp, mock_config):
         """Тест обновления отображения горячей клавиши"""
@@ -217,15 +220,18 @@ class TestHotkeyDisplay:
         panel.update_hotkey_display()
         
         # Отображение должно обновиться
-        text = panel._record_hotkey_label.text()
-        assert "Alt" in text
-        assert "F1" in text
+        keys = [
+            panel._record_keys_layout.itemAt(i).widget().text()
+            for i in range(panel._record_keys_layout.count())
+        ]
+        assert "ALT" in keys
+        assert "F1" in keys
     
     def test_close_hotkey_always_esc(self, qapp, mock_config):
         """Тест что кнопка закрытия всегда Esc"""
         panel = InfoPanelWidget(mock_config)
         
-        assert "Esc" in panel._close_hotkey_label.text()
+        assert "ESC" in panel._cancel_key_label.text()
 
 
 class TestDefaultIcon:
@@ -322,8 +328,7 @@ class TestInfoPanelProperties:
         Property 3: Отображение горячей клавиши из конфигурации
         
         Для любого значения горячей клавиши в Config_Manager, Info_Panel
-        должен отображать кнопку "Запись [formatted_hotkey]" с правильно
-        отформатированной клавишей.
+        должен отображать чип "Запись" и набор keycap для горячей клавиши.
         
         **Validates: Requirements 3.2**
         """
@@ -333,16 +338,16 @@ class TestInfoPanelProperties:
         config.font_size_floating_info = 11  # Mock font size as integer
         panel = InfoPanelWidget(config)
         
-        text = panel._record_hotkey_label.text()
+        # Чип "Запись" должен существовать
+        assert panel._record_chip.text().startswith("ЗАПИСЬ"), \
+            "Чип должен начинаться с 'ЗАПИСЬ'"
         
-        # Текст должен начинаться с "Запись"
-        assert text.startswith("Запись"), \
-            "Текст кнопки должен начинаться с 'Запись'"
-        
-        # Текст должен содержать отформатированную горячую клавишу
-        # (проверяем что текст не пустой и содержит больше чем просто "Запись")
-        assert len(text) > len("Запись "), \
-            "Текст должен содержать отформатированную горячую клавишу"
+        # Должны быть keycap элементы
+        keys = [
+            panel._record_keys_layout.itemAt(i).widget().text()
+            for i in range(panel._record_keys_layout.count())
+        ]
+        assert len(keys) > 0, "Должны быть keycap элементы для горячей клавиши"
     
     @given(st.integers(min_value=8, max_value=256), st.integers(min_value=8, max_value=256))
     @settings(max_examples=100)
@@ -400,11 +405,11 @@ class TestInfoPanelFontSizes:
         app_name_font = panel._app_name_label.font()
         assert app_name_font.pointSize() == 13
         
-        record_hotkey_font = panel._record_hotkey_label.font()
-        assert record_hotkey_font.pointSize() == 13
+        record_chip_font = panel._record_chip.font()
+        assert record_chip_font.pointSize() == 13
         
-        close_hotkey_font = panel._close_hotkey_label.font()
-        assert close_hotkey_font.pointSize() == 13
+        cancel_chip_font = panel._cancel_chip.font()
+        assert cancel_chip_font.pointSize() == 13
     
     def test_default_font_size_when_no_config(self, qapp):
         """Test that default font size is used when config doesn't have the property"""
@@ -426,12 +431,12 @@ class TestInfoPanelFontSizes:
         
         # All labels should have the same font size
         app_name_font = panel._app_name_label.font()
-        record_hotkey_font = panel._record_hotkey_label.font()
-        close_hotkey_font = panel._close_hotkey_label.font()
+        record_chip_font = panel._record_chip.font()
+        cancel_chip_font = panel._cancel_chip.font()
         
         assert app_name_font.pointSize() == 14
-        assert record_hotkey_font.pointSize() == 14
-        assert close_hotkey_font.pointSize() == 14
+        assert record_chip_font.pointSize() == 14
+        assert cancel_chip_font.pointSize() == 14
     
     def test_font_size_boundary_values(self, qapp, mock_config):
         """Test font size with boundary values (min and max)"""

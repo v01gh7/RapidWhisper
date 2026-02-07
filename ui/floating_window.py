@@ -5,9 +5,11 @@
 анимациями и визуализацией звуковой волны.
 """
 
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QGraphicsOpacityEffect
-from PyQt6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve, QRect
-from PyQt6.QtGui import QPainter, QColor, QPainterPath, QPaintEvent
+import time
+
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QGraphicsOpacityEffect, QHBoxLayout
+from PyQt6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve, QRect, QRectF
+from PyQt6.QtGui import QPainter, QColor, QPainterPath, QPaintEvent, QLinearGradient
 from ui.waveform_widget import WaveformWidget
 from ui.info_panel_widget import InfoPanelWidget
 from services.window_monitor import WindowMonitor
@@ -44,7 +46,9 @@ class FloatingWindow(QWidget):
         
         # Размеры окна (будут пересчитаны динамически)
         self.window_width = 600
-        self.window_height = 120
+        self._base_height = 110
+        self._recording_height = 152
+        self.window_height = self._base_height
         self._min_width = 600  # Минимальная ширина (увеличена для лучшего spacing)
         self._max_width_percent = 0.3  # Максимум 30% ширины экрана
         
@@ -66,6 +70,12 @@ class FloatingWindow(QWidget):
         self._auto_hide_timer = QTimer(self)
         self._auto_hide_timer.timeout.connect(self.hide_with_animation)
         self._auto_hide_timer.setSingleShot(True)
+
+        # Таймер записи для отображения времени
+        self._recording_timer = QTimer(self)
+        self._recording_timer.setInterval(1000)
+        self._recording_timer.timeout.connect(self._update_recording_timer)
+        self._recording_start_time: Optional[float] = None
         
         # Window monitor и info panel (инициализируются позже через set_config)
         self.window_monitor: Optional[WindowMonitor] = None
@@ -105,19 +115,48 @@ class FloatingWindow(QWidget):
         """Создает UI компоненты окна."""
         # Главный layout
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(15, 10, 15, 10)
-        layout.setSpacing(5)
+        layout.setContentsMargins(18, 10, 18, 10)
+        layout.setSpacing(6)
+
+        # Верхняя строка записи (точка + статус слева, таймер справа)
+        self.recording_header = QWidget(self)
+        self.recording_header.setObjectName("recordingHeader")
+        self.recording_header.setFixedHeight(20)
+        header_layout = QHBoxLayout(self.recording_header)
+        header_layout.setContentsMargins(0, 0, 0, 0)
+        header_layout.setSpacing(8)
+
+        self._record_dot = QLabel("", self.recording_header)
+        self._record_dot.setObjectName("recordDot")
+        self._record_dot.setFixedSize(8, 8)
+
+        self._recording_status_label = QLabel("", self.recording_header)
+        self._recording_status_label.setObjectName("recordStatus")
+        self._recording_status_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+
+        self._recording_time_label = QLabel("00:00", self.recording_header)
+        self._recording_time_label.setObjectName("recordTime")
+        self._recording_time_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+
+        header_layout.addWidget(self._record_dot)
+        header_layout.addWidget(self._recording_status_label)
+        header_layout.addStretch()
+        header_layout.addWidget(self._recording_time_label)
+
+        self.recording_header.hide()
+        layout.addWidget(self.recording_header)
         
         # Виджет визуализации волны - ФИКСИРОВАННАЯ ВЫСОТА
         self.waveform_widget = WaveformWidget(self, self.config)
-        self.waveform_widget.setFixedHeight(50)  # Фиксированная высота для волны
+        self.waveform_widget.setFixedHeight(56)  # Фиксированная высота для волны
         layout.addWidget(self.waveform_widget)
         
         # Метка статуса/текста
         self.status_label = QLabel("", self)
+        self.status_label.setObjectName("statusLabel")
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.status_label.setWordWrap(True)
-        self.status_label.setFixedHeight(40)  # Фиксированная высота для текста
+        self.status_label.setFixedHeight(28)  # Фиксированная высота для текста
         # Убираем отдельные стили для label - они уже в setStyleSheet окна
         layout.addWidget(self.status_label)
         
@@ -136,22 +175,40 @@ class FloatingWindow(QWidget):
         """
         # Получить размер шрифта из конфигурации
         font_size = self.config.font_size_floating_main if self.config else 14
+        info_font_size = max(10, font_size - 3)
         
         # ВАЖНО: Добавляем стили для видимости окна
         # border-radius применяется только к главному виджету
         self.setStyleSheet(f"""
             FloatingWindow {{
-                background-color: rgba(30, 30, 30, {self._opacity});
-                border-radius: 5px;
-                border: 2px solid rgba(255, 255, 255, 100);
+                background-color: rgba(20, 28, 42, {self._opacity});
+                border-radius: 18px;
+                border: 1px solid rgba(255, 255, 255, 45);
             }}
             QLabel {{
                 color: white;
                 font-size: {font_size}px;
                 font-family: 'Segoe UI', Arial, sans-serif;
                 background: transparent;
-                padding: 5px;
+                padding: 0;
                 border: none;
+            }}
+            QLabel#statusLabel {{
+                padding: 2px 2px;
+            }}
+            QLabel#recordStatus {{
+                font-size: {info_font_size}px;
+                font-weight: 500;
+                color: #EAF1FF;
+            }}
+            QLabel#recordTime {{
+                font-size: {info_font_size}px;
+                font-weight: 600;
+                color: #EAF1FF;
+            }}
+            QLabel#recordDot {{
+                background-color: #FF5C5C;
+                border-radius: 4px;
             }}
             WaveformWidget {{
                 background: transparent;
@@ -195,9 +252,8 @@ class FloatingWindow(QWidget):
             # СКРЫТЬ info panel по умолчанию (показывается только при записи)
             self.info_panel.hide()
             
-            # Обновить высоту окна с учетом info panel
-            self.window_height = 120 + 40  # Исходная высота + высота info panel
-            self.setFixedHeight(self.window_height)
+            # Высота окна в неактивном режиме (info panel скрыта)
+            self._set_fixed_height(self._base_height)
             
             # Пересчитать ширину окна
             self._update_window_width()
@@ -221,11 +277,13 @@ class FloatingWindow(QWidget):
         """Показывает info panel."""
         if self.info_panel and not self.info_panel.isVisible():
             self.info_panel.show()
+        self._set_fixed_height(self._recording_height)
     
     def hide_info_panel(self) -> None:
         """Скрывает info panel."""
         if self.info_panel and self.info_panel.isVisible():
             self.info_panel.hide()
+        self._set_fixed_height(self._base_height)
     
     def _update_window_width(self) -> None:
         """
@@ -244,7 +302,7 @@ class FloatingWindow(QWidget):
         content_width = self.info_panel.sizeHint().width()
         
         # Добавить отступы окна (margins + padding)
-        total_width = content_width + 30  # 15px слева + 15px справа
+        total_width = content_width + 36  # 18px слева + 18px справа
         
         # Получить максимальную ширину (30% экрана)
         app = QApplication.instance()
@@ -352,7 +410,7 @@ class FloatingWindow(QWidget):
         # Показываем окно с анимацией
         self.show()
         self.raise_()  # Поднять окно наверх
-        self.setWindowState(Qt.WindowState.WindowActive)  # Установить как активное
+        # Не активируем окно, т.к. WindowDoesNotAcceptFocus
         
         # Принудительно установить флаг "всегда поверх" (на случай если сбросился)
         self.setWindowFlags(
@@ -461,15 +519,23 @@ class FloatingWindow(QWidget):
         # Создать путь со скругленными углами
         path = QPainterPath()
         rect = self.rect()
-        path.addRoundedRect(float(rect.x()), float(rect.y()), 
-                           float(rect.width()), float(rect.height()), 
-                           5.0, 5.0)  # border-radius: 5px
+        path.addRoundedRect(
+            float(rect.x()),
+            float(rect.y()),
+            float(rect.width()),
+            float(rect.height()),
+            18.0, 18.0
+        )  # border-radius: 18px
         
-        # Заполнить фон с текущей прозрачностью
-        painter.fillPath(path, QColor(30, 30, 30, self._opacity))
+        # Заполнить фон градиентом с текущей прозрачностью
+        rect_f = QRectF(rect)
+        gradient = QLinearGradient(rect_f.topLeft(), rect_f.bottomRight())
+        gradient.setColorAt(0.0, QColor(26, 36, 54, self._opacity))
+        gradient.setColorAt(1.0, QColor(16, 24, 38, self._opacity))
+        painter.fillPath(path, gradient)
         
         # Нарисовать границу
-        painter.setPen(QColor(255, 255, 255, 100))
+        painter.setPen(QColor(255, 255, 255, 45))
         painter.drawPath(path)
     
     def set_status(self, text: str) -> None:
@@ -481,7 +547,16 @@ class FloatingWindow(QWidget):
         
         Requirements: 8.1
         """
+        # Всегда обновляем основной label (нужен для результатов/тестов)
         self.status_label.setText(text)
+
+        if text == t("status.recording"):
+            self._recording_status_label.setText(text)
+            self._set_recording_header_visible(True)
+            self._start_recording_timer()
+        else:
+            self._set_recording_header_visible(False)
+            self._stop_recording_timer()
     
     def set_result_text(self, text: str, max_length: int = 100) -> None:
         """
@@ -500,6 +575,8 @@ class FloatingWindow(QWidget):
         else:
             display_text = text
         
+        self._set_recording_header_visible(False)
+        self._stop_recording_timer()
         self.status_label.setText(display_text)
     
     def set_startup_message(self, text: str) -> None:
@@ -512,6 +589,8 @@ class FloatingWindow(QWidget):
             text: Текст для отображения
         """
         # Скрыть waveform для стартового окна
+        self._set_recording_header_visible(False)
+        self._stop_recording_timer()
         self.waveform_widget.hide()
         
         # Убрать фиксированную высоту и дать label занять всё пространство
@@ -537,10 +616,11 @@ class FloatingWindow(QWidget):
         Вызывается после скрытия стартового окна.
         """
         # Показать waveform обратно
+        self._set_recording_header_visible(False)
         self.waveform_widget.show()
         
         # Вернуть фиксированную высоту для label
-        self.status_label.setFixedHeight(40)
+        self.status_label.setFixedHeight(28)
         
         # Вернуть обычный стиль (из setStyleSheet окна)
         self.status_label.setStyleSheet("")
@@ -621,6 +701,43 @@ class FloatingWindow(QWidget):
             # Если не удалось применить нативный эффект,
             # используем базовую полупрозрачность Qt
             pass
+
+    def _set_fixed_height(self, height: int) -> None:
+        """Устанавливает фиксированную высоту и сохраняет значение."""
+        self.window_height = height
+        self.setFixedHeight(height)
+
+    def _set_recording_header_visible(self, visible: bool) -> None:
+        """Показывает/скрывает верхнюю строку записи и переключает основной статус."""
+        if visible:
+            self.recording_header.show()
+            self.status_label.hide()
+            self.status_label.setFixedHeight(0)
+        else:
+            self.recording_header.hide()
+            self.status_label.show()
+            self.status_label.setFixedHeight(28)
+
+    def _start_recording_timer(self) -> None:
+        """Запускает таймер отображения времени записи."""
+        self._recording_start_time = time.monotonic()
+        self._recording_time_label.setText("00:00")
+        if not self._recording_timer.isActive():
+            self._recording_timer.start()
+
+    def _stop_recording_timer(self) -> None:
+        """Останавливает таймер записи."""
+        if self._recording_timer.isActive():
+            self._recording_timer.stop()
+        self._recording_start_time = None
+
+    def _update_recording_timer(self) -> None:
+        """Обновляет отображение времени записи."""
+        if self._recording_start_time is None:
+            return
+        elapsed = int(time.monotonic() - self._recording_start_time)
+        minutes, seconds = divmod(elapsed, 60)
+        self._recording_time_label.setText(f"{minutes:02d}:{seconds:02d}")
     
     def mousePressEvent(self, event) -> None:
         """

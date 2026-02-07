@@ -45,12 +45,12 @@ class WaveformWidget(QWidget):
         
         # Параметры визуализации
         self.rms_values: List[float] = []
-        self.max_bars: int = 50
+        self.max_bars: int = 60
         self.smoothed_rms: float = 0.0
         self.smoothing_factor: float = 0.3  # Для exponential smoothing
         
         # Цвет волны (по умолчанию синий)
-        self._waveform_color = "#64AAFF"
+        self._waveform_color = "#6EC7FF"
         if config and hasattr(config, 'waveform_color'):
             self._waveform_color = config.waveform_color
         
@@ -211,58 +211,83 @@ class WaveformWidget(QWidget):
         # Вычисляем ширину каждого бара
         num_bars = len(self.rms_values)
         bar_width = width / max(num_bars, self.max_bars)
-        bar_spacing = 2
+        bar_spacing = 3
         
         # Нормализуем значения
         max_rms = max(self.rms_values) if self.rms_values else 1.0
         if max_rms < 0.01:
             max_rms = 0.01  # Избегаем деления на ноль
         
-        # Парсим базовый цвет из HEX
+        # Градиентная палитра от базового цвета (конфиг)
         base_color = QColor(self._waveform_color)
-        
-        # Получаем HSV компоненты базового цвета
         base_h = base_color.hue()
+        if base_h < 0:
+            base_h = 200
         base_s = base_color.saturation()
         base_v = base_color.value()
+
+        left_color = QColor.fromHsv(
+            (base_h - 40) % 360,
+            min(255, int(base_s * 1.05)),
+            min(255, int(base_v * 1.05))
+        )
+        mid_color = base_color
+        right_color = QColor.fromHsv(
+            (base_h + 25) % 360,
+            min(255, int(base_s * 0.95)),
+            min(255, int(base_v * 1.1))
+        )
+
+        def lerp_color(c1: QColor, c2: QColor, t: float) -> QColor:
+            t = max(0.0, min(1.0, t))
+            return QColor(
+                int(c1.red() + (c2.red() - c1.red()) * t),
+                int(c1.green() + (c2.green() - c1.green()) * t),
+                int(c1.blue() + (c2.blue() - c1.blue()) * t),
+            )
         
         # Отрисовываем бары
         for i, rms in enumerate(self.rms_values):
             # Нормализуем высоту (0.0 - 1.0)
             normalized = rms / max_rms
             
-            # Вычисляем высоту бара (максимум 80% от высоты виджета)
-            bar_height = normalized * height * 0.8
+            # Вычисляем высоту бара (максимум 75% от высоты виджета)
+            bar_height = max(4.0, normalized * height * 0.75)
             
             # Позиция бара
             x = i * bar_width
             y = center_y - bar_height / 2
             
-            # Создаем градиент оттенка и яркости от базового цвета
-            # Диапазон изменения оттенка: ±40 градусов от базового
-            # При низкой громкости - сдвиг в одну сторону (темнее)
-            # При высокой громкости - сдвиг в другую сторону (ярче)
-            hue_shift = int((normalized - 0.5) * 80)  # От -40 до +40
-            new_h = (base_h + hue_shift) % 360  # Оборачиваем по кругу (0-359)
+            # Цвет по позиции в ширине
+            if num_bars > 1:
+                pos = i / (num_bars - 1)
+            else:
+                pos = 0.0
+            if pos <= 0.6:
+                base_color = lerp_color(left_color, mid_color, pos / 0.6)
+            else:
+                base_color = lerp_color(mid_color, right_color, (pos - 0.6) / 0.4)
             
-            # Также меняем яркость для большей выразительности
-            # При низкой громкости - 60% яркости, при высокой - 100%
-            brightness_factor = 0.6 + (normalized * 0.4)  # От 0.6 до 1.0
-            new_v = int(base_v * brightness_factor)
-            new_v = max(0, min(255, new_v))  # Ограничиваем диапазон
-            
-            # Создаем цвет с новым оттенком и яркостью
-            color = QColor.fromHsv(new_h, base_s, new_v)
+            # Уточнить яркость по громкости
+            brightness_factor = 0.6 + (normalized * 0.4)
+            color = QColor(
+                min(255, int(base_color.red() * brightness_factor)),
+                min(255, int(base_color.green() * brightness_factor)),
+                min(255, int(base_color.blue() * brightness_factor)),
+                235
+            )
             
             # Рисуем бар
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(color)
+            bar_draw_width = max(3, int(bar_width - bar_spacing))
+            radius = max(2, int(bar_draw_width / 2))
             painter.drawRoundedRect(
-                int(x + bar_spacing / 2),
+                int(x + (bar_width - bar_draw_width) / 2),
                 int(y),
-                int(bar_width - bar_spacing),
+                bar_draw_width,
                 int(bar_height),
-                2, 2
+                radius, radius
             )
     
     def _draw_spinner(self, painter: QPainter) -> None:

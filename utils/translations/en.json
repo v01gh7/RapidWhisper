@@ -383,7 +383,9 @@
     "error": "❌ Error",
     "warning": "⚠️ Warning",
     "no_active_window": "No active window",
+    "active_application": "Active application",
     "record": "Record",
+    "cancel_action": "Cancel",
     "cancel_esc": "Cancel Esc"
   },
   "format_selection": {

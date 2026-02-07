@@ -33,10 +33,10 @@ class TestFloatingWindowInitialization:
         window = FloatingWindow()
         
         assert window.window_width == 600
-        assert window.window_height == 120
+        assert window.window_height == 110
         # Ширина теперь динамическая, проверяем минимальную ширину
         assert window.width() >= 600
-        assert window.height() == 120
+        assert window.height() == 110
     
     def test_window_flags(self, qapp):
         """Тест установки правильных флагов окна"""
@@ -95,8 +95,8 @@ class TestWindowPositioning:
         # Ширина теперь динамическая с минимумом 600px
         assert window.minimumWidth() == 600
         # Высота фиксированная
-        assert window.minimumHeight() == 120
-        assert window.maximumHeight() == 120
+        assert window.minimumHeight() == 110
+        assert window.maximumHeight() == 110
 
 
 class TestStatusAndText:
@@ -380,11 +380,11 @@ class TestInfoPanelIntegration:
         
         # Проверить что info_panel добавлен в layout
         layout = window.layout()
-        assert layout.count() == 3, \
-            "Layout должен содержать 3 виджета: waveform, status_label, info_panel"
+        assert layout.count() == 4, \
+            "Layout должен содержать 4 виджета: recording_header, waveform, status_label, info_panel"
         
         # Проверить что info_panel последний в layout
-        last_widget = layout.itemAt(2).widget()
+        last_widget = layout.itemAt(3).widget()
         assert last_widget == window.info_panel, \
             "InfoPanelWidget должен быть последним в layout"
     
@@ -420,11 +420,18 @@ class TestInfoPanelIntegration:
         config = Config()
         window.set_config(config)
         
-        # Высота должна увеличиться на 40px (высота info_panel)
-        assert window.window_height == original_height + 40, \
-            f"Высота окна должна быть {original_height + 40}px"
-        assert window.height() == original_height + 40, \
-            f"Фактическая высота окна должна быть {original_height + 40}px"
+        # Высота не меняется пока info_panel скрыта
+        assert window.window_height == original_height, \
+            f"Высота окна должна оставаться {original_height}px"
+        assert window.height() == original_height, \
+            f"Фактическая высота окна должна быть {original_height}px"
+
+        # Показать info_panel и проверить увеличение высоты
+        window.show_info_panel()
+        assert window.window_height == window._recording_height, \
+            f"Высота окна должна быть {window._recording_height}px"
+        assert window.height() == window._recording_height, \
+            f"Фактическая высота окна должна быть {window._recording_height}px"
     
     @patch('services.window_monitor.WindowMonitor.create')
     def test_monitoring_starts_on_show(self, mock_create, qapp):
@@ -520,18 +527,24 @@ class TestInfoPanelIntegration:
         window.set_config(config)
         
         # Проверить начальное отображение
-        initial_text = window.info_panel._record_hotkey_label.text()
-        assert "Ctrl+⎵Space" in initial_text, \
-            "Начальная горячая клавиша должна быть отформатирована"
+        initial_keys = [
+            window.info_panel._record_keys_layout.itemAt(i).widget().text()
+            for i in range(window.info_panel._record_keys_layout.count())
+        ]
+        assert "CTRL" in initial_keys and "SPACE" in initial_keys, \
+            "Начальная горячая клавиша должна быть разбита на keycap"
         
         # Изменить конфигурацию
         config.hotkey = "alt+f1"
         window.info_panel.update_hotkey_display()
         
         # Проверить обновленное отображение
-        updated_text = window.info_panel._record_hotkey_label.text()
-        assert "Alt+F1" in updated_text, \
-            "Обновленная горячая клавиша должна быть отформатирована"
+        updated_keys = [
+            window.info_panel._record_keys_layout.itemAt(i).widget().text()
+            for i in range(window.info_panel._record_keys_layout.count())
+        ]
+        assert "ALT" in updated_keys and "F1" in updated_keys, \
+            "Обновленная горячая клавиша должна быть разбита на keycap"
     
     @patch('services.window_monitor.WindowMonitor.create')
     def test_error_handling_in_set_config(self, mock_create, qapp):
@@ -647,8 +660,8 @@ class TestInfoPanelIntegrationProperties:
             "WaveformWidget должен быть тем же объектом"
         assert height_before == height_after, \
             f"Высота WaveformWidget должна остаться {height_before}px"
-        assert height_after == 50, \
-            "Высота WaveformWidget должна быть фиксированной 50px"
+        assert height_after == 56, \
+            "Высота WaveformWidget должна быть фиксированной 56px"
 
 
 

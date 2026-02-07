@@ -34,7 +34,7 @@ class TestWaveformWidgetInitialization:
         assert widget.animation_state == AnimationState.IDLE
         assert len(widget.rms_values) == 0
         assert widget.smoothed_rms == 0.0
-        assert widget.max_bars == 50
+        assert widget.max_bars == 60
         assert not widget.timer.isActive()
     
     def test_has_timer(self, qapp):
