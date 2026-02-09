@@ -328,12 +328,14 @@ class FloatingWindow(QWidget, StyledWindowMixin):
         if self.info_panel and not self.info_panel.isVisible():
             self.info_panel.show()
         self._set_fixed_height(self._recording_height)
+        self._stabilize_geometry()
     
     def hide_info_panel(self) -> None:
         """Скрывает info panel."""
         if self.info_panel and self.info_panel.isVisible():
             self.info_panel.hide()
         self._set_fixed_height(self._base_height)
+        self._stabilize_geometry()
     
     def _update_window_width(self) -> None:
         """
@@ -474,12 +476,13 @@ class FloatingWindow(QWidget, StyledWindowMixin):
     def resizeEvent(self, event) -> None:
         """Синхронизирует ширину инфопанели с доступной шириной окна."""
         super().resizeEvent(event)
+        self._stabilize_geometry()
         self.sync_rounded_surface(self._corner_radius)
-        self._sync_info_panel_width()
 
     def showEvent(self, event) -> None:
         """Обновляет маску окна при первом показе."""
         super().showEvent(event)
+        self._stabilize_geometry()
         self.sync_rounded_surface(self._corner_radius)
     
     def hide_with_animation(self) -> None:
@@ -748,6 +751,21 @@ class FloatingWindow(QWidget, StyledWindowMixin):
         self.window_height = height
         self.setFixedHeight(height)
 
+    def _stabilize_geometry(self) -> None:
+        """
+        Keeps runtime geometry stable so first drag does not "fix" layout visually.
+        """
+        target_height = self._recording_height if (self.info_panel and self.info_panel.isVisible()) else self._base_height
+        if self.window_height != target_height or self.height() != target_height:
+            self._set_fixed_height(target_height)
+        if hasattr(self, "waveform_widget") and self.waveform_widget is not None:
+            if self.waveform_widget.height() != 56:
+                self.waveform_widget.setFixedHeight(56)
+        if hasattr(self, "_main_layout") and self._main_layout is not None:
+            self._main_layout.activate()
+        self._sync_info_panel_width()
+        self.updateGeometry()
+
     def _sync_info_panel_width(self) -> None:
         """Принудительно растягивает info panel на доступную ширину."""
         if not self.info_panel or not self._main_layout:
@@ -767,6 +785,7 @@ class FloatingWindow(QWidget, StyledWindowMixin):
             self.recording_header.hide()
             self.status_label.show()
             self.status_label.setFixedHeight(28)
+        self._stabilize_geometry()
 
     def _start_recording_timer(self) -> None:
         """Запускает таймер отображения времени записи."""
@@ -831,6 +850,7 @@ class FloatingWindow(QWidget, StyledWindowMixin):
             
             # Сохранить позицию окна
             self.save_position()
+            self._stabilize_geometry()
     
     def enterEvent(self, event) -> None:
         """
