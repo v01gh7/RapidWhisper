@@ -1563,8 +1563,8 @@ def main():
     single_instance = SingleInstance("RapidWhisper")
     
     if single_instance.is_already_running():
-        print("❌ RapidWhisper уже запущен!")
-        print("Проверьте системный трей.")
+        print("ERROR: RapidWhisper is already running!")
+        print("Check the system tray.")
         
         # Показать MessageBox на Windows
         try:
