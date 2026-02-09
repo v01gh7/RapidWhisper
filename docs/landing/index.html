@@ -6,7 +6,7 @@
   <title>RapidWhisper - Голос в текст без переключения окон</title>
   <meta
     name="description"
-    content="RapidWhisper - глобальный speech-to-text помощник с плавающим окном, хоткеями, форматированием под приложения, кастомными AI-провайдерами, хуками и темами."
+    content="RapidWhisper: голосовой ввод с глобальным хоткеем, форматированием под приложение, темами интерфейса и управлением без отрыва от работы."
   />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -16,7 +16,7 @@
   />
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body data-page-theme="dusk">
+<body data-page-theme="default">
   <div class="ambient"></div>
   <div class="grain"></div>
 
@@ -25,16 +25,28 @@
       <span class="brand-led"></span>
       <span class="brand-name">RapidWhisper</span>
     </a>
+
     <nav class="nav">
       <a href="#purpose">Для чего</a>
+      <a href="#controls">Хоткеи</a>
       <a href="#features">Фичи</a>
-      <a href="#themes">Темы</a>
-      <a href="#pipeline">Пайплайн</a>
       <a href="#providers">Провайдеры</a>
+      <a href="#pipeline">Пайплайн</a>
     </nav>
+
+    <div class="top-theme-switcher" role="group" aria-label="Theme switcher in header">
+      <button type="button" class="theme-btn is-active" data-theme-source="header" data-theme-id="default">Default</button>
+      <button type="button" class="theme-btn" data-theme-source="header" data-theme-id="ocean">Ocean</button>
+      <button type="button" class="theme-btn" data-theme-source="header" data-theme-id="dusk">Dusk</button>
+      <button type="button" class="theme-btn" data-theme-source="header" data-theme-id="retro">Retro</button>
+      <button type="button" class="theme-btn" data-theme-source="header" data-theme-id="neo">Neo</button>
+      <button type="button" class="theme-btn" data-theme-source="header" data-theme-id="lime">Lime</button>
+      <button type="button" class="theme-btn" data-theme-source="header" data-theme-id="terminal">Terminal</button>
+    </div>
+
     <div class="top-actions">
-      <a class="btn btn-ghost" href="../quick_start.md">Быстрый старт</a>
-      <a class="btn btn-primary" href="../../README.md">README</a>
+      <button type="button" class="btn btn-ghost" data-action="scroll-controls">Хоткеи и настройки</button>
+      <button type="button" class="btn btn-primary" data-action="toggle-license">Посмотреть лицензии</button>
     </div>
   </header>
 
@@ -42,25 +54,38 @@
     <section class="hero">
       <div class="hero-copy reveal">
         <p class="kicker">Global Speech-to-Text Desktop Tool</p>
-        <h1>Говоришь в любой программе. Получаешь готовый текст сразу в буфер.</h1>
+        <h1>Говоришь в любом окне. Получаешь готовый текст сразу.</h1>
         <p class="lead">
-          RapidWhisper нужен для быстрой голосовой работы без прыжков между окнами:
-          запись по хоткею, форматирование под контекст приложения, копирование результата
-          и продолжение работы в том же месте.
+          RapidWhisper нужен для быстрого голосового ввода без переключения контекста:
+          запуск записи по хоткею, форматирование под активное приложение и готовый текст в буфере обмена.
         </p>
         <div class="hero-cta">
-          <a class="btn btn-primary" href="../settings_guide.md">Открыть настройки</a>
-          <a class="btn btn-ghost" href="../hotkeys.md">Посмотреть хоткеи</a>
+          <button type="button" class="btn btn-primary" id="hero-record-toggle">Старт/пауза записи</button>
+          <button type="button" class="btn btn-ghost" data-action="scroll-controls">Открыть блок хоткеев</button>
         </div>
         <ul class="hero-points">
-          <li>Работает поверх любых окон, без перехвата фокуса</li>
-          <li>Форматирование под Notion, Docs, Markdown, Word и другие среды</li>
-          <li>Поддержка встроенных и кастомных OpenAI-совместимых API</li>
+          <li>Работает поверх любых окон и не крадет фокус.</li>
+          <li>Поддерживает встроенные и кастомные OpenAI-совместимые API.</li>
+          <li>Темы интерфейса переключаются мгновенно прямо на странице.</li>
         </ul>
       </div>
 
       <aside class="demo reveal" aria-label="Floating window demo">
-        <div class="demo-window" id="hero-preview">
+        <div class="hero-theme-panel">
+          <p class="theme-panel-title">Тема интерфейса (над окном):</p>
+          <div class="theme-switcher" role="group" aria-label="Theme switcher in hero">
+            <button type="button" class="theme-btn is-active" data-theme-source="hero" data-theme-id="default">Default</button>
+            <button type="button" class="theme-btn" data-theme-source="hero" data-theme-id="ocean">Ocean</button>
+            <button type="button" class="theme-btn" data-theme-source="hero" data-theme-id="dusk">Dusk</button>
+            <button type="button" class="theme-btn" data-theme-source="hero" data-theme-id="retro">Retro</button>
+            <button type="button" class="theme-btn" data-theme-source="hero" data-theme-id="neo">Neo</button>
+            <button type="button" class="theme-btn" data-theme-source="hero" data-theme-id="lime">Lime</button>
+            <button type="button" class="theme-btn" data-theme-source="hero" data-theme-id="terminal">Terminal Theme</button>
+          </div>
+          <p class="theme-note" id="theme-note">Default: универсальная тема для повседневной работы.</p>
+        </div>
+
+        <div class="demo-window" id="hero-preview" data-theme-id="default">
           <div class="demo-head">
             <span class="dot"></span>
             <span class="demo-state" id="hero-state">Запись...</span>
@@ -87,141 +112,108 @@
       </aside>
     </section>
 
+    <section id="controls" class="controls reveal">
+      <h2>Хоткеи и настройки сразу в дизайне</h2>
+      <div class="controls-grid">
+        <article class="control-card">
+          <h3>Горячие клавиши</h3>
+          <ul class="hotkey-list">
+            <li><span class="hotkey-name">Запись</span><span class="hotkey-keys"><kbd>Ctrl</kbd><kbd>Space</kbd></span></li>
+            <li><span class="hotkey-name">Отмена</span><span class="hotkey-keys"><kbd>Esc</kbd></span></li>
+            <li><span class="hotkey-name">Выбор формата</span><span class="hotkey-keys"><kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>Space</kbd></span></li>
+            <li><span class="hotkey-name">Ручное форматирование</span><span class="hotkey-keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>Space</kbd></span></li>
+          </ul>
+        </article>
+        <article class="control-card">
+          <h3>Параметры окна</h3>
+          <ul class="setting-list">
+            <li><span>Автоскрытие</span><strong>2.5 сек</strong></li>
+            <li><span>Запоминать позицию</span><strong>Да</strong></li>
+            <li><span>Сценарий остановки</span><strong>Тишина или вручную</strong></li>
+            <li><span>Режимы темы</span><strong>7 готовых пресетов</strong></li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
     <section id="purpose" class="purpose reveal">
       <h2>Для чего программа</h2>
       <div class="purpose-grid">
         <article class="tile">
-          <h3>Диктовка без контекстного переключения</h3>
-          <p>
-            Нажимаешь хоткей в любом окне, говоришь, получаешь текст и вставляешь его там же.
-            Без отдельного редактора и без ручной копипасты.
-          </p>
+          <h3>Диктовка без переключения окон</h3>
+          <p>Запустил запись, проговорил, вставил текст там же, где работал.</p>
         </article>
         <article class="tile">
-          <h3>Контролируемое форматирование</h3>
-          <p>
-            Можно зафиксировать целевой формат заранее или запустить ручное форматирование
-            для любого текста по отдельному хоткею.
-          </p>
+          <h3>Единый формат вывода</h3>
+          <p>Фиксируешь формат и получаешь одинаковый стиль текста в любом приложении.</p>
         </article>
         <article class="tile">
-          <h3>Автоматизация вокруг текста</h3>
-          <p>
-            Hooks-пайплайн позволяет встраивать свои шаги до/после записи и форматирования:
-            проверка, пост-обработка, отправка в внешние инструменты.
-          </p>
+          <h3>Гибкая автоматизация</h3>
+          <p>Hooks позволяют добавлять свои действия до и после обработки текста.</p>
         </article>
       </div>
     </section>
 
     <section id="features" class="features reveal">
-      <h2>Что уже есть в RapidWhisper</h2>
+      <h2>Фичи</h2>
       <div class="feature-grid">
-        <article class="feature-card"><h3>Global Hotkey</h3><p>Запуск/стоп записи из любого приложения.</p></article>
-        <article class="feature-card"><h3>Cancel Safe</h3><p>Esc мгновенно отменяет текущую запись.</p></article>
-        <article class="feature-card"><h3>Format Picker</h3><p>Выбор целевого формата на всё последующее распознавание.</p></article>
-        <article class="feature-card"><h3>Manual Formatting</h3><p>Отдельный режим форматирования произвольного текста.</p></article>
-        <article class="feature-card"><h3>Live Waveform</h3><p>Живая волна громкости в окне записи.</p></article>
-        <article class="feature-card"><h3>Smart Silence</h3><p>Автостоп по тишине + ручной режим остановки.</p></article>
-        <article class="feature-card"><h3>Context-aware Output</h3><p>Форматирование под тип активного окна и веб-приложения.</p></article>
-        <article class="feature-card"><h3>Web App Detection</h3><p>Google Docs, Notion, Office Online и другие веб-сценарии.</p></article>
-        <article class="feature-card"><h3>Tray + Notifications</h3><p>Работа в фоне через системный трей.</p></article>
-        <article class="feature-card"><h3>Auto Copy</h3><p>Готовый текст автоматически попадает в буфер обмена.</p></article>
-        <article class="feature-card"><h3>Hooks Pipeline</h3><p>before/after hooks для кастомной автоматизации.</p></article>
-        <article class="feature-card"><h3>Built-in + Custom Providers</h3><p>Groq/OpenAI/GLM/Z.AI и любой OpenAI-совместимый endpoint.</p></article>
-        <article class="feature-card"><h3>Theme System</h3><p>Готовые темы UI и быстрый визуальный свитч.</p></article>
-        <article class="feature-card"><h3>Multilingual UI</h3><p>Мультиязычный интерфейс и настройка локали.</p></article>
+        <article class="feature-card"><h3>Global Hotkey</h3><p>Запуск и остановка записи в любом месте.</p></article>
+        <article class="feature-card"><h3>Cancel Safe</h3><p>Esc отменяет запись без лишних шагов.</p></article>
+        <article class="feature-card"><h3>Format Picker</h3><p>Выбор формата до распознавания.</p></article>
+        <article class="feature-card"><h3>Manual Formatting</h3><p>Форматирование произвольного текста.</p></article>
+        <article class="feature-card"><h3>Live Waveform</h3><p>Визуализация голоса в реальном времени.</p></article>
+        <article class="feature-card"><h3>Smart Silence</h3><p>Остановка по тишине или вручную.</p></article>
+        <article class="feature-card"><h3>Web App Detection</h3><p>Автодетект популярных веб-приложений.</p></article>
+        <article class="feature-card"><h3>Tray + Notifications</h3><p>Фоновая работа через системный трей.</p></article>
+        <article class="feature-card"><h3>Auto Copy</h3><p>Результат автоматически копируется в буфер.</p></article>
+        <article class="feature-card"><h3>Hooks Pipeline</h3><p>before/after hooks для кастомной логики.</p></article>
+        <article class="feature-card"><h3>Custom Providers</h3><p>Любые OpenAI-совместимые endpoint-ы.</p></article>
+        <article class="feature-card"><h3>Theme System</h3><p>Default, Ocean, Dusk, Retro, Neo, Lime, Terminal.</p></article>
       </div>
-    </section>
-
-    <section id="themes" class="themes reveal">
-      <div class="themes-head">
-        <h2>Темы интерфейса вживую</h2>
-        <p>
-          Кликни тему - превью окна изменится сразу. Добавлены темы: Retro, Neo, Lime, Dusk,
-          Default, Ocean и Terminal Theme.
-        </p>
-      </div>
-      <div class="theme-switcher" role="group" aria-label="Theme switcher">
-        <button type="button" class="theme-btn is-active" data-theme-id="default">Default</button>
-        <button type="button" class="theme-btn" data-theme-id="ocean">Ocean</button>
-        <button type="button" class="theme-btn" data-theme-id="dusk">Dusk</button>
-        <button type="button" class="theme-btn" data-theme-id="retro">Retro</button>
-        <button type="button" class="theme-btn" data-theme-id="neo">Neo</button>
-        <button type="button" class="theme-btn" data-theme-id="lime">Lime</button>
-        <button type="button" class="theme-btn" data-theme-id="terminal">Terminal Theme</button>
-      </div>
-
-      <div class="theme-stage">
-        <div class="demo-window theme-window" id="theme-preview" data-theme-id="default">
-          <div class="demo-head">
-            <span class="dot"></span>
-            <span class="demo-state">Запись...</span>
-            <span class="demo-time">00:06</span>
-          </div>
-          <div class="demo-wave" id="theme-wave" aria-hidden="true"></div>
-          <div class="demo-footer">
-            <div class="demo-app">
-              <span class="app-icon">RW</span>
-              <div>
-                <strong id="theme-app-name">Notion</strong>
-                <span>Активное приложение</span>
-              </div>
-            </div>
-            <div class="demo-actions">
-              <button class="chip chip-record" type="button">Запись</button>
-              <span class="key">CTRL</span>
-              <span class="key">SPACE</span>
-              <button class="chip chip-cancel" type="button">Отменить</button>
-              <span class="key">ESC</span>
-            </div>
-          </div>
-        </div>
-        <p class="theme-note" id="theme-note">
-          Default: универсальная тема для длительной работы и чистой читаемости.
-        </p>
-      </div>
-    </section>
-
-    <section id="pipeline" class="pipeline reveal">
-      <h2>Пайплайн работы</h2>
-      <ol class="steps">
-        <li><span>01</span> Hotkey открывает floating-window и начинает запись.</li>
-        <li><span>02</span> В реальном времени идёт визуализация, отслеживается активное окно.</li>
-        <li><span>03</span> Остановка по хоткею или по тишине (если включено).</li>
-        <li><span>04</span> Текст проходит форматирование под выбранный/определённый контекст.</li>
-        <li><span>05</span> Результат копируется в буфер и может быть обработан hooks-скриптами.</li>
-      </ol>
     </section>
 
     <section id="providers" class="providers reveal">
       <h2>AI-провайдеры и расширяемость</h2>
       <div class="provider-grid">
         <article class="provider-card">
-          <h3>Built-in провайдеры</h3>
-          <p>Groq, OpenAI, GLM, Z.AI - переключение в интерфейсе без ручного редактирования.</p>
+          <h3>Built-in</h3>
+          <p>Groq, OpenAI, GLM, Z.AI — быстрое переключение в UI.</p>
         </article>
         <article class="provider-card">
           <h3>Custom/OpenAI-compatible</h3>
           <p>LM Studio, Ollama, vLLM, LocalAI и любые совместимые endpoint-ы.</p>
         </article>
         <article class="provider-card">
-          <h3>Hooks и интеграции</h3>
-          <p>before_recording, after_recording, transcription_received и другие этапы пайплайна.</p>
+          <h3>Hooks-интеграции</h3>
+          <p>before_recording, after_recording, formatting_step и другие этапы.</p>
         </article>
       </div>
     </section>
 
-    <section class="final-cta reveal">
-      <h2>Запуск и документация</h2>
+    <section id="pipeline" class="pipeline reveal">
+      <h2>Пайплайн</h2>
+      <ol class="steps">
+        <li><span>01</span> Hotkey открывает floating-window и запускает запись.</li>
+        <li><span>02</span> Волна и статус обновляются в реальном времени.</li>
+        <li><span>03</span> Остановка по хоткею или тишине.</li>
+        <li><span>04</span> Форматирование под выбранный/определенный контекст.</li>
+        <li><span>05</span> Результат в буфере обмена + пост-обработка hooks.</li>
+      </ol>
+    </section>
+
+    <section id="licenses" class="licenses reveal is-collapsed" aria-hidden="true">
+      <h2>Лицензионный блок</h2>
       <p>
-        В лендинге собраны ключевые сценарии. Для установки, запуска и настройки смотри
-        официальные документы проекта.
+        В проекте используются лицензии для кода, зависимостей и провайдеров.
+        Этот блок добавлен как быстрый доступ к лицензиям прямо в лендинге.
       </p>
-      <div class="hero-cta">
-        <a class="btn btn-primary" href="../../README.md">Открыть README</a>
-        <a class="btn btn-ghost" href="../settings_guide.md">Гайд по настройкам</a>
-        <a class="btn btn-ghost" href="../CUSTOM_PROVIDERS.md">Custom Providers</a>
+      <ul class="license-list">
+        <li>Основная лицензия проекта (RapidWhisper)</li>
+        <li>Лицензии сторонних библиотек Python/Qt</li>
+        <li>Условия API-провайдеров (Groq/OpenAI/GLM/Z.AI и кастомные endpoint-ы)</li>
+      </ul>
+      <div class="license-actions">
+        <button type="button" class="btn btn-ghost" data-action="hide-license">Скрыть блок лицензий</button>
       </div>
     </section>
   </main>
@@ -229,7 +221,7 @@
   <footer class="footer">
     <span>RapidWhisper</span>
     <span>docs/landing</span>
-    <span>Interactive Theme Preview</span>
+    <span>Theme + Hotkeys + License block</span>
   </footer>
 
   <script src="app.js"></script>

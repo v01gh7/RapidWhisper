@@ -7,13 +7,12 @@
 :root {
   --page-bg: #090d17;
   --page-bg-alt: #111b30;
-  --page-surface: rgba(18, 26, 44, 0.72);
+  --page-surface: rgba(18, 26, 44, 0.74);
   --page-border: rgba(157, 188, 255, 0.26);
   --page-text: #e9f1ff;
   --page-muted: #9eacc7;
   --page-accent: #73a6ff;
   --page-accent-2: #6be7db;
-  --page-danger: #ff6f85;
   --shadow-lg: 0 22px 60px rgba(0, 0, 0, 0.5);
 }
 
@@ -103,12 +102,12 @@ a {
   top: 0;
   z-index: 20;
   margin: 16px auto 0;
-  width: min(1180px, calc(100% - 24px));
+  width: min(1220px, calc(100% - 24px));
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 14px 18px;
+  gap: 14px;
+  padding: 12px 14px;
   border: 1px solid var(--page-border);
   border-radius: 14px;
   background: color-mix(in srgb, var(--page-surface) 88%, transparent);
@@ -121,6 +120,7 @@ a {
   align-items: center;
   gap: 10px;
   text-decoration: none;
+  flex: 0 0 auto;
 }
 
 .brand-led {
@@ -141,13 +141,13 @@ a {
 
 .nav {
   display: flex;
-  gap: 20px;
+  gap: 16px;
 }
 
 .nav a {
   text-decoration: none;
   color: var(--page-muted);
-  font-size: 0.9rem;
+  font-size: 0.86rem;
   letter-spacing: 0.04em;
   transition: color 180ms ease;
 }
@@ -157,9 +157,17 @@ a {
   color: var(--page-text);
 }
 
+.top-theme-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 430px;
+  justify-content: flex-end;
+}
+
 .top-actions {
   display: inline-flex;
-  gap: 10px;
+  gap: 8px;
 }
 
 .btn {
@@ -170,10 +178,10 @@ a {
   border: 1px solid transparent;
   border-radius: 10px;
   font-family: inherit;
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   letter-spacing: 0.04em;
   font-weight: 600;
-  padding: 10px 14px;
+  padding: 9px 12px;
   cursor: pointer;
   transition: transform 170ms ease, border-color 170ms ease, box-shadow 170ms ease, background 170ms ease;
 }
@@ -198,10 +206,10 @@ a {
 main {
   position: relative;
   z-index: 4;
-  width: min(1180px, calc(100% - 24px));
-  margin: 36px auto 26px;
+  width: min(1220px, calc(100% - 24px));
+  margin: 32px auto 26px;
   display: grid;
-  gap: 28px;
+  gap: 24px;
 }
 
 section {
@@ -209,12 +217,12 @@ section {
   border-radius: 18px;
   background: color-mix(in srgb, var(--page-surface) 92%, transparent);
   backdrop-filter: blur(12px);
-  padding: 24px;
+  padding: 22px;
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.26);
 }
 
 .reveal {
-  animation: rise-in 720ms ease both;
+  animation: rise-in 700ms ease both;
 }
 
 @keyframes rise-in {
@@ -231,7 +239,7 @@ section {
 h1,
 h2,
 h3 {
-  margin: 0 0 12px;
+  margin: 0 0 10px;
   line-height: 1.15;
 }
 
@@ -240,11 +248,11 @@ h1 {
 }
 
 h2 {
-  font-size: clamp(1.6rem, 2.5vw, 2.1rem);
+  font-size: clamp(1.5rem, 2.3vw, 2rem);
 }
 
 h3 {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
 }
 
 p {
@@ -264,29 +272,29 @@ p {
 
 .hero {
   display: grid;
-  gap: 26px;
-  grid-template-columns: 1.1fr 1fr;
-  align-items: center;
+  gap: 24px;
+  grid-template-columns: 1.08fr 1fr;
+  align-items: start;
 }
 
 .lead {
   margin-top: 6px;
-  font-size: 1.04rem;
+  font-size: 1.03rem;
 }
 
 .hero-cta {
-  margin-top: 18px;
+  margin-top: 16px;
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
 
 .hero-points {
-  margin: 18px 0 0;
+  margin: 16px 0 0;
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 8px;
+  gap: 7px;
   color: var(--page-muted);
 }
 
@@ -304,6 +312,58 @@ p {
   border-radius: 99px;
   background: var(--page-accent);
   flex: 0 0 auto;
+}
+
+.hero-theme-panel {
+  margin-bottom: 10px;
+  border: 1px solid color-mix(in srgb, var(--page-border) 70%, transparent);
+  border-radius: 14px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.theme-panel-title {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.76rem;
+  color: var(--page-muted);
+  margin-bottom: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.theme-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.theme-note {
+  margin-top: 8px;
+  font-size: 0.82rem;
+}
+
+.theme-btn {
+  border: 1px solid var(--page-border);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--page-text);
+  font-family: inherit;
+  font-size: 0.76rem;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
+}
+
+.theme-btn:hover,
+.theme-btn:focus-visible {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--page-accent) 62%, var(--page-border));
+}
+
+.theme-btn.is-active {
+  background: color-mix(in srgb, var(--page-accent) 20%, rgba(255, 255, 255, 0.08));
+  border-color: color-mix(in srgb, var(--page-accent) 72%, transparent);
 }
 
 .demo-window {
@@ -368,8 +428,14 @@ p {
 }
 
 @keyframes pulse-bar {
-  0%, 100% { transform: scaleY(0.65); opacity: 0.78; }
-  50% { transform: scaleY(1.16); opacity: 1; }
+  0%, 100% {
+    transform: scaleY(0.65);
+    opacity: 0.78;
+  }
+  50% {
+    transform: scaleY(1.16);
+    opacity: 1;
+  }
 }
 
 .demo-footer {
@@ -448,38 +514,83 @@ p {
   background: rgba(255, 255, 255, 0.04);
 }
 
-.purpose-grid {
+.controls-grid,
+.purpose-grid,
+.provider-grid {
   display: grid;
+  gap: 10px;
+}
+
+.controls-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.purpose-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 14px;
 }
 
-.tile {
-  border-radius: 14px;
-  border: 1px solid color-mix(in srgb, var(--page-border) 70%, transparent);
+.provider-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.control-card,
+.tile,
+.provider-card,
+.feature-card {
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--page-border) 66%, transparent);
   background: rgba(255, 255, 255, 0.03);
-  padding: 15px;
+  padding: 12px;
 }
 
-.features h2,
-.themes h2,
-.pipeline h2,
-.providers h2 {
-  margin-bottom: 14px;
+.hotkey-list,
+.setting-list,
+.license-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.hotkey-list li,
+.setting-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 9px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid color-mix(in srgb, var(--page-border) 55%, transparent);
+}
+
+.hotkey-name {
+  color: var(--page-muted);
+}
+
+.hotkey-keys {
+  display: inline-flex;
+  gap: 6px;
+}
+
+kbd {
+  border: 1px solid color-mix(in srgb, var(--page-border) 80%, transparent);
+  border-radius: 7px;
+  padding: 2px 7px;
+  font-size: 0.72rem;
+  font-family: "IBM Plex Mono", monospace;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.setting-list strong {
+  font-size: 0.86rem;
+  color: var(--page-text);
 }
 
 .feature-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
-}
-
-.feature-card {
-  padding: 12px;
-  border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--page-border) 66%, transparent);
-  background: rgba(255, 255, 255, 0.03);
 }
 
 .feature-card h3 {
@@ -489,52 +600,6 @@ p {
 
 .feature-card p {
   font-size: 0.88rem;
-}
-
-.themes-head p {
-  max-width: 72ch;
-}
-
-.theme-switcher {
-  margin-top: 14px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.theme-btn {
-  border: 1px solid var(--page-border);
-  border-radius: 999px;
-  padding: 8px 13px;
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--page-text);
-  font-family: inherit;
-  font-size: 0.82rem;
-  letter-spacing: 0.03em;
-  cursor: pointer;
-  transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
-}
-
-.theme-btn:hover,
-.theme-btn:focus-visible {
-  transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--page-accent) 62%, var(--page-border));
-}
-
-.theme-btn.is-active {
-  background: color-mix(in srgb, var(--page-accent) 20%, rgba(255, 255, 255, 0.08));
-  border-color: color-mix(in srgb, var(--page-accent) 72%, transparent);
-}
-
-.theme-stage {
-  margin-top: 14px;
-  display: grid;
-  grid-template-columns: minmax(260px, 820px);
-  gap: 10px;
-}
-
-.theme-note {
-  font-size: 0.86rem;
 }
 
 .steps {
@@ -566,41 +631,32 @@ p {
   font-family: "IBM Plex Mono", monospace;
 }
 
-.provider-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+.licenses {
+  transition: all 220ms ease;
 }
 
-.provider-card {
-  border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--page-border) 65%, transparent);
+.licenses.is-collapsed {
+  display: none;
+}
+
+.license-list li {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--page-border) 58%, transparent);
   background: rgba(255, 255, 255, 0.03);
-  padding: 12px;
+  color: var(--page-muted);
 }
 
-.provider-card h3 {
-  margin-bottom: 6px;
-  font-size: 1rem;
-}
-
-.final-cta {
-  text-align: center;
-}
-
-.final-cta p {
-  max-width: 74ch;
-  margin-inline: auto;
-}
-
-.final-cta .hero-cta {
-  justify-content: center;
+.license-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .footer {
   position: relative;
   z-index: 5;
-  width: min(1180px, calc(100% - 24px));
+  width: min(1220px, calc(100% - 24px));
   margin: 0 auto 20px;
   border: 1px solid color-mix(in srgb, var(--page-border) 70%, transparent);
   border-radius: 12px;
@@ -684,8 +740,15 @@ p {
   --demo-dot: #74ff98;
 }
 
-@media (max-width: 1060px) {
+@media (max-width: 1160px) {
   .topbar {
+    flex-wrap: wrap;
+  }
+
+  .nav {
+    order: 3;
+    width: 100%;
+    justify-content: flex-start;
     flex-wrap: wrap;
   }
 
@@ -693,14 +756,27 @@ p {
     grid-template-columns: 1fr;
   }
 
-  .purpose-grid {
-    grid-template-columns: 1fr;
-  }
-
   .feature-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
 
+@media (max-width: 860px) {
+  .top-theme-switcher {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .top-actions {
+    width: 100%;
+  }
+
+  .top-actions .btn {
+    flex: 1;
+  }
+
+  .controls-grid,
+  .purpose-grid,
   .provider-grid {
     grid-template-columns: 1fr;
   }
@@ -708,7 +784,7 @@ p {
 
 @media (max-width: 680px) {
   main {
-    gap: 18px;
+    gap: 16px;
     margin-top: 20px;
   }
 
@@ -720,20 +796,6 @@ p {
     width: calc(100% - 12px);
     margin-top: 6px;
     padding: 10px;
-  }
-
-  .nav {
-    width: 100%;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
-  .top-actions {
-    width: 100%;
-  }
-
-  .top-actions .btn {
-    flex: 1;
   }
 
   .feature-grid {
