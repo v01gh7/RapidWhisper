@@ -162,6 +162,8 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         # Загрузить текущие значения
         self._load_values()
+        # Re-polish styles after widgets are built; this mirrors what happens on manual theme switch.
+        self._apply_theme_runtime(getattr(self.config, "window_theme", DEFAULT_WINDOW_THEME_ID))
     
     def showEvent(self, event):
         """
