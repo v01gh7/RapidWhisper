@@ -188,10 +188,17 @@ class InfoPanelWidget(QWidget):
         
         main_layout.addWidget(right_container)
         
-        # Адаптивная высота (до 200px)
-        self.setMaximumHeight(200)
-        # Растягиваться по ширине контейнера, высота по содержимому
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        # Держим стабильную высоту, чтобы floating window не "подпрыгивал"
+        # после первого layout/reflow.
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self._lock_height_to_hint()
+
+    def _lock_height_to_hint(self) -> None:
+        """Locks panel height to current hint to prevent runtime jumps."""
+        hint = max(1, self.sizeHint().height())
+        self.setMinimumHeight(hint)
+        self.setMaximumHeight(hint)
+        self.setFixedHeight(hint)
     
     def _apply_styles(self) -> None:
         """
@@ -339,6 +346,7 @@ class InfoPanelWidget(QWidget):
         self._theme = get_window_theme(self._theme_id)
         self._apply_theme_fonts()
         self._apply_styles()
+        self._lock_height_to_hint()
 
     def _chip_text(self, text: str) -> str:
         """Возвращает текст для чипа в верхнем регистре."""

@@ -156,6 +156,8 @@ class FloatingWindow(QWidget, StyledWindowMixin):
         header_layout.addWidget(self._recording_time_label)
 
         self.recording_header.hide()
+        self.recording_header.setMinimumHeight(0)
+        self.recording_header.setMaximumHeight(0)
         layout.addWidget(self.recording_header)
         
         # Виджет визуализации волны - ФИКСИРОВАННАЯ ВЫСОТА
@@ -329,6 +331,8 @@ class FloatingWindow(QWidget, StyledWindowMixin):
             self.info_panel.show()
         self._set_fixed_height(self._recording_height)
         self._stabilize_geometry()
+        # One more pass after event-loop layout commit.
+        QTimer.singleShot(0, self._stabilize_geometry)
     
     def hide_info_panel(self) -> None:
         """Скрывает info panel."""
@@ -336,6 +340,7 @@ class FloatingWindow(QWidget, StyledWindowMixin):
             self.info_panel.hide()
         self._set_fixed_height(self._base_height)
         self._stabilize_geometry()
+        QTimer.singleShot(0, self._stabilize_geometry)
     
     def _update_window_width(self) -> None:
         """
@@ -467,6 +472,7 @@ class FloatingWindow(QWidget, StyledWindowMixin):
 
         # Держим контур и blur синхронизированными без пересоздания HWND.
         self.sync_rounded_surface(self._corner_radius)
+        self._schedule_initial_stabilization()
         
         self._fade_in()  # Запустить анимацию появления
         
@@ -484,6 +490,7 @@ class FloatingWindow(QWidget, StyledWindowMixin):
         super().showEvent(event)
         self._stabilize_geometry()
         self.sync_rounded_surface(self._corner_radius)
+        self._schedule_initial_stabilization()
     
     def hide_with_animation(self) -> None:
         """
@@ -751,17 +758,34 @@ class FloatingWindow(QWidget, StyledWindowMixin):
         self.window_height = height
         self.setFixedHeight(height)
 
+    def _schedule_initial_stabilization(self) -> None:
+        """Runs several deferred geometry passes right after show/layout commit."""
+        QTimer.singleShot(0, self._stabilize_geometry)
+        QTimer.singleShot(40, self._stabilize_geometry)
+        QTimer.singleShot(120, self._stabilize_geometry)
+
     def _stabilize_geometry(self) -> None:
         """
         Keeps runtime geometry stable so first drag does not "fix" layout visually.
         """
-        target_height = self._recording_height if (self.info_panel and self.info_panel.isVisible()) else self._base_height
+        target_height = int(self.window_height)
+        if self.info_panel and self.info_panel.isVisible():
+            target_height = max(target_height, int(self._recording_height))
+        else:
+            target_height = max(target_height, int(self._base_height))
         if self.window_height != target_height or self.height() != target_height:
             self._set_fixed_height(target_height)
         if hasattr(self, "waveform_widget") and self.waveform_widget is not None:
-            if self.waveform_widget.height() != 56:
+            if (
+                self.waveform_widget.height() != 56
+                or self.waveform_widget.minimumHeight() != 56
+                or self.waveform_widget.maximumHeight() != 56
+            ):
                 self.waveform_widget.setFixedHeight(56)
+            self.waveform_widget.updateGeometry()
+            self.waveform_widget.update()
         if hasattr(self, "_main_layout") and self._main_layout is not None:
+            self._main_layout.invalidate()
             self._main_layout.activate()
         self._sync_info_panel_width()
         self.updateGeometry()
@@ -778,14 +802,24 @@ class FloatingWindow(QWidget, StyledWindowMixin):
     def _set_recording_header_visible(self, visible: bool) -> None:
         """Показывает/скрывает верхнюю строку записи и переключает основной статус."""
         if visible:
+            self.recording_header.setMinimumHeight(20)
+            self.recording_header.setMaximumHeight(20)
             self.recording_header.show()
+            self.status_label.setMinimumHeight(0)
+            self.status_label.setMaximumHeight(0)
             self.status_label.hide()
-            self.status_label.setFixedHeight(0)
         else:
+            self.recording_header.setMinimumHeight(0)
+            self.recording_header.setMaximumHeight(0)
             self.recording_header.hide()
             self.status_label.show()
-            self.status_label.setFixedHeight(28)
+            self.status_label.setMinimumHeight(28)
+            self.status_label.setMaximumHeight(28)
+        if hasattr(self, "_main_layout") and self._main_layout is not None:
+            self._main_layout.invalidate()
+            self._main_layout.activate()
         self._stabilize_geometry()
+        QTimer.singleShot(0, self._stabilize_geometry)
 
     def _start_recording_timer(self) -> None:
         """Запускает таймер отображения времени записи."""
@@ -850,7 +884,6 @@ class FloatingWindow(QWidget, StyledWindowMixin):
             
             # Сохранить позицию окна
             self.save_position()
-            self._stabilize_geometry()
     
     def enterEvent(self, event) -> None:
         """
