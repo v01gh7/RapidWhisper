@@ -60,6 +60,14 @@ class FormatSelectionDialog(QDialog, StyledWindowMixin):
         self.apply_unified_style(stay_on_top=True)
         
         logger.info("Format selection dialog initialized")
+
+    def showEvent(self, event) -> None:
+        super().showEvent(event)
+        self.sync_rounded_surface()
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        self.sync_rounded_surface()
     
     def _create_ui(self):
         """

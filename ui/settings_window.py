@@ -13,7 +13,7 @@ from PyQt6.QtWidgets import (
     QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QSizePolicy
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QSize
-from PyQt6.QtGui import QFont, QIcon, QScreen, QPainter, QPainterPath, QRegion
+from PyQt6.QtGui import QFont, QIcon, QScreen, QPainter
 from core.config import Config
 from core.statistics_manager import StatisticsManager
 from utils.logger import get_logger
@@ -162,6 +162,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         with blur effects and rounded corners.
         """
         super().showEvent(event)
+        self.sync_rounded_surface()
         self.repaint()
         self.update()
     
@@ -172,23 +173,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         This creates a clipping region with rounded corners to ensure the window
         background is properly masked, preventing white corner artifacts on Windows.
         """
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        
-        # Create rounded rectangle path
-        from design_system.style_constants import StyleConstants
-        path = QPainterPath()
-        path.addRoundedRect(
-            0, 0, 
-            self.width(), self.height(),
-            StyleConstants.BORDER_RADIUS, StyleConstants.BORDER_RADIUS
-        )
-        
-        # Set clipping region to rounded rectangle
-        region = QRegion(path.toFillPolygon().toPolygon())
-        self.setMask(region)
-        
-        # Call parent's paintEvent
+        self.apply_rounded_mask()
         super().paintEvent(event)
     
     def _set_window_icon(self):
@@ -4341,9 +4326,15 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             event: Show event
         """
         super().showEvent(event)
+        self.sync_rounded_surface()
         # Force repaint and update for proper rendering on Windows
         self.repaint()
         self.update()
+
+    def resizeEvent(self, event):
+        """Keep rounded mask/blur synced when settings window size changes."""
+        super().resizeEvent(event)
+        self.sync_rounded_surface()
 
 
 class PromptEditDialog(QDialog):

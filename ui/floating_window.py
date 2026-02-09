@@ -8,17 +8,18 @@
 import time
 
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QGraphicsOpacityEffect, QHBoxLayout
-from PyQt6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve, QRect, QRectF
-from PyQt6.QtGui import QPainter, QColor, QPainterPath, QPaintEvent, QRegion
+from PyQt6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve, QRectF
+from PyQt6.QtGui import QPainter, QColor, QPainterPath, QPaintEvent
 from ui.waveform_widget import WaveformWidget
 from ui.info_panel_widget import InfoPanelWidget
+from design_system.styled_window_mixin import StyledWindowMixin
 from services.window_monitor import WindowMonitor
 from utils.i18n import t
 from typing import Optional
 
 INTERBAL_WINDOW_BORDER_RADIUS = 18.0
 
-class FloatingWindow(QWidget):
+class FloatingWindow(QWidget, StyledWindowMixin):
     """
     Плавающее окно в форме пилюли.
     
@@ -37,7 +38,9 @@ class FloatingWindow(QWidget):
             config: Объект конфигурации приложения (опциональный)
             parent: Родительский виджет
         """
-        super().__init__(parent)
+        QWidget.__init__(self, parent)
+        StyledWindowMixin.__init__(self)
+        self._native_blur_enabled = True
         
         # Сохранить конфигурацию
         self.config = config
@@ -56,6 +59,7 @@ class FloatingWindow(QWidget):
         # Для перетаскивания окна
         self._drag_position = None
         self._is_dragging = False
+        self._corner_radius = int(INTERBAL_WINDOW_BORDER_RADIUS)
         
         # Настройка свойств окна
         self.setup_window_properties()
@@ -94,17 +98,14 @@ class FloatingWindow(QWidget):
         # Флаги окна: без рамки, всегда поверх, tool window
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint |
-            Qt.WindowType.Window |
+            Qt.WindowType.NoDropShadowWindowHint |
             Qt.WindowType.WindowStaysOnTopHint |
             Qt.WindowType.Tool |
             Qt.WindowType.WindowDoesNotAcceptFocus  # Не забирает фокус у других окон
         )
         
-        # Полупрозрачный фон
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
-        self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent, False)
-        self.setAutoFillBackground(False)
+        # Полупрозрачная поверхность и реальная форма окна управляются единообразно.
+        self.configure_translucent_surface(self._corner_radius)
         
         # Показывать окно даже когда приложение не в фокусе
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
@@ -416,17 +417,9 @@ class FloatingWindow(QWidget):
         self.show()
         self.raise_()  # Поднять окно наверх
         # Не активируем окно, т.к. WindowDoesNotAcceptFocus
-        
-        # Принудительно установить флаг "всегда поверх" (на случай если сбросился)
-        self.setWindowFlags(
-            Qt.WindowType.FramelessWindowHint |
-            Qt.WindowType.Window |
-            Qt.WindowType.WindowStaysOnTopHint |
-            Qt.WindowType.Tool |
-            Qt.WindowType.WindowDoesNotAcceptFocus
-        )
-        self.show()  # Показать снова после изменения флагов
-        self._update_window_mask()
+
+        # Держим контур и blur синхронизированными без пересоздания HWND.
+        self.sync_rounded_surface(self._corner_radius)
         
         self._fade_in()  # Запустить анимацию появления
         
@@ -436,13 +429,13 @@ class FloatingWindow(QWidget):
     def resizeEvent(self, event) -> None:
         """Синхронизирует ширину инфопанели с доступной шириной окна."""
         super().resizeEvent(event)
-        self._update_window_mask()
+        self.sync_rounded_surface(self._corner_radius)
         self._sync_info_panel_width()
 
     def showEvent(self, event) -> None:
         """Обновляет маску окна при первом показе."""
         super().showEvent(event)
-        self._update_window_mask()
+        self.sync_rounded_surface(self._corner_radius)
     
     def hide_with_animation(self) -> None:
         """
@@ -542,13 +535,8 @@ class FloatingWindow(QWidget):
         painter.fillPath(path, QColor(20, 28, 42, self._opacity))
 
     def _update_window_mask(self) -> None:
-        """Применяет реальную скругленную форму окна на уровне ОС."""
-        rect_f = QRectF(self.rect()).adjusted(0.0, 0.0, -1.0, -1.0)
-        if rect_f.width() <= 0 or rect_f.height() <= 0:
-            return
-        path = QPainterPath()
-        path.addRoundedRect(rect_f, INTERBAL_WINDOW_BORDER_RADIUS, INTERBAL_WINDOW_BORDER_RADIUS)
-        self.setMask(QRegion(path.toFillPolygon().toPolygon()))
+        """Совместимость: обновление маски через общий mixin-метод."""
+        self.apply_rounded_mask(self._corner_radius)
     
     def set_status(self, text: str) -> None:
         """
@@ -704,20 +692,8 @@ class FloatingWindow(QWidget):
         
         Requirements: 2.3
         """
-        from utils.platform_utils import apply_blur_effect, is_windows
-        
-        # На Windows Acrylic часто дает квадратные артефакты в прозрачных углах
-        # для frameless + translucent окон с mask.
-        if is_windows():
-            return
-        
-        # Применяем платформо-зависимый эффект размытия
-        success = apply_blur_effect(self)
-        
-        if not success:
-            # Если не удалось применить нативный эффект,
-            # используем базовую полупрозрачность Qt
-            pass
+        # Централизованный путь: blur и форма окна поддерживаются в sync_rounded_surface.
+        self.sync_rounded_surface(self._corner_radius)
 
     def _set_fixed_height(self, height: int) -> None:
         """Устанавливает фиксированную высоту и сохраняет значение."""

@@ -6,7 +6,8 @@ for windows in the RapidWhisper application, including frameless window setup,
 translucent backgrounds, blur effects, and drag functionality.
 """
 
-from PyQt6.QtCore import Qt, QPoint
+from PyQt6.QtCore import Qt, QPoint, QRectF
+from PyQt6.QtGui import QPainterPath, QRegion
 from PyQt6.QtWidgets import QWidget
 from .style_constants import StyleConstants
 
@@ -24,6 +25,8 @@ class StyledWindowMixin:
         """
         self._drag_position = None
         self._opacity = StyleConstants.OPACITY_DEFAULT
+        self._corner_radius = int(StyleConstants.BORDER_RADIUS)
+        self._native_blur_enabled = True
     
     def apply_unified_style(self, opacity: int = None, stay_on_top: bool = False):
         """
@@ -45,9 +48,26 @@ class StyledWindowMixin:
         # Set opacity
         if opacity is not None:
             self._opacity = StyleConstants.clamp_opacity(opacity)
+        self._corner_radius = int(StyleConstants.BORDER_RADIUS)
         
-        # Set window flags
-        flags = Qt.WindowType.FramelessWindowHint
+        # Configure window surface for real transparent rounded corners.
+        self.configure_translucent_surface()
+        
+        # Set window flags while preserving existing window type (Dialog/Tool/Window).
+        base_type = self.windowFlags() & (
+            Qt.WindowType.Window |
+            Qt.WindowType.Dialog |
+            Qt.WindowType.Tool |
+            Qt.WindowType.Popup |
+            Qt.WindowType.Sheet
+        )
+        if base_type == Qt.WindowType(0):
+            base_type = Qt.WindowType.Window
+        flags = (
+            Qt.WindowType.FramelessWindowHint |
+            Qt.WindowType.NoDropShadowWindowHint |
+            base_type
+        )
         if stay_on_top:
             flags |= Qt.WindowType.WindowStaysOnTopHint
         self.setWindowFlags(flags)
@@ -55,7 +75,42 @@ class StyledWindowMixin:
         # Apply stylesheet
         self._apply_stylesheet()
         
-        # Apply platform-specific blur effect
+        # Apply rounded mask + platform blur in one place.
+        self.sync_rounded_surface()
+
+    def configure_translucent_surface(self, corner_radius: int | None = None):
+        """
+        Configure native surface attributes for transparent rounded windows.
+        """
+        if corner_radius is not None:
+            self._corner_radius = int(corner_radius)
+
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent, False)
+        if hasattr(self, "setAutoFillBackground"):
+            self.setAutoFillBackground(False)
+
+    def apply_rounded_mask(self, corner_radius: int | None = None):
+        """
+        Apply real rounded window region (OS-level shape).
+        """
+        if corner_radius is not None:
+            self._corner_radius = int(corner_radius)
+
+        rect_f = QRectF(self.rect()).adjusted(0.0, 0.0, -1.0, -1.0)
+        if rect_f.width() <= 0 or rect_f.height() <= 0:
+            return
+
+        path = QPainterPath()
+        path.addRoundedRect(rect_f, float(self._corner_radius), float(self._corner_radius))
+        self.setMask(QRegion(path.toFillPolygon().toPolygon()))
+
+    def sync_rounded_surface(self, corner_radius: int | None = None):
+        """
+        Keep rounded mask and native blur in sync with current window geometry.
+        """
+        self.apply_rounded_mask(corner_radius)
         self._apply_blur()
     
     def _apply_stylesheet(self):
@@ -91,6 +146,9 @@ class StyledWindowMixin:
         
         Requirements: 1.4, 6.1
         """
+        if not getattr(self, "_native_blur_enabled", True):
+            return
+
         try:
             from utils.platform_utils import apply_blur_effect
             from utils.logger import get_logger
@@ -119,6 +177,7 @@ class StyledWindowMixin:
         """
         self._opacity = StyleConstants.clamp_opacity(opacity)
         self._apply_stylesheet()
+        self.sync_rounded_surface()
     
     # Drag functionality for frameless windows
     

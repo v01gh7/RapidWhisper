@@ -87,9 +87,14 @@ def is_linux() -> bool:
     return detect_platform() == Platform.LINUX
 
 
-def apply_windows_blur(hwnd: int) -> bool:
+def apply_windows_blur(
+    hwnd: int,
+    width: Optional[int] = None,
+    height: Optional[int] = None,
+    corner_radius: Optional[int] = None,
+) -> bool:
     """
-    Применяет эффект размытия Acrylic для Windows 11.
+    Применяет эффект размытия для Windows.
     
     Использует Windows API для применения эффекта размытого стекла.
     
@@ -120,15 +125,25 @@ def apply_windows_blur(hwnd: int) -> bool:
                 ("Data", ctypes.POINTER(ACCENT_POLICY)),
                 ("SizeOfData", ctypes.c_size_t),
             ]
+
+        class DWM_BLURBEHIND(ctypes.Structure):
+            _fields_ = [
+                ("dwFlags", wintypes.DWORD),
+                ("fEnable", wintypes.BOOL),
+                ("hRgnBlur", wintypes.HRGN),
+                ("fTransitionOnMaximized", wintypes.BOOL),
+            ]
         
-        # Константы для Windows 11 Acrylic
-        ACCENT_ENABLE_ACRYLICBLURBEHIND = 4
+        # Без Acrylic: используем обычный BlurBehind, чтобы не получать
+        # квадратные артефакты по углам у translucent frameless окна.
+        ACCENT_ENABLE_BLURBEHIND = 3
         WCA_ACCENT_POLICY = 19
         
         # Создаем политику акцента
         accent = ACCENT_POLICY()
-        accent.AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND
-        accent.GradientColor = 0x01000000  # Полупрозрачный черный
+        accent.AccentState = ACCENT_ENABLE_BLURBEHIND
+        accent.AccentFlags = 0
+        accent.GradientColor = 0x00000000
         
         # Создаем данные атрибута композиции
         data = WINDOWCOMPOSITIONATTRIBDATA()
@@ -144,8 +159,55 @@ def apply_windows_blur(hwnd: int) -> bool:
         ]
         user32.SetWindowCompositionAttribute.restype = wintypes.BOOL
         
-        result = user32.SetWindowCompositionAttribute(hwnd, ctypes.byref(data))
-        return bool(result)
+        result = bool(user32.SetWindowCompositionAttribute(hwnd, ctypes.byref(data)))
+
+        # Важно: скругляем реальную форму окна на уровне Win32,
+        # иначе blur/acrylic может оставаться прямоугольным по краям.
+        has_rounded_geometry = (
+            corner_radius is not None and corner_radius > 0 and
+            width is not None and width > 0 and
+            height is not None and height > 0
+        )
+        if has_rounded_geometry:
+            user32.CreateRoundRectRgn.argtypes = [
+                ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int,
+                ctypes.c_int, ctypes.c_int
+            ]
+            user32.CreateRoundRectRgn.restype = wintypes.HRGN
+            user32.SetWindowRgn.argtypes = [wintypes.HWND, wintypes.HRGN, wintypes.BOOL]
+            user32.SetWindowRgn.restype = ctypes.c_int
+
+            diameter = int(corner_radius) * 2
+            hrgn = user32.CreateRoundRectRgn(0, 0, int(width) + 1, int(height) + 1, diameter, diameter)
+            if hrgn:
+                # При успехе SetWindowRgn владение region переходит к системе.
+                if user32.SetWindowRgn(hwnd, hrgn, True) == 0:
+                    ctypes.windll.gdi32.DeleteObject(hrgn)
+
+                # Применяем тот же скругленный регион к blur-слою DWM.
+                # Создаем отдельный HRGN, потому что предыдущий перешел во владение системы.
+                hrgn_blur = user32.CreateRoundRectRgn(0, 0, int(width) + 1, int(height) + 1, diameter, diameter)
+                if hrgn_blur:
+                    DWM_BB_ENABLE = 0x00000001
+                    DWM_BB_BLURREGION = 0x00000002
+
+                    dwmapi = ctypes.windll.dwmapi
+                    dwmapi.DwmEnableBlurBehindWindow.argtypes = [
+                        wintypes.HWND,
+                        ctypes.POINTER(DWM_BLURBEHIND),
+                    ]
+                    dwmapi.DwmEnableBlurBehindWindow.restype = ctypes.c_long
+
+                    blur_behind = DWM_BLURBEHIND()
+                    blur_behind.dwFlags = DWM_BB_ENABLE | DWM_BB_BLURREGION
+                    blur_behind.fEnable = True
+                    blur_behind.hRgnBlur = hrgn_blur
+                    blur_behind.fTransitionOnMaximized = False
+                    dwmapi.DwmEnableBlurBehindWindow(hwnd, ctypes.byref(blur_behind))
+
+                    ctypes.windll.gdi32.DeleteObject(hrgn_blur)
+
+        return result
         
     except Exception:
         return False
@@ -240,7 +302,13 @@ def apply_blur_effect(window) -> bool:
     if current_platform == Platform.WINDOWS:
         # Получаем HWND для Windows
         hwnd = int(window.winId())
-        return apply_windows_blur(hwnd)
+        radius = int(getattr(window, "_corner_radius", 18))
+        return apply_windows_blur(
+            hwnd,
+            width=int(window.width()),
+            height=int(window.height()),
+            corner_radius=radius,
+        )
     
     elif current_platform == Platform.MACOS:
         return apply_macos_blur(window)

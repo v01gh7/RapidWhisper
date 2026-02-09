@@ -68,6 +68,14 @@ class ManualFormatDialog(QDialog, StyledWindowMixin):
 
         logger.info("Manual format dialog initialized")
 
+    def showEvent(self, event) -> None:
+        super().showEvent(event)
+        self.sync_rounded_surface()
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        self.sync_rounded_surface()
+
     def _create_ui(self) -> None:
         self.setWindowTitle(t("manual_format.title"))
         self.setModal(True)
