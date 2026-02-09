@@ -532,6 +532,51 @@ p {
   font-size: 0.82rem;
 }
 
+.platform-strip {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.platform-icon-card {
+  min-height: 106px;
+  border: 1px solid color-mix(in srgb, var(--page-border) 74%, transparent);
+  border-radius: 12px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+    linear-gradient(160deg, color-mix(in srgb, var(--page-accent) 18%, transparent), transparent 65%);
+  color: var(--page-text);
+  text-decoration: none;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 10px;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.platform-icon-card:hover,
+.platform-icon-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--page-accent) 78%, transparent);
+  box-shadow: 0 10px 20px color-mix(in srgb, var(--page-accent) 24%, transparent);
+}
+
+.platform-icon-card img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 14px color-mix(in srgb, var(--page-accent) 34%, transparent));
+}
+
+.platform-icon-card span {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.8rem;
+  letter-spacing: 0.03em;
+  color: var(--page-text);
+}
+
 .hero-theme-panel {
   margin-bottom: 10px;
   border: 1px solid color-mix(in srgb, var(--page-border) 70%, transparent);
@@ -1019,6 +1064,10 @@ kbd {
   }
 
   .download-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .platform-strip {
     grid-template-columns: 1fr;
   }
 
