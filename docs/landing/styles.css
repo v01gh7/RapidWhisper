@@ -157,12 +157,64 @@ a {
   color: var(--page-text);
 }
 
-.top-theme-switcher {
-  display: flex;
-  flex-wrap: wrap;
+.top-theme-dropdown {
+  position: relative;
+  min-width: 196px;
+  flex: 0 0 auto;
+}
+
+.theme-dropdown-trigger {
+  width: 100%;
+  border: 1px solid var(--page-border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--page-text);
+  font-family: inherit;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  padding: 8px 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.theme-trigger-label {
+  color: var(--page-muted);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.theme-trigger-value {
+  font-weight: 600;
+}
+
+.theme-trigger-caret {
+  margin-left: auto;
+  color: var(--page-muted);
+}
+
+.theme-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 220px;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--page-border) 86%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--page-surface) 96%, transparent);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.38);
+  display: none;
+  flex-direction: column;
   gap: 6px;
-  max-width: 430px;
-  justify-content: flex-end;
+  z-index: 40;
+}
+
+.top-theme-dropdown.is-open .theme-dropdown-menu {
+  display: flex;
 }
 
 .top-actions {
@@ -314,6 +366,81 @@ p {
   flex: 0 0 auto;
 }
 
+.download-block {
+  margin-top: 16px;
+  border: 1px solid color-mix(in srgb, var(--page-border) 68%, transparent);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+  padding: 12px;
+}
+
+.download-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.download-head h3 {
+  margin: 0;
+}
+
+.download-head p {
+  font-size: 0.84rem;
+}
+
+.download-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.download-card {
+  border: 1px solid color-mix(in srgb, var(--page-border) 74%, transparent);
+  border-radius: 12px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+    linear-gradient(160deg, color-mix(in srgb, var(--page-accent) 22%, transparent), transparent 60%);
+  color: var(--page-text);
+  padding: 12px;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.download-card:hover,
+.download-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--page-accent) 78%, transparent);
+  box-shadow: 0 10px 20px color-mix(in srgb, var(--page-accent) 24%, transparent);
+}
+
+.download-card.is-active {
+  border-color: color-mix(in srgb, var(--page-accent-2) 76%, transparent);
+  box-shadow: 0 12px 24px color-mix(in srgb, var(--page-accent-2) 24%, transparent);
+}
+
+.download-os {
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.download-format {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.78rem;
+  color: var(--page-muted);
+}
+
+.download-hint {
+  margin-top: 9px;
+  font-size: 0.82rem;
+}
+
 .hero-theme-panel {
   margin-bottom: 10px;
   border: 1px solid color-mix(in srgb, var(--page-border) 70%, transparent);
@@ -343,6 +470,9 @@ p {
 }
 
 .theme-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--page-border);
   border-radius: 999px;
   padding: 6px 10px;
@@ -364,6 +494,11 @@ p {
 .theme-btn.is-active {
   background: color-mix(in srgb, var(--page-accent) 20%, rgba(255, 255, 255, 0.08));
   border-color: color-mix(in srgb, var(--page-accent) 72%, transparent);
+}
+
+.theme-dropdown-menu .theme-btn {
+  justify-content: flex-start;
+  border-radius: 10px;
 }
 
 .demo-window {
@@ -762,9 +897,15 @@ kbd {
 }
 
 @media (max-width: 860px) {
-  .top-theme-switcher {
+  .top-theme-dropdown {
     width: 100%;
-    justify-content: flex-start;
+  }
+
+  .theme-dropdown-menu {
+    left: 0;
+    right: auto;
+    width: 100%;
+    min-width: 0;
   }
 
   .top-actions {
@@ -778,6 +919,10 @@ kbd {
   .controls-grid,
   .purpose-grid,
   .provider-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .download-grid {
     grid-template-columns: 1fr;
   }
 }

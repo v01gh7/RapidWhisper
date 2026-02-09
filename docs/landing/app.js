@@ -19,6 +19,16 @@
     terminal: "Windows Terminal",
   };
 
+  const THEME_LABELS = {
+    default: "Default",
+    ocean: "Ocean",
+    dusk: "Dusk",
+    retro: "Retro",
+    neo: "Neo",
+    lime: "Lime",
+    terminal: "Terminal Theme",
+  };
+
   const heroWave = document.getElementById("hero-wave");
   const heroPreview = document.getElementById("hero-preview");
   const heroAppName = document.getElementById("hero-app-name");
@@ -30,9 +40,14 @@
   const heroRecordBtn = document.getElementById("hero-record-btn");
   const heroCancelBtn = document.getElementById("hero-cancel-btn");
   const heroRecordToggle = document.getElementById("hero-record-toggle");
+  const headerThemeDropdown = document.getElementById("header-theme-dropdown");
+  const headerThemeTrigger = document.getElementById("header-theme-trigger");
+  const headerThemeValue = document.getElementById("header-theme-value");
 
   const controlsSection = document.getElementById("controls");
   const licensesSection = document.getElementById("licenses");
+  const downloadHint = document.getElementById("download-hint");
+  const downloadCards = document.querySelectorAll(".download-card");
 
   let recording = true;
   let seconds = 11;
@@ -93,6 +108,13 @@
     syncHeroState();
   }
 
+  function setThemeDropdownOpen(open) {
+    if (!headerThemeDropdown || !headerThemeTrigger) return;
+    const isOpen = Boolean(open);
+    headerThemeDropdown.classList.toggle("is-open", isOpen);
+    headerThemeTrigger.setAttribute("aria-expanded", isOpen ? "true" : "false");
+  }
+
   function applyTheme(themeId) {
     const id = themeId || "default";
     document.body.dataset.pageTheme = id;
@@ -104,6 +126,9 @@
     }
     if (themeNote && THEME_NOTES[id]) {
       themeNote.textContent = THEME_NOTES[id];
+    }
+    if (headerThemeValue) {
+      headerThemeValue.textContent = THEME_LABELS[id] || "Default";
     }
     themeButtons.forEach((button) => {
       button.classList.toggle("is-active", button.dataset.themeId === id);
@@ -128,7 +153,28 @@
   themeButtons.forEach((button) => {
     button.addEventListener("click", function () {
       applyTheme(button.dataset.themeId);
+      setThemeDropdownOpen(false);
     });
+  });
+
+  if (headerThemeTrigger) {
+    headerThemeTrigger.addEventListener("click", function () {
+      const shouldOpen = !headerThemeDropdown || !headerThemeDropdown.classList.contains("is-open");
+      setThemeDropdownOpen(shouldOpen);
+    });
+  }
+
+  document.addEventListener("click", function (event) {
+    if (!headerThemeDropdown) return;
+    if (!headerThemeDropdown.contains(event.target)) {
+      setThemeDropdownOpen(false);
+    }
+  });
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") {
+      setThemeDropdownOpen(false);
+    }
   });
 
   if (heroRecordBtn) {
@@ -168,6 +214,24 @@
   document.querySelectorAll('[data-action="hide-license"]').forEach((button) => {
     button.addEventListener("click", function () {
       setLicensesVisible(false);
+    });
+  });
+
+  downloadCards.forEach((card) => {
+    card.addEventListener("click", function () {
+      const osId = card.dataset.downloadOs || "";
+      const labels = {
+        windows: "Windows (.exe)",
+        macos: "macOS (.dmg)",
+        linux: "Linux (.AppImage)",
+      };
+
+      downloadCards.forEach((el) => el.classList.remove("is-active"));
+      card.classList.add("is-active");
+
+      if (downloadHint && labels[osId]) {
+        downloadHint.textContent = `Выбрано: ${labels[osId]}.`;
+      }
     });
   });
 

@@ -34,14 +34,28 @@
       <a href="#pipeline">Пайплайн</a>
     </nav>
 
-    <div class="top-theme-switcher" role="group" aria-label="Theme switcher in header">
-      <button type="button" class="theme-btn is-active" data-theme-source="header" data-theme-id="default">Default</button>
-      <button type="button" class="theme-btn" data-theme-source="header" data-theme-id="ocean">Ocean</button>
-      <button type="button" class="theme-btn" data-theme-source="header" data-theme-id="dusk">Dusk</button>
-      <button type="button" class="theme-btn" data-theme-source="header" data-theme-id="retro">Retro</button>
-      <button type="button" class="theme-btn" data-theme-source="header" data-theme-id="neo">Neo</button>
-      <button type="button" class="theme-btn" data-theme-source="header" data-theme-id="lime">Lime</button>
-      <button type="button" class="theme-btn" data-theme-source="header" data-theme-id="terminal">Terminal</button>
+    <div class="top-theme-dropdown" id="header-theme-dropdown">
+      <button
+        type="button"
+        class="theme-dropdown-trigger"
+        id="header-theme-trigger"
+        aria-haspopup="listbox"
+        aria-expanded="false"
+        aria-controls="header-theme-menu"
+      >
+        <span class="theme-trigger-label">Тема</span>
+        <span class="theme-trigger-value" id="header-theme-value">Default</span>
+        <span class="theme-trigger-caret">▾</span>
+      </button>
+      <div class="theme-dropdown-menu" id="header-theme-menu" role="listbox" aria-label="Выбор темы">
+        <button type="button" class="theme-btn is-active" data-theme-source="header-dropdown" data-theme-id="default">Default</button>
+        <button type="button" class="theme-btn" data-theme-source="header-dropdown" data-theme-id="ocean">Ocean</button>
+        <button type="button" class="theme-btn" data-theme-source="header-dropdown" data-theme-id="dusk">Dusk</button>
+        <button type="button" class="theme-btn" data-theme-source="header-dropdown" data-theme-id="retro">Retro</button>
+        <button type="button" class="theme-btn" data-theme-source="header-dropdown" data-theme-id="neo">Neo</button>
+        <button type="button" class="theme-btn" data-theme-source="header-dropdown" data-theme-id="lime">Lime</button>
+        <button type="button" class="theme-btn" data-theme-source="header-dropdown" data-theme-id="terminal">Terminal Theme</button>
+      </div>
     </div>
 
     <div class="top-actions">
@@ -68,6 +82,28 @@
           <li>Поддерживает встроенные и кастомные OpenAI-совместимые API.</li>
           <li>Темы интерфейса переключаются мгновенно прямо на странице.</li>
         </ul>
+
+        <div class="download-block" aria-label="Download builds">
+          <div class="download-head">
+            <h3>Скачать</h3>
+            <p>Сборки для основных платформ</p>
+          </div>
+          <div class="download-grid">
+            <button type="button" class="download-card" data-download-os="windows">
+              <span class="download-os">Windows</span>
+              <span class="download-format">.exe</span>
+            </button>
+            <button type="button" class="download-card" data-download-os="macos">
+              <span class="download-os">macOS</span>
+              <span class="download-format">.dmg</span>
+            </button>
+            <button type="button" class="download-card" data-download-os="linux">
+              <span class="download-os">Linux</span>
+              <span class="download-format">.AppImage</span>
+            </button>
+          </div>
+          <p class="download-hint" id="download-hint">Выбери платформу, чтобы подсветить вариант загрузки.</p>
+        </div>
       </div>
 
       <aside class="demo reveal" aria-label="Floating window demo">
