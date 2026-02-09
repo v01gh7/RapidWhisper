@@ -19,16 +19,6 @@
     terminal: "Windows Terminal",
   };
 
-  const THEME_LABELS = {
-    default: "Default",
-    ocean: "Ocean",
-    dusk: "Dusk",
-    retro: "Retro",
-    neo: "Neo",
-    lime: "Lime",
-    terminal: "Terminal Theme",
-  };
-
   const heroWave = document.getElementById("hero-wave");
   const heroPreview = document.getElementById("hero-preview");
   const heroAppName = document.getElementById("hero-app-name");
@@ -42,15 +32,20 @@
   const heroRecordToggle = document.getElementById("hero-record-toggle");
   const headerThemeDropdown = document.getElementById("header-theme-dropdown");
   const headerThemeTrigger = document.getElementById("header-theme-trigger");
-  const headerThemeValue = document.getElementById("header-theme-value");
+  const topDownloadBtn = document.getElementById("top-download-btn");
 
   const controlsSection = document.getElementById("controls");
   const licensesSection = document.getElementById("licenses");
   const downloadHint = document.getElementById("download-hint");
-  const downloadCards = document.querySelectorAll(".download-card");
+  const downloadCards = document.querySelectorAll(".platform-icon-card[data-download-os]");
 
   let recording = true;
   let seconds = 11;
+  const DOWNLOAD_LINKS = {
+    windows: "../../dist/RapidWhisper.exe",
+    macos: "https://github.com/v01gh7/RapidWhisper/releases/latest",
+    linux: "https://github.com/v01gh7/RapidWhisper/releases/latest",
+  };
 
   function createWave(container) {
     if (!container || container.dataset.waveReady === "1") return;
@@ -108,6 +103,65 @@
     syncHeroState();
   }
 
+  function detectCurrentOS() {
+    const uaDataPlatform = navigator.userAgentData && navigator.userAgentData.platform
+      ? navigator.userAgentData.platform
+      : "";
+    const platform = `${uaDataPlatform} ${navigator.platform || ""}`.toLowerCase();
+    const userAgent = (navigator.userAgent || "").toLowerCase();
+
+    if (platform.includes("mac") || userAgent.includes("macintosh") || userAgent.includes("mac os")) {
+      return "macos";
+    }
+    if (platform.includes("win") || userAgent.includes("windows")) {
+      return "windows";
+    }
+    if (platform.includes("linux") || userAgent.includes("linux")) {
+      return "linux";
+    }
+    return "windows";
+  }
+
+  function setDownloadHint(osId) {
+    if (!downloadHint) return;
+    const labels = {
+      windows: "Windows (.exe)",
+      macos: "macOS (.dmg)",
+      linux: "Linux (.AppImage)",
+    };
+    if (labels[osId]) {
+      downloadHint.textContent = `Выбрано: ${labels[osId]}.`;
+    }
+  }
+
+  function markDownloadCard(osId) {
+    downloadCards.forEach((card) => {
+      card.classList.toggle("is-active", card.dataset.downloadOs === osId);
+    });
+  }
+
+  function downloadByOS(osId) {
+    const id = DOWNLOAD_LINKS[osId] ? osId : "windows";
+    const href = DOWNLOAD_LINKS[id];
+    if (!href) return;
+
+    markDownloadCard(id);
+    setDownloadHint(id);
+
+    if (id === "windows") {
+      const a = document.createElement("a");
+      a.href = href;
+      a.download = "RapidWhisper.exe";
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      return;
+    }
+
+    window.open(href, "_blank", "noopener");
+  }
+
   function setThemeDropdownOpen(open) {
     if (!headerThemeDropdown || !headerThemeTrigger) return;
     const isOpen = Boolean(open);
@@ -126,9 +180,6 @@
     }
     if (themeNote && THEME_NOTES[id]) {
       themeNote.textContent = THEME_NOTES[id];
-    }
-    if (headerThemeValue) {
-      headerThemeValue.textContent = THEME_LABELS[id] || "Default";
     }
     themeButtons.forEach((button) => {
       button.classList.toggle("is-active", button.dataset.themeId === id);
@@ -220,20 +271,23 @@
   downloadCards.forEach((card) => {
     card.addEventListener("click", function () {
       const osId = card.dataset.downloadOs || "";
-      const labels = {
-        windows: "Windows (.exe)",
-        macos: "macOS (.dmg)",
-        linux: "Linux (.AppImage)",
-      };
-
-      downloadCards.forEach((el) => el.classList.remove("is-active"));
-      card.classList.add("is-active");
-
-      if (downloadHint && labels[osId]) {
-        downloadHint.textContent = `Выбрано: ${labels[osId]}.`;
-      }
+      markDownloadCard(osId);
+      setDownloadHint(osId);
     });
   });
+
+  if (topDownloadBtn) {
+    const currentOS = detectCurrentOS();
+    const forTopButton = currentOS === "macos" || currentOS === "windows" ? currentOS : "linux";
+    topDownloadBtn.title = forTopButton === "macos"
+      ? "Скачать для macOS"
+      : forTopButton === "windows"
+        ? "Скачать для Windows"
+        : "Открыть загрузки";
+    topDownloadBtn.addEventListener("click", function () {
+      downloadByOS(forTopButton);
+    });
+  }
 
   setInterval(function () {
     if (recording) {

@@ -160,41 +160,49 @@ a {
 
 .top-theme-dropdown {
   position: relative;
-  min-width: 196px;
+  width: 48px;
   flex: 0 0 auto;
 }
 
-.theme-dropdown-trigger {
-  width: 100%;
+.theme-palette-trigger {
+  width: 48px;
+  height: 40px;
   border: 1px solid var(--page-border);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.04);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--page-accent) 34%, rgba(255, 255, 255, 0.06)),
+      color-mix(in srgb, var(--page-accent-2) 30%, rgba(255, 255, 255, 0.03))
+    );
   color: var(--page-text);
-  font-family: inherit;
-  font-size: 0.8rem;
-  letter-spacing: 0.04em;
-  padding: 8px 10px;
+  padding: 0;
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  display: inline-grid;
+  place-items: center;
+  box-shadow: 0 10px 20px color-mix(in srgb, var(--page-accent) 24%, transparent);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
-.theme-trigger-label {
-  color: var(--page-muted);
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+.theme-palette-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--page-border) 80%, transparent);
+  background: conic-gradient(
+    from 32deg,
+    var(--page-accent),
+    var(--page-accent-2),
+    #b0c6ff,
+    var(--page-accent)
+  );
+  box-shadow: inset 0 0 10px rgba(10, 16, 30, 0.26);
 }
 
-.theme-trigger-value {
-  font-weight: 600;
-}
-
-.theme-trigger-caret {
-  margin-left: auto;
-  color: var(--page-muted);
+.theme-palette-trigger:hover,
+.theme-palette-trigger:focus-visible {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--page-accent) 72%, transparent);
 }
 
 .theme-dropdown-menu {
@@ -226,6 +234,10 @@ a {
 .top-actions {
   display: inline-flex;
   gap: 8px;
+}
+
+.top-download-btn {
+  min-width: 136px;
 }
 
 .btn {
@@ -561,6 +573,11 @@ p {
   transform: translateY(-2px);
   border-color: color-mix(in srgb, var(--page-accent) 78%, transparent);
   box-shadow: 0 10px 20px color-mix(in srgb, var(--page-accent) 24%, transparent);
+}
+
+.platform-icon-card.is-active {
+  border-color: color-mix(in srgb, var(--page-accent-2) 78%, transparent);
+  box-shadow: 0 12px 24px color-mix(in srgb, var(--page-accent-2) 26%, transparent);
 }
 
 .platform-icon-card img {
@@ -1039,31 +1056,28 @@ kbd {
 
 @media (max-width: 860px) {
   .top-theme-dropdown {
-    width: 100%;
+    width: 48px;
   }
 
   .theme-dropdown-menu {
-    left: 0;
-    right: auto;
-    width: 100%;
-    min-width: 0;
+    right: 0;
+    left: auto;
+    width: 220px;
+    min-width: 220px;
   }
 
   .top-actions {
-    width: 100%;
+    width: auto;
+    margin-left: auto;
   }
 
   .top-actions .btn {
-    flex: 1;
+    flex: 0 0 auto;
   }
 
   .controls-grid,
   .purpose-grid,
   .provider-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .download-grid {
     grid-template-columns: 1fr;
   }
 

@@ -37,15 +37,14 @@
     <div class="top-theme-dropdown" id="header-theme-dropdown">
       <button
         type="button"
-        class="theme-dropdown-trigger"
+        class="theme-palette-trigger"
         id="header-theme-trigger"
         aria-haspopup="listbox"
         aria-expanded="false"
         aria-controls="header-theme-menu"
+        aria-label="Выбор темы"
       >
-        <span class="theme-trigger-label">Тема</span>
-        <span class="theme-trigger-value" id="header-theme-value">Default</span>
-        <span class="theme-trigger-caret">▾</span>
+        <span class="theme-palette-dot" aria-hidden="true"></span>
       </button>
       <div class="theme-dropdown-menu" id="header-theme-menu" role="listbox" aria-label="Выбор темы">
         <button type="button" class="theme-btn is-active" data-theme-source="header-dropdown" data-theme-id="default">Default</button>
@@ -59,8 +58,7 @@
     </div>
 
     <div class="top-actions">
-      <button type="button" class="btn btn-ghost" data-action="scroll-controls">Хоткеи и настройки</button>
-      <button type="button" class="btn btn-primary" data-action="toggle-license">Посмотреть лицензии</button>
+      <button type="button" class="btn btn-primary top-download-btn" id="top-download-btn">Скачать</button>
     </div>
   </header>
 
