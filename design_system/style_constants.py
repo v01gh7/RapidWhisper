@@ -21,7 +21,7 @@ class StyleConstants:
     # Opacity
     OPACITY_MIN = 50
     OPACITY_MAX = 255
-    OPACITY_DEFAULT = 150
+    OPACITY_DEFAULT = 255
     
     @staticmethod
     def get_background_color(opacity: int) -> str:

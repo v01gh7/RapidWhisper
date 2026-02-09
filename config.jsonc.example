@@ -50,14 +50,15 @@
   "window": {
     "width": 400,
     "height": 120,
-    "opacity": 76,
+    "opacity": 255,
     "auto_hide_delay": 1.0,
     "remember_position": false,
     // position_preset options: center, top_left, top_center, top_right, center_left, center_right, bottom_left, bottom_center, bottom_right, custom
     "position_preset": "top_right",
     "position_x": 1493,
     "position_y": 39,
-    "waveform_color": "#64AAFF",
+    "theme": "default",
+    "waveform_color": "#7AA2F7",
     "font_sizes": {
       "floating_main": 15,
       "floating_info": 16,

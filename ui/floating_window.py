@@ -13,6 +13,7 @@ from PyQt6.QtGui import QPainter, QColor, QPainterPath, QPaintEvent
 from ui.waveform_widget import WaveformWidget
 from ui.info_panel_widget import InfoPanelWidget
 from design_system.styled_window_mixin import StyledWindowMixin
+from design_system.window_themes import DEFAULT_WINDOW_THEME_ID, get_window_theme
 from services.window_monitor import WindowMonitor
 from utils.i18n import t
 from typing import Optional
@@ -40,13 +41,18 @@ class FloatingWindow(QWidget, StyledWindowMixin):
         """
         QWidget.__init__(self, parent)
         StyledWindowMixin.__init__(self)
-        self._native_blur_enabled = True
+        # Floating window now uses opaque themed rendering only.
+        self._native_blur_enabled = False
         
         # Сохранить конфигурацию
         self.config = config
+        self._theme_id = getattr(config, "window_theme", DEFAULT_WINDOW_THEME_ID)
+        self._theme = get_window_theme(self._theme_id)
         
-        # Прозрачность окна (читаем из конфигурации или используем дефолт)
-        self._opacity = config.window_opacity if config else 150
+        # Keep background fully opaque.
+        self._opacity = 255
+        if self.config is not None:
+            self.config.window_opacity = 255
         
         # Размеры окна (будут пересчитаны динамически)
         self.window_width = 600
@@ -179,6 +185,8 @@ class FloatingWindow(QWidget, StyledWindowMixin):
         
         Requirements: 1.2, 1.3
         """
+        self._opacity = 255
+
         # Получить размер шрифта из конфигурации
         font_size = self.config.font_size_floating_main if self.config else 14
         info_font_size = max(10, font_size - 3)
@@ -190,9 +198,9 @@ class FloatingWindow(QWidget, StyledWindowMixin):
                 border: none;
             }}
             QLabel {{
-                color: white;
+                color: {self._theme["text_primary"]};
                 font-size: {font_size}px;
-                font-family: 'Segoe UI', Arial, sans-serif;
+                font-family: '{self._theme["font_family"]}';
                 background: transparent;
                 padding: 0;
                 border: none;
@@ -203,15 +211,15 @@ class FloatingWindow(QWidget, StyledWindowMixin):
             QLabel#recordStatus {{
                 font-size: {info_font_size}px;
                 font-weight: 500;
-                color: #EAF1FF;
+                color: {self._theme["text_secondary"]};
             }}
             QLabel#recordTime {{
                 font-size: {info_font_size}px;
                 font-weight: 600;
-                color: #EAF1FF;
+                color: {self._theme["text_secondary"]};
             }}
             QLabel#recordDot {{
-                background-color: #FF5C5C;
+                background-color: {self._theme["record_dot"]};
                 border-radius: 4px;
             }}
             WaveformWidget {{
@@ -219,6 +227,7 @@ class FloatingWindow(QWidget, StyledWindowMixin):
                 border: none;
             }}
         """)
+        self._set_waveform_color()
         self.update()  # Trigger repaint
     
     def set_opacity(self, value: int) -> None:
@@ -230,9 +239,35 @@ class FloatingWindow(QWidget, StyledWindowMixin):
         
         Requirements: 1.2
         """
-        # Constrain to valid range
-        self._opacity = max(50, min(255, value))
+        # Opacity is fixed to fully opaque mode.
+        self._opacity = 255
+        if self.config is not None:
+            self.config.window_opacity = 255
         self._apply_opacity()
+
+    def set_theme(self, theme_id: str, update_waveform: bool = True) -> None:
+        """Applies a predefined floating-window theme."""
+        self._theme_id = theme_id or DEFAULT_WINDOW_THEME_ID
+        self._theme = get_window_theme(self._theme_id)
+        if self.config is not None:
+            self.config.window_theme = self._theme_id
+            self.config.window_opacity = 255
+            if update_waveform:
+                self.config.waveform_color = self._theme["waveform_color"]
+                self._set_waveform_color()
+        self._apply_opacity()
+        if self.info_panel and hasattr(self.info_panel, "set_theme"):
+            self.info_panel.set_theme(self._theme_id)
+
+    def _set_waveform_color(self) -> None:
+        """Syncs waveform color from config/theme to waveform widget."""
+        if not hasattr(self, "waveform_widget") or self.waveform_widget is None:
+            return
+        if self.config and getattr(self.config, "waveform_color", ""):
+            color = self.config.waveform_color
+        else:
+            color = self._theme["waveform_color"]
+        self.waveform_widget.set_waveform_color(color)
     
     def set_config(self, config) -> None:
         """
@@ -243,12 +278,20 @@ class FloatingWindow(QWidget, StyledWindowMixin):
         
         Requirements: 7.1
         """
+        self.config = config
+        if self.config is not None:
+            self.config.window_opacity = 255
+        self._theme_id = getattr(config, "window_theme", DEFAULT_WINDOW_THEME_ID)
+        self._theme = get_window_theme(self._theme_id)
+
         try:
             # Создать window monitor
             self.window_monitor = WindowMonitor.create()
             
             # Создать info panel
             self.info_panel = InfoPanelWidget(config, self)
+            if hasattr(self.info_panel, "set_theme"):
+                self.info_panel.set_theme(self._theme_id)
             
             # Добавить info panel в конец layout
             self._main_layout.addWidget(self.info_panel)
@@ -262,6 +305,8 @@ class FloatingWindow(QWidget, StyledWindowMixin):
             # Пересчитать ширину окна
             self._update_window_width()
             self._sync_info_panel_width()
+            self._set_waveform_color()
+            self._apply_opacity()
             
         except Exception as e:
             # Логировать ошибку, но не прерывать работу
@@ -526,13 +571,16 @@ class FloatingWindow(QWidget, StyledWindowMixin):
         """
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
+        painter.fillRect(self.rect(), Qt.GlobalColor.transparent)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
         
-        # Создать путь со скругленными углами
+        # Создать путь со скругленными углами (идентичный контуру mask/Win32 region).
         path = QPainterPath()
-        rect_f = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
-        path.addRoundedRect(rect_f, INTERBAL_WINDOW_BORDER_RADIUS, INTERBAL_WINDOW_BORDER_RADIUS)
+        rect_f = QRectF(self.rect())
+        path.addRoundedRect(rect_f, float(self._corner_radius), float(self._corner_radius))
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.fillPath(path, QColor(20, 28, 42, self._opacity))
+        painter.fillPath(path, QColor(self._theme["floating_bg"]))
 
     def _update_window_mask(self) -> None:
         """Совместимость: обновление маски через общий mixin-метод."""

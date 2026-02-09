@@ -109,8 +109,7 @@ def apply_windows_blur(
     try:
         import ctypes
         from ctypes import wintypes
-        
-        # Определяем структуры и константы Windows API
+
         class ACCENT_POLICY(ctypes.Structure):
             _fields_ = [
                 ("AccentState", wintypes.DWORD),
@@ -118,7 +117,7 @@ def apply_windows_blur(
                 ("GradientColor", wintypes.DWORD),
                 ("AnimationId", wintypes.DWORD),
             ]
-        
+
         class WINDOWCOMPOSITIONATTRIBDATA(ctypes.Structure):
             _fields_ = [
                 ("Attribute", wintypes.DWORD),
@@ -126,89 +125,64 @@ def apply_windows_blur(
                 ("SizeOfData", ctypes.c_size_t),
             ]
 
-        class DWM_BLURBEHIND(ctypes.Structure):
-            _fields_ = [
-                ("dwFlags", wintypes.DWORD),
-                ("fEnable", wintypes.BOOL),
-                ("hRgnBlur", wintypes.HRGN),
-                ("fTransitionOnMaximized", wintypes.BOOL),
-            ]
-        
-        # Без Acrylic: используем обычный BlurBehind, чтобы не получать
-        # квадратные артефакты по углам у translucent frameless окна.
-        ACCENT_ENABLE_BLURBEHIND = 3
-        WCA_ACCENT_POLICY = 19
-        
-        # Создаем политику акцента
-        accent = ACCENT_POLICY()
-        accent.AccentState = ACCENT_ENABLE_BLURBEHIND
-        accent.AccentFlags = 0
-        accent.GradientColor = 0x00000000
-        
-        # Создаем данные атрибута композиции
-        data = WINDOWCOMPOSITIONATTRIBDATA()
-        data.Attribute = WCA_ACCENT_POLICY
-        data.Data = ctypes.pointer(accent)
-        data.SizeOfData = ctypes.sizeof(accent)
-        
-        # Применяем эффект
         user32 = ctypes.windll.user32
-        user32.SetWindowCompositionAttribute.argtypes = [
-            wintypes.HWND,
-            ctypes.POINTER(WINDOWCOMPOSITIONATTRIBDATA)
-        ]
-        user32.SetWindowCompositionAttribute.restype = wintypes.BOOL
-        
-        result = bool(user32.SetWindowCompositionAttribute(hwnd, ctypes.byref(data)))
+        gdi32 = ctypes.windll.gdi32
 
-        # Важно: скругляем реальную форму окна на уровне Win32,
-        # иначе blur/acrylic может оставаться прямоугольным по краям.
-        has_rounded_geometry = (
+        user32.CreateRoundRectRgn.argtypes = [
+            ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int,
+            ctypes.c_int, ctypes.c_int
+        ]
+        user32.CreateRoundRectRgn.restype = wintypes.HRGN
+        user32.SetWindowRgn.argtypes = [wintypes.HWND, wintypes.HRGN, wintypes.BOOL]
+        user32.SetWindowRgn.restype = ctypes.c_int
+
+        gdi32.DeleteObject.argtypes = [wintypes.HGDIOBJ]
+        gdi32.DeleteObject.restype = wintypes.BOOL
+
+        # Реальная скругленная форма окна на уровне Win32.
+        if (
             corner_radius is not None and corner_radius > 0 and
             width is not None and width > 0 and
             height is not None and height > 0
-        )
-        if has_rounded_geometry:
-            user32.CreateRoundRectRgn.argtypes = [
-                ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int,
-                ctypes.c_int, ctypes.c_int
-            ]
-            user32.CreateRoundRectRgn.restype = wintypes.HRGN
-            user32.SetWindowRgn.argtypes = [wintypes.HWND, wintypes.HRGN, wintypes.BOOL]
-            user32.SetWindowRgn.restype = ctypes.c_int
-
+        ):
             diameter = int(corner_radius) * 2
             hrgn = user32.CreateRoundRectRgn(0, 0, int(width) + 1, int(height) + 1, diameter, diameter)
             if hrgn:
-                # При успехе SetWindowRgn владение region переходит к системе.
+                # При успехе владение region переходит к системе.
                 if user32.SetWindowRgn(hwnd, hrgn, True) == 0:
-                    ctypes.windll.gdi32.DeleteObject(hrgn)
+                    gdi32.DeleteObject(hrgn)
 
-                # Применяем тот же скругленный регион к blur-слою DWM.
-                # Создаем отдельный HRGN, потому что предыдущий перешел во владение системы.
-                hrgn_blur = user32.CreateRoundRectRgn(0, 0, int(width) + 1, int(height) + 1, diameter, diameter)
-                if hrgn_blur:
-                    DWM_BB_ENABLE = 0x00000001
-                    DWM_BB_BLURREGION = 0x00000002
+        if not hasattr(user32, "SetWindowCompositionAttribute"):
+            return False
 
-                    dwmapi = ctypes.windll.dwmapi
-                    dwmapi.DwmEnableBlurBehindWindow.argtypes = [
-                        wintypes.HWND,
-                        ctypes.POINTER(DWM_BLURBEHIND),
-                    ]
-                    dwmapi.DwmEnableBlurBehindWindow.restype = ctypes.c_long
+        user32.SetWindowCompositionAttribute.argtypes = [
+            wintypes.HWND,
+            ctypes.POINTER(WINDOWCOMPOSITIONATTRIBDATA),
+        ]
+        user32.SetWindowCompositionAttribute.restype = wintypes.BOOL
 
-                    blur_behind = DWM_BLURBEHIND()
-                    blur_behind.dwFlags = DWM_BB_ENABLE | DWM_BB_BLURREGION
-                    blur_behind.fEnable = True
-                    blur_behind.hRgnBlur = hrgn_blur
-                    blur_behind.fTransitionOnMaximized = False
-                    dwmapi.DwmEnableBlurBehindWindow(hwnd, ctypes.byref(blur_behind))
+        WCA_ACCENT_POLICY = 19
+        ACCENT_ENABLE_BLURBEHIND = 3
+        ACCENT_ENABLE_ACRYLICBLURBEHIND = 4
 
-                    ctypes.windll.gdi32.DeleteObject(hrgn_blur)
+        def _set_accent(state: int, flags: int, gradient_color: int) -> bool:
+            accent = ACCENT_POLICY()
+            accent.AccentState = state
+            accent.AccentFlags = flags
+            accent.GradientColor = gradient_color
+            accent.AnimationId = 0
 
-        return result
-        
+            data = WINDOWCOMPOSITIONATTRIBDATA()
+            data.Attribute = WCA_ACCENT_POLICY
+            data.Data = ctypes.pointer(accent)
+            data.SizeOfData = ctypes.sizeof(accent)
+            return bool(user32.SetWindowCompositionAttribute(hwnd, ctypes.byref(data)))
+
+        # Сначала Acrylic (более заметный blur), затем fallback на classic blur.
+        if _set_accent(ACCENT_ENABLE_ACRYLICBLURBEHIND, 2, 0xCC1F1F1F):
+            return True
+        return _set_accent(ACCENT_ENABLE_BLURBEHIND, 0, 0x00000000)
+
     except Exception:
         return False
 

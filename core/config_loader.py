@@ -115,7 +115,8 @@ def _create_minimal_config(config_path: Path):
             "position_preset": "center",
             "position_x": None,
             "position_y": None,
-            "opacity": 150,
+            "opacity": 255,
+            "theme": "default",
             "font_sizes": {
                 "floating_main": 14,
                 "floating_info": 11,

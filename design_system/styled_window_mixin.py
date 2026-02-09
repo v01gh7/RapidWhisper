@@ -10,6 +10,7 @@ from PyQt6.QtCore import Qt, QPoint, QRectF
 from PyQt6.QtGui import QPainterPath, QRegion
 from PyQt6.QtWidgets import QWidget
 from .style_constants import StyleConstants
+from .window_themes import DEFAULT_WINDOW_THEME_ID, get_window_theme
 
 
 class StyledWindowMixin:
@@ -27,6 +28,9 @@ class StyledWindowMixin:
         self._opacity = StyleConstants.OPACITY_DEFAULT
         self._corner_radius = int(StyleConstants.BORDER_RADIUS)
         self._native_blur_enabled = True
+        self._force_opaque_surface = False
+        self._window_theme_id = DEFAULT_WINDOW_THEME_ID
+        self._window_theme = get_window_theme(self._window_theme_id)
     
     def apply_unified_style(self, opacity: int = None, stay_on_top: bool = False):
         """
@@ -45,13 +49,16 @@ class StyledWindowMixin:
             opacity: Window opacity (50-255), uses config default if None
             stay_on_top: Whether window should stay on top of other windows
         """
-        # Set opacity
-        if opacity is not None:
-            self._opacity = StyleConstants.clamp_opacity(opacity)
+        # Keep windows fully opaque in the current theme model.
+        self._opacity = 255
         self._corner_radius = int(StyleConstants.BORDER_RADIUS)
+
+        cfg = getattr(self, "config", None)
+        theme_id = getattr(cfg, "window_theme", self._window_theme_id)
+        self.set_window_theme(theme_id, sync_surface=False)
         
-        # Configure window surface for real transparent rounded corners.
-        self.configure_translucent_surface()
+        # Configure window surface.
+        self.configure_translucent_surface(translucent=not self._force_opaque_surface)
         
         # Set window flags while preserving existing window type (Dialog/Tool/Window).
         base_type = self.windowFlags() & (
@@ -78,18 +85,18 @@ class StyledWindowMixin:
         # Apply rounded mask + platform blur in one place.
         self.sync_rounded_surface()
 
-    def configure_translucent_surface(self, corner_radius: int | None = None):
+    def configure_translucent_surface(self, corner_radius: int | None = None, translucent: bool = True):
         """
         Configure native surface attributes for transparent rounded windows.
         """
         if corner_radius is not None:
             self._corner_radius = int(corner_radius)
 
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
-        self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
-        self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent, False)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, bool(translucent))
+        self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, bool(translucent))
+        self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent, not bool(translucent))
         if hasattr(self, "setAutoFillBackground"):
-            self.setAutoFillBackground(False)
+            self.setAutoFillBackground(not bool(translucent))
 
     def apply_rounded_mask(self, corner_radius: int | None = None):
         """
@@ -98,7 +105,17 @@ class StyledWindowMixin:
         if corner_radius is not None:
             self._corner_radius = int(corner_radius)
 
-        rect_f = QRectF(self.rect()).adjusted(0.0, 0.0, -1.0, -1.0)
+        # On Windows, native rounded region is applied via Win32 SetWindowRgn
+        # inside blur path. Qt polygon mask can look jagged for translucent windows.
+        try:
+            from utils.platform_utils import is_windows
+            if is_windows() and getattr(self, "_native_blur_enabled", True):
+                self.clearMask()
+                return
+        except Exception:
+            pass
+
+        rect_f = QRectF(self.rect())
         if rect_f.width() <= 0 or rect_f.height() <= 0:
             return
 
@@ -125,13 +142,15 @@ class StyledWindowMixin:
         NOTE: We target both QWidget and QDialog to ensure the style applies
         to all window types (QDialog, QWidget, etc.)
         """
-        bg_color = StyleConstants.get_background_color(self._opacity)
+        theme = self._window_theme
         
         stylesheet = f"""
             QWidget, QDialog {{
-                background-color: {bg_color};
-                border: {StyleConstants.BORDER_WIDTH}px solid {StyleConstants.BORDER_COLOR};
+                background-color: {theme["window_bg"]};
+                border: {StyleConstants.BORDER_WIDTH}px solid {theme["window_border"]};
                 border-radius: {StyleConstants.BORDER_RADIUS}px;
+                color: {theme["text_primary"]};
+                font-family: '{theme["font_family"]}';
             }}
         """
         self.setStyleSheet(stylesheet)
@@ -147,6 +166,8 @@ class StyledWindowMixin:
         Requirements: 1.4, 6.1
         """
         if not getattr(self, "_native_blur_enabled", True):
+            return
+        if not self.testAttribute(Qt.WidgetAttribute.WA_TranslucentBackground):
             return
 
         try:
@@ -175,9 +196,17 @@ class StyledWindowMixin:
         
         Requirements: 4.1
         """
-        self._opacity = StyleConstants.clamp_opacity(opacity)
+        self._opacity = 255
         self._apply_stylesheet()
         self.sync_rounded_surface()
+
+    def set_window_theme(self, theme_id: str | None, sync_surface: bool = True) -> None:
+        """Applies the selected window theme to the mixin-managed base style."""
+        self._window_theme_id = theme_id or DEFAULT_WINDOW_THEME_ID
+        self._window_theme = get_window_theme(self._window_theme_id)
+        self._apply_stylesheet()
+        if sync_surface:
+            self.sync_rounded_surface()
     
     # Drag functionality for frameless windows
     

@@ -505,7 +505,8 @@ BEGIN FORMATTING NOW. OUTPUT ONLY THE FORMATTED TEXT IN THE SAME LANGUAGE AS INP
         self.interface_language: str = get_system_language()  # Язык интерфейса (определяется из системы)
         
         # UI Customization параметры
-        self.window_opacity: int = 150  # Прозрачность окна (50-255)
+        self.window_opacity: int = 255  # Прозрачность окна (50-255)
+        self.window_theme: str = "default"  # Цветовая тема плавающего окна
         self.font_size_floating_main: int = 14  # Размер шрифта основного текста плавающего окна (10-24)
         self.font_size_floating_info: int = 11  # Размер шрифта инфопанели плавающего окна (8-16)
         self.font_size_settings_labels: int = 12  # Размер шрифта меток окна настроек (10-16)
@@ -578,7 +579,7 @@ BEGIN FORMATTING NOW. OUTPUT ONLY THE FORMATTED TEXT IN THE SAME LANGUAGE AS INP
                 'GLM_USE_CODING_PLAN', 'LLM_BASE_URL', 'LLM_API_KEY',
                 'INTERFACE_LANGUAGE',
                 'WINDOW_OPACITY', 'FONT_SIZE_FLOATING_MAIN', 'FONT_SIZE_FLOATING_INFO',
-                'FONT_SIZE_SETTINGS_LABELS', 'FONT_SIZE_SETTINGS_TITLES'
+                'FONT_SIZE_SETTINGS_LABELS', 'FONT_SIZE_SETTINGS_TITLES', 'WINDOW_THEME'
             ]
             
             # Удалить ключи которых нет в файле
@@ -725,6 +726,10 @@ BEGIN FORMATTING NOW. OUTPUT ONLY THE FORMATTED TEXT IN THE SAME LANGUAGE AS INP
             config.window_opacity = max(50, min(255, value))
         except (ValueError, TypeError):
             pass  # Использовать значение по умолчанию
+
+        window_theme = os.getenv("WINDOW_THEME", "").strip()
+        if window_theme:
+            config.window_theme = window_theme
         
         try:
             value = int(os.getenv("FONT_SIZE_FLOATING_MAIN", config.font_size_floating_main))
@@ -808,7 +813,8 @@ BEGIN FORMATTING NOW. OUTPUT ONLY THE FORMATTED TEXT IN THE SAME LANGUAGE AS INP
         config.window_position_preset = config_loader.get("window.position_preset", "center")
         config.window_position_x = config_loader.get("window.position_x", None)
         config.window_position_y = config_loader.get("window.position_y", None)
-        config.window_opacity = config_loader.get("window.opacity", 150)
+        config.window_opacity = config_loader.get("window.opacity", 255)
+        config.window_theme = config_loader.get("window.theme", "default")
         config.font_size_floating_main = config_loader.get("window.font_sizes.floating_main", 14)
         config.font_size_floating_info = config_loader.get("window.font_sizes.floating_info", 11)
         config.font_size_settings_labels = config_loader.get("window.font_sizes.settings_labels", 12)

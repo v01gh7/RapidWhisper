@@ -20,6 +20,7 @@ from PyQt6.QtWidgets import (
 
 from core.config_loader import get_config_loader
 from design_system.styled_window_mixin import StyledWindowMixin
+from design_system.window_themes import DEFAULT_WINDOW_THEME_ID, get_window_theme
 from services.clipboard_manager import ClipboardManager
 from services.formatting_config import FormattingConfig
 from services.formatting_module import FormattingModule
@@ -49,12 +50,21 @@ class _FormatWorker(QObject):
 
 
 class ManualFormatDialog(QDialog, StyledWindowMixin):
-    def __init__(self, formatting_config: FormattingConfig, format_id: str, parent=None):
+    def __init__(self, formatting_config: FormattingConfig, format_id: str, parent=None, theme_id: Optional[str] = None):
         super().__init__(parent)
         StyledWindowMixin.__init__(self)
 
         self.formatting_config = formatting_config
         self.format_id = format_id
+        self._theme_id = theme_id or DEFAULT_WINDOW_THEME_ID
+        self._theme = get_window_theme(self._theme_id)
+        self._window_theme_id = self._theme_id
+        self._window_theme = self._theme
+        self._force_opaque_surface = True
+        self._title_label: Optional[QLabel] = None
+        self._format_label: Optional[QLabel] = None
+        self._input_label: Optional[QLabel] = None
+        self._output_label: Optional[QLabel] = None
 
         self._formatting_thread: Optional[QThread] = None
         self._formatting_worker: Optional[_FormatWorker] = None
@@ -62,9 +72,10 @@ class ManualFormatDialog(QDialog, StyledWindowMixin):
 
         self._create_ui()
 
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
+        self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent, True)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Dialog)
-        self.apply_unified_style(stay_on_top=True)
+        self.apply_unified_style(opacity=255, stay_on_top=True)
 
         logger.info("Manual format dialog initialized")
 
@@ -90,18 +101,27 @@ class ManualFormatDialog(QDialog, StyledWindowMixin):
         title_font = QFont()
         title_font.setPointSize(17)
         title_font.setBold(True)
+        title_font.setFamily(self._theme["font_family"])
         title_label.setFont(title_font)
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title_label.setStyleSheet("border: none; background: transparent;")
+        title_label.setStyleSheet(f"border: none; background: transparent; color: {self._theme['text_primary']};")
         layout.addWidget(title_label)
+        self._title_label = title_label
 
         format_label = QLabel(t("manual_format.selected_format", format=self._format_display_name()))
         format_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        format_label.setStyleSheet("color: #b0b0b0; font-size: 12px;")
+        format_label.setStyleSheet(
+            f"color: {self._theme['text_secondary']}; font-size: 12px; font-family: '{self._theme['font_family']}';"
+        )
         layout.addWidget(format_label)
+        self._format_label = format_label
 
         input_label = QLabel(t("manual_format.input_label"))
+        input_label.setStyleSheet(
+            f"color: {self._theme['text_primary']}; font-size: 12px; font-family: '{self._theme['font_family']}';"
+        )
         layout.addWidget(input_label)
+        self._input_label = input_label
 
         self.input_edit = QTextEdit()
         self.input_edit.setMinimumHeight(160)
@@ -109,7 +129,11 @@ class ManualFormatDialog(QDialog, StyledWindowMixin):
         layout.addWidget(self.input_edit)
 
         output_label = QLabel(t("manual_format.output_label"))
+        output_label.setStyleSheet(
+            f"color: {self._theme['text_primary']}; font-size: 12px; font-family: '{self._theme['font_family']}';"
+        )
         layout.addWidget(output_label)
+        self._output_label = output_label
 
         self.output_edit = QTextEdit()
         self.output_edit.setReadOnly(True)
@@ -118,7 +142,9 @@ class ManualFormatDialog(QDialog, StyledWindowMixin):
         layout.addWidget(self.output_edit)
 
         self.status_label = QLabel("")
-        self.status_label.setStyleSheet("color: #888888; font-size: 11px;")
+        self.status_label.setStyleSheet(
+            f"color: {self._theme['text_secondary']}; font-size: 11px; font-family: '{self._theme['font_family']}';"
+        )
         layout.addWidget(self.status_label)
 
         button_layout = QHBoxLayout()
@@ -153,39 +179,43 @@ class ManualFormatDialog(QDialog, StyledWindowMixin):
         return self.format_id.replace("_", " ").title()
 
     def _text_edit_style(self, read_only: bool = False) -> str:
-        background = "#242424" if read_only else "#2d2d2d"
+        background = self._theme["input_bg_alt"] if read_only else self._theme["input_bg"]
+        color = self._theme["text_secondary"] if read_only else self._theme["text_primary"]
         return f"""
             QTextEdit {{
                 background-color: {background};
-                color: #ffffff;
-                border: 1px solid #3d3d3d;
+                color: {color};
+                border: 1px solid {self._theme["input_border"]};
                 border-radius: 6px;
                 padding: 8px;
                 font-size: 12px;
+                font-family: '{self._theme["font_family"]}';
             }}
             QTextEdit:focus {{
-                border: 1px solid #0078d4;
+                border: 1px solid {self._theme["input_focus"]};
             }}
         """
 
     def _button_style(self) -> str:
-        return """
+        return f"""
             QPushButton {
-                background-color: #2d2d2d;
-                color: #ffffff;
-                border: 1px solid #3d3d3d;
+                background-color: {self._theme["input_bg"]};
+                color: {self._theme["text_primary"]};
+                border: 1px solid {self._theme["input_border"]};
                 border-radius: 8px;
                 padding: 8px 16px;
                 font-size: 12px;
                 min-width: 110px;
+                font-family: '{self._theme["font_family"]}';
             }
             QPushButton:hover {
-                background-color: #3d3d3d;
+                background-color: {self._theme["sidebar_hover"]};
+                border: 1px solid {self._theme["input_focus"]};
             }
             QPushButton:disabled {
-                color: #777777;
-                background-color: #242424;
-                border: 1px solid #2a2a2a;
+                color: {self._theme["text_secondary"]};
+                background-color: {self._theme["input_bg_alt"]};
+                border: 1px solid {self._theme["input_border"]};
             }
         """
 
@@ -295,3 +325,46 @@ class ManualFormatDialog(QDialog, StyledWindowMixin):
             event.accept()
             return
         super().keyPressEvent(event)
+
+    def set_theme(self, theme_id: str) -> None:
+        """Apply theme to dialog at runtime."""
+        self._theme_id = theme_id or DEFAULT_WINDOW_THEME_ID
+        self._theme = get_window_theme(self._theme_id)
+        self.set_window_theme(self._theme_id)
+
+        if self._title_label is not None:
+            title_font = self._title_label.font()
+            title_font.setFamily(self._theme["font_family"])
+            self._title_label.setFont(title_font)
+            self._title_label.setStyleSheet(
+                f"border: none; background: transparent; color: {self._theme['text_primary']};"
+            )
+
+        if self._format_label is not None:
+            self._format_label.setStyleSheet(
+                f"color: {self._theme['text_secondary']}; font-size: 12px; font-family: '{self._theme['font_family']}';"
+            )
+
+        if self._input_label is not None:
+            self._input_label.setStyleSheet(
+                f"color: {self._theme['text_primary']}; font-size: 12px; font-family: '{self._theme['font_family']}';"
+            )
+        if self._output_label is not None:
+            self._output_label.setStyleSheet(
+                f"color: {self._theme['text_primary']}; font-size: 12px; font-family: '{self._theme['font_family']}';"
+            )
+
+        if hasattr(self, "status_label") and self.status_label is not None:
+            self.status_label.setStyleSheet(
+                f"color: {self._theme['text_secondary']}; font-size: 11px; font-family: '{self._theme['font_family']}';"
+            )
+        if hasattr(self, "input_edit") and self.input_edit is not None:
+            self.input_edit.setStyleSheet(self._text_edit_style())
+        if hasattr(self, "output_edit") and self.output_edit is not None:
+            self.output_edit.setStyleSheet(self._text_edit_style(read_only=True))
+        if hasattr(self, "format_button") and self.format_button is not None:
+            self.format_button.setStyleSheet(self._button_style())
+        if hasattr(self, "copy_button") and self.copy_button is not None:
+            self.copy_button.setStyleSheet(self._button_style())
+        if hasattr(self, "close_button") and self.close_button is not None:
+            self.close_button.setStyleSheet(self._button_style())

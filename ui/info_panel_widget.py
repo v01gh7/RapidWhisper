@@ -11,6 +11,7 @@ from PyQt6.QtCore import Qt, pyqtSlot, pyqtSignal
 from PyQt6.QtGui import QPixmap, QFont, QCursor
 from typing import Optional, List
 from utils.i18n import t
+from design_system.window_themes import DEFAULT_WINDOW_THEME_ID, get_window_theme
 
 
 class InfoPanelWidget(QWidget):
@@ -50,6 +51,8 @@ class InfoPanelWidget(QWidget):
         """
         super().__init__(parent)
         self._config = config
+        self._theme_id = getattr(config, "window_theme", DEFAULT_WINDOW_THEME_ID)
+        self._theme = get_window_theme(self._theme_id)
         self._default_icon: Optional[QPixmap] = None
         self._create_default_icon()
         self._setup_ui()
@@ -120,12 +123,12 @@ class InfoPanelWidget(QWidget):
         
         self._app_name_label = QLabel(t("common.no_active_window"))
         self._app_name_label.setObjectName("appName")
-        self._app_name_label.setFont(QFont("Segoe UI", font_size))
+        self._app_name_label.setFont(QFont(self._theme["font_family"], font_size))
         self._app_name_label.setMaximumWidth(245)  # Ограничить максимальную ширину (минус 15px)
         
         self._app_sub_label = QLabel(t("common.active_application"))
         self._app_sub_label.setObjectName("appSub")
-        self._app_sub_label.setFont(QFont("Segoe UI", sub_font_size))
+        self._app_sub_label.setFont(QFont(self._theme["font_family"], sub_font_size))
         
         text_layout.addWidget(self._app_name_label)
         text_layout.addWidget(self._app_sub_label)
@@ -146,7 +149,7 @@ class InfoPanelWidget(QWidget):
         # Чип "Запись"
         self._record_chip = QLabel(self._chip_text(t("common.record")))
         self._record_chip.setObjectName("recordChip")
-        self._record_chip.setFont(QFont("Segoe UI", font_size))
+        self._record_chip.setFont(QFont(self._theme["font_family"], font_size))
         self._record_chip.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self._record_chip.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
         self._record_chip.setMouseTracking(True)
@@ -168,7 +171,7 @@ class InfoPanelWidget(QWidget):
         # Чип "Отменить"
         self._cancel_chip = QLabel(self._chip_text(t("common.cancel_action")))
         self._cancel_chip.setObjectName("cancelChip")
-        self._cancel_chip.setFont(QFont("Segoe UI", font_size))
+        self._cancel_chip.setFont(QFont(self._theme["font_family"], font_size))
         self._cancel_chip.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self._cancel_chip.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
         self._cancel_chip.setMouseTracking(True)
@@ -199,28 +202,29 @@ class InfoPanelWidget(QWidget):
         
         Requirements: 5.1, 5.2, 5.6, 5.7, 5.8
         """
+        theme = self._theme
         self.setStyleSheet("""
             InfoPanelWidget {
-                background-color: rgba(16, 22, 34, 175);
-                border-top: 1px solid rgba(255, 255, 255, 35);
+                background-color: %s;
+                border-top: 1px solid %s;
             }
             QLabel#appName {
-                color: #EAF1FF;
+                color: %s;
                 font-weight: 600;
             }
             QLabel#appSub {
-                color: #9AA4B2;
+                color: %s;
             }
             QLabel#appIcon {
-                background-color: rgba(255, 255, 255, 0.08);
-                border: 1px solid rgba(255, 255, 255, 0.18);
+                background-color: %s;
+                border: 1px solid %s;
                 border-radius: 5px;
                 padding: 2px;
             }
             QLabel#recordChip {
-                background-color: rgba(58, 140, 255, 0.22);
-                border: 1px solid rgba(105, 185, 255, 0.5);
-                color: #7FD3FF;
+                background-color: %s;
+                border: 1px solid %s;
+                color: %s;
                 border-radius: 9px;
                 padding: 1px 6px;
                 min-height: 22px;
@@ -228,24 +232,24 @@ class InfoPanelWidget(QWidget):
                 letter-spacing: 0px;
             }
             QLabel#recordChip:hover {
-                background-color: rgba(80, 160, 255, 0.35);
-                border: 1px solid rgba(140, 210, 255, 0.75);
-                color: #EAF6FF;
+                background-color: %s;
+                border: 1px solid %s;
+                color: %s;
             }
             QLabel#recordChip[active="true"] {
-                background-color: rgba(90, 170, 255, 0.4);
-                border: 1px solid rgba(130, 200, 255, 0.7);
-                color: #EAF6FF;
+                background-color: %s;
+                border: 1px solid %s;
+                color: %s;
             }
             QLabel#recordChip[active="true"]:hover {
-                background-color: rgba(110, 185, 255, 0.55);
-                border: 1px solid rgba(170, 225, 255, 0.9);
-                color: #FFFFFF;
+                background-color: %s;
+                border: 1px solid %s;
+                color: %s;
             }
             QLabel#cancelChip {
-                background-color: rgba(255, 90, 90, 0.2);
-                border: 1px solid rgba(255, 120, 120, 0.55);
-                color: #FF6B6B;
+                background-color: %s;
+                border: 1px solid %s;
+                color: %s;
                 border-radius: 9px;
                 padding: 1px 6px;
                 min-height: 22px;
@@ -253,33 +257,88 @@ class InfoPanelWidget(QWidget):
                 letter-spacing: 0px;
             }
             QLabel#cancelChip:hover {
-                background-color: rgba(255, 120, 120, 0.35);
-                border: 1px solid rgba(255, 165, 165, 0.75);
-                color: #FFE2E2;
+                background-color: %s;
+                border: 1px solid %s;
+                color: %s;
             }
             QLabel#cancelChip[active="true"] {
-                background-color: rgba(255, 100, 100, 0.32);
-                border: 1px solid rgba(255, 140, 140, 0.7);
-                color: #FFE2E2;
+                background-color: %s;
+                border: 1px solid %s;
+                color: %s;
             }
             QLabel#cancelChip[active="true"]:hover {
-                background-color: rgba(255, 130, 130, 0.45);
-                border: 1px solid rgba(255, 180, 180, 0.9);
-                color: #FFFFFF;
+                background-color: %s;
+                border: 1px solid %s;
+                color: %s;
             }
             QLabel[role="keycap"] {
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                background: rgba(255, 255, 255, 0.09);
+                border: 1px solid %s;
+                background: %s;
                 border-radius: 6px;
                 padding: 1px 5px;
                 min-height: 22px;
                 max-height: 22px;
-                color: #E6EAF2;
+                color: %s;
             }
             QFrame#hotkeyDivider {
-                background-color: rgba(255, 255, 255, 0.18);
+                background-color: %s;
             }
-        """)
+        """ % (
+            theme["panel_bg"],
+            theme["panel_border_top"],
+            theme["panel_app_name"],
+            theme["panel_app_sub"],
+            theme["panel_app_icon_bg"],
+            theme["panel_app_icon_border"],
+            theme["panel_record_bg"],
+            theme["panel_record_border"],
+            theme["panel_record_text"],
+            theme["panel_record_bg_hover"],
+            theme["panel_record_border_hover"],
+            theme["panel_record_text_hover"],
+            theme["panel_record_bg_active"],
+            theme["panel_record_border_active"],
+            theme["panel_record_text_active"],
+            theme["panel_record_bg_hover"],
+            theme["panel_record_border_hover"],
+            theme["panel_record_text_hover"],
+            theme["panel_cancel_bg"],
+            theme["panel_cancel_border"],
+            theme["panel_cancel_text"],
+            theme["panel_cancel_bg_hover"],
+            theme["panel_cancel_border_hover"],
+            theme["panel_cancel_text_hover"],
+            theme["panel_cancel_bg_active"],
+            theme["panel_cancel_border_active"],
+            theme["panel_cancel_text_active"],
+            theme["panel_cancel_bg_hover"],
+            theme["panel_cancel_border_hover"],
+            theme["panel_cancel_text_hover"],
+            theme["panel_keycap_border"],
+            theme["panel_keycap_bg"],
+            theme["panel_keycap_text"],
+            theme["panel_divider"],
+        ))
+
+    def _apply_theme_fonts(self) -> None:
+        """Applies current theme font family to panel labels."""
+        font_size = self._config.font_size_floating_info if self._config else 11
+        sub_font_size = max(8, font_size - 2)
+        self._hotkey_font_size = max(9, font_size - 1)
+        self._app_name_label.setFont(QFont(self._theme["font_family"], font_size))
+        self._app_sub_label.setFont(QFont(self._theme["font_family"], sub_font_size))
+        self._record_chip.setFont(QFont(self._theme["font_family"], font_size))
+        self._cancel_chip.setFont(QFont(self._theme["font_family"], font_size))
+        for label in self.findChildren(QLabel):
+            if label.property("role") == "keycap":
+                label.setFont(QFont(self._theme["font_family"], self._hotkey_font_size))
+
+    def set_theme(self, theme_id: str) -> None:
+        """Switches panel colors to a predefined theme."""
+        self._theme_id = theme_id or DEFAULT_WINDOW_THEME_ID
+        self._theme = get_window_theme(self._theme_id)
+        self._apply_theme_fonts()
+        self._apply_styles()
 
     def _chip_text(self, text: str) -> str:
         """Возвращает текст для чипа в верхнем регистре."""
@@ -299,7 +358,7 @@ class InfoPanelWidget(QWidget):
         """Создает label-ключ в стиле keycap."""
         label = QLabel(text)
         label.setProperty("role", "keycap")
-        label.setFont(QFont("Segoe UI", getattr(self, "_hotkey_font_size", 11)))
+        label.setFont(QFont(self._theme["font_family"], getattr(self, "_hotkey_font_size", 11)))
         label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         return label
 

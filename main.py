@@ -1102,7 +1102,11 @@ class RapidWhisperApp(QObject):
             formatting_config = FormattingConfig.from_config(config_loader)
             
             # Create dialog (without parent to ensure it shows)
-            self.format_selection_dialog = FormatSelectionDialog(formatting_config, parent=None)
+            self.format_selection_dialog = FormatSelectionDialog(
+                formatting_config,
+                parent=None,
+                theme_id=getattr(self.config, "window_theme", "default"),
+            )
             self._format_dialog_open = True
             self.logger.info("Диалог создан, показываем...")
             
@@ -1188,7 +1192,11 @@ class RapidWhisperApp(QObject):
 
             formatting_config = FormattingConfig.from_config(get_config_loader())
 
-            dialog = FormatSelectionDialog(formatting_config, parent=None)
+            dialog = FormatSelectionDialog(
+                formatting_config,
+                parent=None,
+                theme_id=getattr(self.config, "window_theme", "default"),
+            )
             self.manual_format_selection_dialog = dialog
             self._manual_format_selection_open = True
 
@@ -1206,7 +1214,12 @@ class RapidWhisperApp(QObject):
                 self.logger.warning("Manual formatting selection accepted without a format")
                 return
 
-            manual_dialog = ManualFormatDialog(formatting_config, selected_format, parent=None)
+            manual_dialog = ManualFormatDialog(
+                formatting_config,
+                selected_format,
+                parent=None,
+                theme_id=getattr(self.config, "window_theme", "default"),
+            )
             self.manual_format_dialog = manual_dialog
             self._manual_format_dialog_open = True
             manual_dialog.exec()
@@ -1253,6 +1266,35 @@ class RapidWhisperApp(QObject):
             self.logger.info("API ключ установлен - приложение готово к работе")
         else:
             self.logger.warning("API ключ все еще не установлен")
+
+    def _apply_runtime_theme(self, theme_id: str | None = None) -> None:
+        """Apply current theme immediately to all active windows/dialogs."""
+        active_theme_id = theme_id or getattr(self.config, "window_theme", "default")
+
+        if self.floating_window is not None:
+            self.floating_window.config = self.config
+            if getattr(self.floating_window, "info_panel", None) is not None:
+                self.floating_window.info_panel.config = self.config
+            if hasattr(self.floating_window, "set_theme"):
+                self.floating_window.set_theme(active_theme_id)
+            if hasattr(self.floating_window, "set_opacity"):
+                self.floating_window.set_opacity(255)
+
+        if self.settings_window is not None:
+            self.settings_window.config = self.config
+            if hasattr(self.settings_window, "_apply_theme_runtime"):
+                self.settings_window._apply_theme_runtime(active_theme_id)
+
+        for dialog_attr in ("format_selection_dialog", "manual_format_selection_dialog", "manual_format_dialog"):
+            dialog = getattr(self, dialog_attr, None)
+            if dialog is None:
+                continue
+            if hasattr(dialog, "set_theme"):
+                dialog.set_theme(active_theme_id)
+            if hasattr(dialog, "set_opacity"):
+                dialog.set_opacity(255)
+            if hasattr(dialog, "update_opacity"):
+                dialog.update_opacity(255)
     
     def _show_welcome_dialog(self):
         """Показывает приветственное окно при первом запуске."""
@@ -1326,6 +1368,10 @@ class RapidWhisperApp(QObject):
             # Сохранить старую конфигурацию для сравнения
             old_config = self.config
             self.config = new_config
+            self.config.window_opacity = 255
+
+            # Rebind config/theme to all active windows immediately.
+            self._apply_runtime_theme(getattr(self.config, "window_theme", "default"))
             
             # Обновить компоненты которые можно обновить без перезапуска
             

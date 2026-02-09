@@ -15,6 +15,7 @@ from services.formatting_config import FormattingConfig
 from utils.i18n import t
 from utils.logger import get_logger
 from design_system.styled_window_mixin import StyledWindowMixin
+from design_system.window_themes import DEFAULT_WINDOW_THEME_ID, get_window_theme
 from typing import Optional, List, Tuple
 
 logger = get_logger()
@@ -30,7 +31,7 @@ class FormatSelectionDialog(QDialog, StyledWindowMixin):
     Requirements: 2.1, 2.4, 7.1, 7.2, 7.3, 7.4
     """
     
-    def __init__(self, formatting_config: FormattingConfig, parent=None):
+    def __init__(self, formatting_config: FormattingConfig, parent=None, theme_id: Optional[str] = None):
         """
         Initialize the format selection dialog.
         
@@ -46,18 +47,26 @@ class FormatSelectionDialog(QDialog, StyledWindowMixin):
         self.formatting_config = formatting_config
         self._selected_format: Optional[str] = None
         self.format_buttons = {}  # Store format buttons
+        self._theme_id = theme_id or DEFAULT_WINDOW_THEME_ID
+        self._theme = get_window_theme(self._theme_id)
+        self._window_theme_id = self._theme_id
+        self._window_theme = self._theme
+        self._force_opaque_surface = True
+        self._cancel_button: Optional[QPushButton] = None
+        self._title_label: Optional[QLabel] = None
         
         # Set up the dialog
         self._create_ui()
         self._load_formats()
         
         # Apply unified styling
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
+        self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent, True)
         
         # Убрать border от окна
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Dialog)
         
-        self.apply_unified_style(stay_on_top=True)
+        self.apply_unified_style(opacity=255, stay_on_top=True)
         
         logger.info("Format selection dialog initialized")
 
@@ -92,11 +101,13 @@ class FormatSelectionDialog(QDialog, StyledWindowMixin):
         title_font = QFont()
         title_font.setPointSize(17)
         title_font.setBold(True)
+        title_font.setFamily(self._theme["font_family"])
         title_label.setFont(title_font)
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title_label.setContentsMargins(20, 20, 20, 20)
         title_label.setStyleSheet("border: none; background: transparent;")
         layout.addWidget(title_label)
+        self._title_label = title_label
         
         # Scroll area for format grid - БЕЗ BORDER
         scroll_area = QScrollArea()
@@ -136,20 +147,9 @@ class FormatSelectionDialog(QDialog, StyledWindowMixin):
         cancel_btn.setMinimumWidth(100)
         cancel_btn.clicked.connect(self._on_cancel)
         cancel_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        cancel_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #2d2d2d;
-                color: #ffffff;
-                border: 1px solid #fff;
-                border-radius: 8px;
-                padding: 8px;
-                font-size: 12px;
-            }
-            QPushButton:hover {
-                background-color: #3d3d3d;
-            }
-        """)
+        cancel_btn.setStyleSheet(self._cancel_button_style())
         button_layout.addWidget(cancel_btn)
+        self._cancel_button = cancel_btn
         
         layout.addLayout(button_layout)
         
@@ -198,24 +198,7 @@ class FormatSelectionDialog(QDialog, StyledWindowMixin):
                 btn.setCursor(Qt.CursorShape.PointingHandCursor)
                 btn.setCheckable(False)
                 
-                # Style button exactly like in settings
-                btn.setStyleSheet("""
-                    QPushButton {
-                        background-color: #2d2d2d;
-                        color: #ffffff;
-                        border: none;
-                        border-radius: 8px;
-                        padding: 8px;
-                        font-size: 12px;
-                        font-weight: bold;
-                    }
-                    QPushButton:hover {
-                        background-color: #3d3d3d;
-                    }
-                    QPushButton:pressed {
-                        background-color: #0078d4;
-                    }
-                """)
+                btn.setStyleSheet(self._format_button_style())
                 
                 # Connect click to selection
                 btn.clicked.connect(lambda checked, fid=format_id: self._on_format_button_clicked(fid))
@@ -249,20 +232,7 @@ class FormatSelectionDialog(QDialog, StyledWindowMixin):
             btn.setMinimumHeight(80)
             btn.setMinimumWidth(120)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #2d2d2d;
-                    color: #ffffff;
-                    border: none;
-                    border-radius: 8px;
-                    padding: 8px;
-                    font-size: 12px;
-                    font-weight: bold;
-                }
-                QPushButton:hover {
-                    background-color: #3d3d3d;
-                }
-            """)
+            btn.setStyleSheet(self._format_button_style())
             btn.clicked.connect(lambda: self._on_format_button_clicked("_fallback"))
             self.formats_grid.addWidget(btn, 0, 0)
             self.format_buttons["_fallback"] = btn
@@ -324,3 +294,58 @@ class FormatSelectionDialog(QDialog, StyledWindowMixin):
             self._on_cancel()
         else:
             super().keyPressEvent(event)
+
+    def _cancel_button_style(self) -> str:
+        return f"""
+            QPushButton {{
+                background-color: {self._theme["input_bg_alt"]};
+                color: {self._theme["text_primary"]};
+                border: 1px solid {self._theme["input_border"]};
+                border-radius: 8px;
+                padding: 8px;
+                font-size: 12px;
+                font-weight: 600;
+                font-family: '{self._theme["font_family"]}';
+            }}
+            QPushButton:hover {{
+                background-color: {self._theme["sidebar_hover"]};
+                border: 1px solid {self._theme["input_focus"]};
+            }}
+        """
+
+    def _format_button_style(self) -> str:
+        return f"""
+            QPushButton {{
+                background-color: {self._theme["input_bg"]};
+                color: {self._theme["text_primary"]};
+                border: 1px solid {self._theme["input_border"]};
+                border-radius: 8px;
+                padding: 8px;
+                font-size: 12px;
+                font-weight: bold;
+                font-family: '{self._theme["font_family"]}';
+            }}
+            QPushButton:hover {{
+                background-color: {self._theme["sidebar_hover"]};
+                border: 1px solid {self._theme["input_focus"]};
+            }}
+            QPushButton:pressed {{
+                background-color: {self._theme["accent_press"]};
+                border: 1px solid {self._theme["accent"]};
+            }}
+        """
+
+    def set_theme(self, theme_id: str) -> None:
+        """Apply theme to dialog at runtime."""
+        self._theme_id = theme_id or DEFAULT_WINDOW_THEME_ID
+        self._theme = get_window_theme(self._theme_id)
+        self.set_window_theme(self._theme_id)
+        if self._title_label is not None:
+            title_font = self._title_label.font()
+            title_font.setFamily(self._theme["font_family"])
+            self._title_label.setFont(title_font)
+            self._title_label.setStyleSheet(f"border: none; background: transparent; color: {self._theme['text_primary']};")
+        if self._cancel_button is not None:
+            self._cancel_button.setStyleSheet(self._cancel_button_style())
+        for button in self.format_buttons.values():
+            button.setStyleSheet(self._format_button_style())

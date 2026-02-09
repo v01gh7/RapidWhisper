@@ -21,6 +21,12 @@ from utils.i18n import t
 from ui.hotkey_input import HotkeyInput
 from ui.statistics_tab import StatisticsTab
 from design_system.styled_window_mixin import StyledWindowMixin
+from design_system.window_themes import (
+    DEFAULT_WINDOW_THEME_ID,
+    get_window_theme,
+    get_window_theme_ids,
+    get_window_theme_name_key,
+)
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 import os
@@ -118,6 +124,10 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         self.config = config
         self.statistics_manager = statistics_manager
         self.tray_icon = tray_icon
+        self._header_widget: Optional[QWidget] = None
+        self._header_title_label: Optional[QLabel] = None
+        self._header_minimize_btn: Optional[QPushButton] = None
+        self._header_close_btn: Optional[QPushButton] = None
         self.setWindowTitle(t("settings.title"))
         self.setMinimumWidth(950)  # Увеличена ширина для новых кнопок
         self.setMinimumHeight(650)  # Увеличена высота
@@ -133,15 +143,14 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             self.setMaximumHeight(max_height)
         
         # Set translucent background BEFORE applying unified style
-        # This is critical for Windows to properly render the transparent window
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        
-        # IMPORTANT: Set WA_OpaquePaintEvent to False for proper transparency rendering
-        self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent, False)
+        # Settings window is always opaque.
+        self._force_opaque_surface = True
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
+        self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent, True)
         
         # Apply unified styling from mixin (Task 4.2)
         from design_system.style_constants import StyleConstants
-        opacity = getattr(config, 'window_opacity', StyleConstants.OPACITY_DEFAULT)
+        opacity = 255
         self.apply_unified_style(opacity=opacity, stay_on_top=False)
         
         # Apply child widget styles (must be called AFTER apply_unified_style)
@@ -219,112 +228,107 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         ВАЖНО: Этот метод объединяет стили миксина (для окна) со стилями
         дочерних виджетов. Вызывается ПОСЛЕ apply_unified_style().
         """
-        # Получить размеры шрифтов из конфигурации
         label_font_size = self.config.font_size_settings_labels if hasattr(self.config, 'font_size_settings_labels') else 12
         title_font_size = self.config.font_size_settings_titles if hasattr(self.config, 'font_size_settings_titles') else 24
-        
-        # Get the mixin's background style
-        from design_system.style_constants import StyleConstants
-        bg_color = StyleConstants.get_background_color(self._opacity)
-        
-        # Combine mixin styles (window-level) with child widget styles
-        # The mixin sets the window background, we add styles for child widgets
+        theme_id = getattr(self.config, "window_theme", DEFAULT_WINDOW_THEME_ID)
+        theme = get_window_theme(theme_id)
+
+        self.set_window_theme(theme_id, sync_surface=False)
+        self._opacity = 255
+
         self.setStyleSheet(f"""
-            /* Window-level styles from mixin */
             QDialog {{
-                background-color: {bg_color};
-                border: {StyleConstants.BORDER_WIDTH}px solid {StyleConstants.BORDER_COLOR};
-                border-radius: {StyleConstants.BORDER_RADIUS}px;
-                color: #ffffff;
+                background-color: {theme["window_bg"]};
+                border: 2px solid {theme["window_border"]};
+                border-radius: 6px;
+                color: {theme["text_primary"]};
+                font-family: '{theme["font_family"]}';
             }}
             QLabel {{
-                color: #ffffff;
+                color: {theme["text_primary"]};
                 font-size: {label_font_size}px;
+                background: transparent;
             }}
-            QLineEdit, QDoubleSpinBox {{
-                background-color: #2d2d2d;
-                color: #ffffff;
-                border: 1px solid #3d3d3d;
+            QLineEdit, QDoubleSpinBox, QSpinBox, QComboBox, QTextEdit {{
+                background-color: {theme["input_bg"]};
+                color: {theme["text_primary"]};
+                border: 1px solid {theme["input_border"]};
                 border-radius: 6px;
                 padding: 8px;
+                selection-background-color: {theme["sidebar_selected"]};
+                selection-color: {theme["text_primary"]};
             }}
-            QComboBox {{
-                background-color: #2d2d2d;
-                color: #ffffff;
-                border: 1px solid #3d3d3d;
-                border-radius: 6px;
-                padding: 8px;
-            }}
-            QLineEdit:focus, QDoubleSpinBox:focus, QComboBox:focus {{
-                border: 1px solid #0078d4;
+            QLineEdit:focus, QDoubleSpinBox:focus, QSpinBox:focus, QComboBox:focus, QTextEdit:focus {{
+                border: 1px solid {theme["input_focus"]};
             }}
             QPushButton {{
-                background-color: #0078d4;
-                color: #ffffff;
-                border: none;
+                background-color: {theme["accent"]};
+                color: {theme["text_primary"]};
+                border: 1px solid {theme["window_border"]};
                 border-radius: 6px;
                 padding: 8px 16px;
                 font-size: 12px;
                 font-weight: bold;
             }}
             QPushButton:hover {{
-                background-color: #1084d8;
+                background-color: {theme["accent_hover"]};
             }}
             QPushButton:pressed {{
-                background-color: #006cc1;
+                background-color: {theme["accent_press"]};
             }}
             QPushButton#cancelButton {{
-                background-color: #3d3d3d;
+                background-color: {theme["input_bg_alt"]};
+                border: 1px solid {theme["input_border"]};
             }}
             QPushButton#cancelButton:hover {{
-                background-color: #4d4d4d;
+                background-color: {theme["sidebar_hover"]};
             }}
             QGroupBox {{
-                color: #ffffff;
-                border: {StyleConstants.BORDER_WIDTH}px solid rgba(255, 255, 255, 80);
+                color: {theme["text_primary"]};
+                border: 1px solid {theme["window_border"]};
                 border-radius: 8px;
                 margin-top: 20px;
                 font-weight: bold;
                 padding-top: 20px;
-                background-color: rgba(37, 37, 37, {int(self._opacity * 0.7)});
+                background-color: {theme["group_bg"]};
             }}
             QGroupBox::title {{
                 subcontrol-origin: margin;
                 subcontrol-position: top left;
                 padding: 8px 16px;
-                background-color: rgba(200, 200, 200, {int(self._opacity * 0.7)});
-                color: #ffffff;
+                background-color: {theme["group_title_bg"]};
+                color: {theme["text_primary"]};
                 font-size: 14px;
                 font-weight: bold;
                 border-radius: 4px;
-                border: 1px solid rgba(255, 255, 255, 100);
+                border: 1px solid {theme["window_border"]};
             }}
             QListWidget {{
-                background-color: rgba(26, 26, 26, {int(self._opacity * 0.9)});
+                background-color: {theme["sidebar_bg"]};
                 border: none;
-                border-right: 1px solid rgba(255, 255, 255, 50);
+                border-right: 1px solid {theme["window_border"]};
                 outline: none;
                 padding: 8px 0px;
-                color: #ffffff;
+                color: {theme["text_primary"]};
             }}
             QWidget#rightPanel {{
-                background-color: rgba(26, 26, 26, {int(self._opacity * 0.9)});
+                background-color: {theme["window_bg"]};
                 border: none;
             }}
             QListWidget::item {{
-                color: #ffffff;
+                color: {theme["text_primary"]};
                 padding: 10px 16px;
                 border-radius: 6px;
                 margin: 2px 8px;
                 background-color: transparent;
             }}
             QListWidget::item:selected {{
-                background-color: rgba(0, 120, 212, {int(self._opacity * 0.8)});
-                color: #ffffff;
+                background-color: {theme["sidebar_selected"]};
+                color: {theme["text_primary"]};
             }}
             QListWidget::item:hover:!selected {{
-                background-color: rgba(45, 45, 45, {int(self._opacity * 0.6)});
-                color: #ffffff;
+                background-color: {theme["sidebar_hover"]};
+                color: {theme["text_primary"]};
             }}
             QScrollArea {{
                 border: none;
@@ -337,30 +341,27 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                 background-color: transparent;
             }}
             QScrollBar:vertical {{
-                background-color: rgba(30, 30, 30, {int(self._opacity * 0.6)});
+                background-color: {theme["scroll_track"]};
                 width: 12px;
                 border-radius: 6px;
                 margin: 0px;
             }}
             QScrollBar::handle:vertical {{
-                background-color: #3d3d3d;
+                background-color: {theme["scroll_handle"]};
                 border-radius: 6px;
                 min-height: 30px;
             }}
             QScrollBar::handle:vertical:hover {{
-                background-color: #4d4d4d;
-            }}
-            QScrollBar::handle:vertical:pressed {{
-                background-color: #0078d4;
+                background-color: {theme["scroll_handle_hover"]};
             }}
             QLabel#pageTitle {{
-                color: #ffffff;
+                color: {theme["text_primary"]};
                 font-size: {title_font_size}px;
                 font-weight: bold;
                 padding: 12px 20px;
-                background-color: rgba(45, 45, 45, {int(self._opacity * 0.8)});
+                background-color: {theme["group_title_bg"]};
                 border-radius: 6px;
-                border: 2px solid rgba(255, 255, 255, 100);
+                border: 1px solid {theme["window_border"]};
                 margin-bottom: 8px;
             }}
             QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
@@ -370,14 +371,15 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                 background: none;
             }}
             QLabel a {{
-                color: #0078d4;
+                color: {theme["link"]};
                 text-decoration: none;
             }}
             QLabel a:hover {{
-                color: #1084d8;
+                color: {theme["accent_hover"]};
                 text-decoration: underline;
             }}
         """)
+        self._apply_header_style(theme)
     
     def _create_ui(self):
         """Создает интерфейс окна настроек в стиле macOS с боковой панелью."""
@@ -567,8 +569,10 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         Requirements: 2.3
         """
+        theme = get_window_theme(getattr(self.config, "window_theme", DEFAULT_WINDOW_THEME_ID))
         header = QWidget()
         header.setFixedHeight(35)
+        self._header_widget = header
         
         # Create horizontal layout for header content
         header_layout = QHBoxLayout(header)
@@ -577,10 +581,11 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         # Add title label
         title_label = QLabel("RapidWhisper - " + t("settings.title"))
-        title_font = QFont("Segoe UI", 10)
+        title_font = QFont(theme["font_family"], 10)
         title_label.setFont(title_font)
-        title_label.setStyleSheet("color: #ffffff; background: transparent;")
+        title_label.setStyleSheet(f"color: {theme['text_primary']}; background: transparent;")
         header_layout.addWidget(title_label)
+        self._header_title_label = title_label
         
         # Add stretch to push buttons to the right
         header_layout.addStretch()
@@ -602,18 +607,19 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         minimize_icon = QIcon(os.path.join(icons_path, 'minimize.svg'))
         minimize_btn.setIcon(minimize_icon)
         minimize_btn.setIconSize(minimize_btn.size() * 0.5)
-        minimize_btn.setStyleSheet("""
-            QPushButton {
+        minimize_btn.setStyleSheet(f"""
+            QPushButton {{
                 background-color: transparent;
                 border: none;
-            }
-            QPushButton:hover {
-                background-color: rgba(255, 255, 255, 30);
+            }}
+            QPushButton:hover {{
+                background-color: {theme["sidebar_hover"]};
                 border-radius: 4px;
-            }
+            }}
         """)
         minimize_btn.clicked.connect(self.showMinimized)
         header_layout.addWidget(minimize_btn)
+        self._header_minimize_btn = minimize_btn
         
         # Maximize/Restore button
         self.maximize_btn = QPushButton()
@@ -623,15 +629,15 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         self.restore_icon = QIcon(os.path.join(icons_path, 'restore.svg'))
         self.maximize_btn.setIcon(self.maximize_icon)
         self.maximize_btn.setIconSize(self.maximize_btn.size() * 0.5)
-        self.maximize_btn.setStyleSheet("""
-            QPushButton {
+        self.maximize_btn.setStyleSheet(f"""
+            QPushButton {{
                 background-color: transparent;
                 border: none;
-            }
-            QPushButton:hover {
-                background-color: rgba(255, 255, 255, 30);
+            }}
+            QPushButton:hover {{
+                background-color: {theme["sidebar_hover"]};
                 border-radius: 4px;
-            }
+            }}
         """)
         self.maximize_btn.clicked.connect(self._toggle_maximize)
         header_layout.addWidget(self.maximize_btn)
@@ -643,30 +649,82 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         close_icon = QIcon(os.path.join(icons_path, 'close.svg'))
         close_btn.setIcon(close_icon)
         close_btn.setIconSize(close_btn.size() * 0.5)
-        close_btn.setStyleSheet("""
-            QPushButton {
+        close_btn.setStyleSheet(f"""
+            QPushButton {{
                 background-color: transparent;
                 border: none;
-            }
-            QPushButton:hover {
-                background-color: rgba(232, 17, 35, 200);
+            }}
+            QPushButton:hover {{
+                background-color: {theme["panel_cancel_bg_hover"]};
                 border-radius: 4px;
-            }
+            }}
         """)
         close_btn.clicked.connect(self.close)
         header_layout.addWidget(close_btn)
+        self._header_close_btn = close_btn
         
         # Style the header to be visually distinct
-        header_opacity = int(self._opacity * 0.8)
         header.setStyleSheet(f"""
             QWidget {{
-                background-color: rgba(40, 40, 40, {header_opacity});
+                background-color: {theme["sidebar_bg"]};
                 border: none;
+                border-bottom: 1px solid {theme["window_border"]};
                 border-top-left-radius: 5px;
                 border-top-right-radius: 5px;
             }}
         """)
         return header
+
+    def _apply_header_style(self, theme: Dict[str, str]) -> None:
+        """Apply active theme colors to the custom title bar."""
+        if self._header_widget is not None:
+            self._header_widget.setStyleSheet(f"""
+                QWidget {{
+                    background-color: {theme["sidebar_bg"]};
+                    border: none;
+                    border-bottom: 1px solid {theme["window_border"]};
+                    border-top-left-radius: 5px;
+                    border-top-right-radius: 5px;
+                }}
+            """)
+        if self._header_title_label is not None:
+            header_font = self._header_title_label.font()
+            header_font.setFamily(theme["font_family"])
+            self._header_title_label.setFont(header_font)
+            self._header_title_label.setStyleSheet(f"color: {theme['text_primary']}; background: transparent;")
+        if self._header_minimize_btn is not None:
+            self._header_minimize_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: transparent;
+                    border: none;
+                }}
+                QPushButton:hover {{
+                    background-color: {theme["sidebar_hover"]};
+                    border-radius: 4px;
+                }}
+            """)
+        if getattr(self, "maximize_btn", None) is not None:
+            self.maximize_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: transparent;
+                    border: none;
+                }}
+                QPushButton:hover {{
+                    background-color: {theme["sidebar_hover"]};
+                    border-radius: 4px;
+                }}
+            """)
+        if self._header_close_btn is not None:
+            self._header_close_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: transparent;
+                    border: none;
+                }}
+                QPushButton:hover {{
+                    background-color: {theme["panel_cancel_bg_hover"]};
+                    border-radius: 4px;
+                }}
+            """)
     
     def _toggle_maximize(self):
         """Toggle between maximized and normal window state."""
@@ -2061,6 +2119,26 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         title = QLabel(t("settings.ui_customization.title"))
         title.setObjectName("pageTitle")
         layout.addWidget(title)
+
+        # Группа: Тема окна
+        theme_group = QGroupBox(t("settings.ui_customization.window_theme"))
+        theme_layout = QFormLayout()
+        theme_layout.setSpacing(12)
+
+        self.theme_combo = NoScrollComboBox()
+        self.theme_combo.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.theme_combo.setToolTip(t("settings.ui_customization.window_theme_tooltip"))
+        for theme_id in get_window_theme_ids():
+            self.theme_combo.addItem(t(get_window_theme_name_key(theme_id)), theme_id)
+        current_theme = getattr(self.config, "window_theme", DEFAULT_WINDOW_THEME_ID)
+        current_index = self.theme_combo.findData(current_theme)
+        if current_index < 0:
+            current_index = self.theme_combo.findData(DEFAULT_WINDOW_THEME_ID)
+        self.theme_combo.setCurrentIndex(max(0, current_index))
+        self.theme_combo.currentIndexChanged.connect(self._on_theme_changed)
+        theme_layout.addRow(QLabel(t("settings.ui_customization.window_theme_label")), self.theme_combo)
+        theme_group.setLayout(theme_layout)
+        layout.addWidget(theme_group)
         
         # Группа: Прозрачность окна
         opacity_group = QGroupBox(t("settings.ui_customization.window_opacity"))
@@ -2073,17 +2151,18 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         from PyQt6.QtWidgets import QSlider
         self.opacity_slider = QSlider(Qt.Orientation.Horizontal)
-        self.opacity_slider.setMinimum(50)
+        self.opacity_slider.setMinimum(255)
         self.opacity_slider.setMaximum(255)
-        self.opacity_slider.setValue(self.config.window_opacity)
+        self.opacity_slider.setValue(255)
         self.opacity_slider.setTickPosition(QSlider.TickPosition.TicksBelow)
         self.opacity_slider.setTickInterval(25)
         self.opacity_slider.setCursor(Qt.CursorShape.PointingHandCursor)
         self.opacity_slider.setToolTip(t("settings.ui_customization.window_opacity_tooltip"))
+        self.opacity_slider.setEnabled(False)
         opacity_container.addWidget(self.opacity_slider, 1)
         
         # Метка со значением
-        self.opacity_value_label = QLabel(str(self.config.window_opacity))
+        self.opacity_value_label = QLabel("255")
         self.opacity_value_label.setMinimumWidth(40)
         self.opacity_value_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.opacity_value_label.setStyleSheet("""
@@ -2229,15 +2308,21 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         """Сбрасывает все настройки интерфейса на значения по умолчанию."""
         from core.config_saver import get_config_saver
         
+        default_theme_id = DEFAULT_WINDOW_THEME_ID
+        default_theme = get_window_theme(default_theme_id)
+
         # Установить значения по умолчанию в UI контролы
-        self.opacity_slider.setValue(150)
+        theme_index = self.theme_combo.findData(default_theme_id)
+        if theme_index >= 0:
+            self.theme_combo.setCurrentIndex(theme_index)
+        self.opacity_slider.setValue(255)
         self.font_floating_main_spin.setValue(14)
         self.font_floating_info_spin.setValue(11)
         self.font_settings_labels_spin.setValue(12)
         self.font_settings_titles_spin.setValue(24)
         
         # Сбросить цвет волны
-        default_color = "#64AAFF"
+        default_color = default_theme["waveform_color"]
         self.waveform_color_button.setStyleSheet(f"""
             QPushButton {{
                 background-color: {default_color};
@@ -2252,7 +2337,8 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         # Записать значения в config.jsonc
         config_saver = get_config_saver()
         config_saver.update_multiple_values({
-            "window.opacity": 150,
+            "window.theme": default_theme_id,
+            "window.opacity": 255,
             "window.font_sizes.floating_main": 14,
             "window.font_sizes.floating_info": 11,
             "window.font_sizes.settings_labels": 12,
@@ -2261,32 +2347,85 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         })
         
         # Обновить конфиг в памяти
-        self.config.window_opacity = 150
+        self.config.window_theme = default_theme_id
+        self.config.window_opacity = 255
         self.config.font_size_floating_main = 14
         self.config.font_size_floating_info = 11
         self.config.font_size_settings_labels = 12
         self.config.font_size_settings_titles = 24
         self.config.waveform_color = default_color
         
-        # Получить FloatingWindow через tray_icon
-        floating_window = None
-        if self.tray_icon and hasattr(self.tray_icon, 'parent') and self.tray_icon.parent():
-            floating_window = self.tray_icon.parent()
-        
-        # Обновить FloatingWindow если доступно (для live preview opacity)
-        if floating_window and hasattr(floating_window, 'set_opacity'):
-            floating_window.set_opacity(150)
-        
-        # Обновить цвет волны в FloatingWindow
-        if floating_window and hasattr(floating_window, 'get_waveform_widget'):
-            waveform_widget = floating_window.get_waveform_widget()
-            if waveform_widget:
-                waveform_widget.set_waveform_color(default_color)
-            # Обновить конфиг FloatingWindow
-            if hasattr(floating_window, 'config'):
-                floating_window.config.waveform_color = default_color
+        self._apply_theme_runtime(default_theme_id)
         
         logger.info("UI customization settings reset to defaults")
+
+    def _on_theme_changed(self, index: int):
+        """Обработчик изменения темы плавающего окна с live preview."""
+        if index < 0:
+            return
+
+        theme_id = self.theme_combo.currentData()
+        if not theme_id:
+            theme_id = DEFAULT_WINDOW_THEME_ID
+        self._apply_theme_runtime(theme_id)
+
+    def _apply_theme_runtime(self, theme_id: str) -> None:
+        """Applies selected theme to all active windows immediately."""
+        theme = get_window_theme(theme_id)
+        theme_wave_color = theme["waveform_color"]
+
+        self.config.window_theme = theme_id
+        self.config.window_opacity = 255
+        self.config.waveform_color = theme_wave_color
+        self.opacity_slider.setValue(255)
+        self.opacity_value_label.setText("255")
+        self._apply_style()
+
+        self.waveform_color_button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {theme_wave_color};
+                border: 2px solid {theme["input_border"]};
+                border-radius: 4px;
+            }}
+            QPushButton:hover {{
+                border: 2px solid {theme["input_focus"]};
+            }}
+        """)
+
+        app_root = None
+        if self.tray_icon and hasattr(self.tray_icon, "parent") and self.tray_icon.parent():
+            app_root = self.tray_icon.parent()
+
+        if app_root and hasattr(app_root, "config"):
+            app_root.config.window_theme = theme_id
+            app_root.config.window_opacity = 255
+            app_root.config.waveform_color = theme_wave_color
+
+            if hasattr(app_root, "floating_window") and app_root.floating_window:
+                if hasattr(app_root.floating_window, "set_theme"):
+                    app_root.floating_window.set_theme(theme_id)
+                if hasattr(app_root.floating_window, "set_opacity"):
+                    app_root.floating_window.set_opacity(255)
+
+            for attr_name in ("format_selection_dialog", "manual_format_selection_dialog", "manual_format_dialog"):
+                dialog = getattr(app_root, attr_name, None)
+                if dialog and hasattr(dialog, "set_theme"):
+                    dialog.set_theme(theme_id)
+                if dialog and hasattr(dialog, "update_opacity"):
+                    dialog.update_opacity(255)
+
+        # Fallback: apply to all top-level windows in current process.
+        app = QApplication.instance()
+        if app:
+            for widget in app.topLevelWidgets():
+                if widget is self:
+                    continue
+                if hasattr(widget, "set_theme"):
+                    widget.set_theme(theme_id)
+                elif hasattr(widget, "set_window_theme"):
+                    widget.set_window_theme(theme_id)
+                if hasattr(widget, "set_opacity"):
+                    widget.set_opacity(255)
     
     def _on_opacity_changed(self, value: int):
         """
@@ -2297,6 +2436,12 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         Requirements: 4.1
         """
+        if value != 255:
+            self.opacity_slider.blockSignals(True)
+            self.opacity_slider.setValue(255)
+            self.opacity_slider.blockSignals(False)
+        value = 255
+
         # Update this Settings Window's opacity using mixin (Task 4.4)
         # We override update_opacity to also update child widget styles
         self.update_opacity(value)
@@ -3328,6 +3473,17 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         # LLM настройки
         self.llm_base_url_edit.setText(self.config.llm_base_url)
         self.llm_api_key_edit.setText(self.config.llm_api_key)
+
+        # UI тема и непрозрачный фон
+        current_theme = getattr(self.config, "window_theme", DEFAULT_WINDOW_THEME_ID)
+        theme_index = self.theme_combo.findData(current_theme)
+        if theme_index < 0:
+            theme_index = self.theme_combo.findData(DEFAULT_WINDOW_THEME_ID)
+        self.theme_combo.blockSignals(True)
+        self.theme_combo.setCurrentIndex(max(0, theme_index))
+        self.theme_combo.blockSignals(False)
+        self.opacity_slider.setValue(255)
+        self.opacity_value_label.setText("255")
         
         # Загрузить модели для выбранного провайдера
         self._on_post_processing_provider_changed(self.config.post_processing_provider)
@@ -4000,6 +4156,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             'glm_coding_plan': self.glm_coding_plan_check.isChecked(),
             'llm_base_url': self.llm_base_url_edit.text(),
             'llm_api_key': self.llm_api_key_edit.text(),
+            'window_theme': self.theme_combo.currentData() or DEFAULT_WINDOW_THEME_ID,
             'opacity': self.opacity_slider.value(),
             'font_floating_main': self.font_floating_main_spin.value(),
             'font_floating_info': self.font_floating_info_spin.value(),
@@ -4052,7 +4209,13 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         self.llm_api_key_edit.setText(values['llm_api_key'])
         
         # UI Customization settings
-        self.opacity_slider.setValue(int(values['opacity']))
+        theme_index = self.theme_combo.findData(values.get('window_theme', DEFAULT_WINDOW_THEME_ID))
+        if theme_index < 0:
+            theme_index = self.theme_combo.findData(DEFAULT_WINDOW_THEME_ID)
+        self.theme_combo.blockSignals(True)
+        self.theme_combo.setCurrentIndex(max(0, theme_index))
+        self.theme_combo.blockSignals(False)
+        self.opacity_slider.setValue(255)
         self.font_floating_main_spin.setValue(values['font_floating_main'])
         self.font_floating_info_spin.setValue(values['font_floating_info'])
         self.font_settings_labels_spin.setValue(values['font_settings_labels'])
@@ -4192,7 +4355,8 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                 "window.auto_hide_delay": self.auto_hide_spin.value(),
                 "window.remember_position": self.remember_position_check.isChecked(),
                 "window.position_preset": position_presets[position_index],
-                "window.opacity": int(self.opacity_slider.value()),
+                "window.theme": self.theme_combo.currentData() or DEFAULT_WINDOW_THEME_ID,
+                "window.opacity": 255,
                 "window.font_sizes.floating_main": int(self.font_floating_main_spin.value()),
                 "window.font_sizes.floating_info": int(self.font_floating_info_spin.value()),
                 "window.font_sizes.settings_labels": int(self.font_settings_labels_spin.value()),
@@ -4242,6 +4406,8 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             # Сохранить все обновления config.jsonc
             config_saver = get_config_saver()
             config_saver.update_multiple_values(config_updates)
+            self.config.window_theme = config_updates["window.theme"]
+            self.config.window_opacity = 255
             
             # Сохранить все API ключи в secrets.json
             for key_path, value in secret_updates.items():
