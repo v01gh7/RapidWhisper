@@ -8,6 +8,7 @@
   --page-bg: #090d17;
   --page-bg-alt: #111b30;
   --page-surface: rgba(18, 26, 44, 0.74);
+  --page-surface-solid: #1a2740;
   --page-border: rgba(157, 188, 255, 0.26);
   --page-text: #e9f1ff;
   --page-muted: #9eacc7;
@@ -204,8 +205,13 @@ a {
   padding: 8px;
   border: 1px solid color-mix(in srgb, var(--page-border) 86%, transparent);
   border-radius: 12px;
-  background: color-mix(in srgb, var(--page-surface) 96%, transparent);
-  backdrop-filter: blur(16px);
+  background:
+    linear-gradient(
+      155deg,
+      color-mix(in srgb, var(--page-surface-solid) 88%, #1a2439),
+      color-mix(in srgb, var(--page-bg) 92%, #11192a)
+    );
+  backdrop-filter: none;
   box-shadow: 0 16px 34px rgba(0, 0, 0, 0.38);
   display: none;
   flex-direction: column;
@@ -367,7 +373,7 @@ p {
 }
 
 .download-block {
-  margin-top: 16px;
+  margin-top: 10px;
   border: 1px solid color-mix(in srgb, var(--page-border) 68%, transparent);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.035);
@@ -410,6 +416,7 @@ p {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  text-decoration: none;
   transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
@@ -499,6 +506,11 @@ p {
 .theme-dropdown-menu .theme-btn {
   justify-content: flex-start;
   border-radius: 10px;
+}
+
+.demo {
+  display: grid;
+  gap: 10px;
 }
 
 .demo-window {

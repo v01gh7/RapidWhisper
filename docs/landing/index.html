@@ -83,27 +83,6 @@
           <li>Темы интерфейса переключаются мгновенно прямо на странице.</li>
         </ul>
 
-        <div class="download-block" aria-label="Download builds">
-          <div class="download-head">
-            <h3>Скачать</h3>
-            <p>Сборки для основных платформ</p>
-          </div>
-          <div class="download-grid">
-            <button type="button" class="download-card" data-download-os="windows">
-              <span class="download-os">Windows</span>
-              <span class="download-format">.exe</span>
-            </button>
-            <button type="button" class="download-card" data-download-os="macos">
-              <span class="download-os">macOS</span>
-              <span class="download-format">.dmg</span>
-            </button>
-            <button type="button" class="download-card" data-download-os="linux">
-              <span class="download-os">Linux</span>
-              <span class="download-format">.AppImage</span>
-            </button>
-          </div>
-          <p class="download-hint" id="download-hint">Выбери платформу, чтобы подсветить вариант загрузки.</p>
-        </div>
       </div>
 
       <aside class="demo reveal" aria-label="Floating window demo">
@@ -144,6 +123,45 @@
               <span class="key">ESC</span>
             </div>
           </div>
+        </div>
+
+        <div class="download-block" aria-label="Download builds">
+          <div class="download-head">
+            <h3>Скачать</h3>
+            <p>Сборки для основных платформ</p>
+          </div>
+          <div class="download-grid">
+            <a
+              class="download-card"
+              data-download-os="windows"
+              href="../../dist/RapidWhisper.exe"
+              download="RapidWhisper.exe"
+            >
+              <span class="download-os">Windows</span>
+              <span class="download-format">.exe</span>
+            </a>
+            <a
+              class="download-card"
+              data-download-os="macos"
+              href="https://github.com/v01gh7/RapidWhisper/releases/latest"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span class="download-os">macOS</span>
+              <span class="download-format">.dmg</span>
+            </a>
+            <a
+              class="download-card"
+              data-download-os="linux"
+              href="https://github.com/v01gh7/RapidWhisper/releases/latest"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span class="download-os">Linux</span>
+              <span class="download-format">.AppImage</span>
+            </a>
+          </div>
+          <p class="download-hint" id="download-hint">Windows скачивается сразу, для macOS/Linux откроется страница Releases.</p>
         </div>
       </aside>
     </section>
