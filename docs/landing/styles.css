@@ -347,29 +347,43 @@ p {
   gap: 10px;
 }
 
-.hero-points {
-  margin: 16px 0 0;
-  padding: 0;
-  list-style: none;
+.discord-news-block {
+  margin-top: 16px;
+  border: 1px solid color-mix(in srgb, var(--page-border) 68%, transparent);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+  padding: 12px;
   display: grid;
-  gap: 7px;
+  gap: 10px;
+}
+
+.discord-news-head {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.discord-news-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.discord-news-copy strong {
+  display: block;
+  font-size: 0.98rem;
+  line-height: 1.1;
+}
+
+.discord-news-copy span {
+  display: block;
+  margin-top: 4px;
   color: var(--page-muted);
+  font-size: 0.86rem;
 }
 
-.hero-points li {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-}
-
-.hero-points li::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  margin-top: 8px;
-  border-radius: 99px;
-  background: var(--page-accent);
-  flex: 0 0 auto;
+.discord-news-link {
+  justify-self: start;
 }
 
 .support-block {
