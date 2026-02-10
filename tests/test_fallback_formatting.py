@@ -21,7 +21,7 @@ def test_fallback_has_default_prompt():
     
     # Should have the fallback prompt (either custom or default)
     assert len(fallback_prompt) > 0, "_fallback should have a prompt"
-    assert "TEXT FORMATTER" in fallback_prompt or "readable and well-structured" in fallback_prompt.lower()
+    assert "TRANSCRIPT FORMATTING ENGINE" in fallback_prompt or "text formatting engine" in fallback_prompt.lower()
 
 
 def test_unknown_app_uses_fallback_prompt():

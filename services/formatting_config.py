@@ -12,54 +12,14 @@ from typing import List, Optional, Dict, Any
 from pathlib import Path
 # DEPRECATED: dotenv imports kept for backward compatibility with tests only
 from dotenv import load_dotenv, set_key
+from core.prompt_defaults import get_default_transcript_prompt
 from utils.logger import get_logger
 
 logger = get_logger()
 
 
-# No hardcoded prompts - all prompts are stored in .env file only!
-
-
-# Fallback formatting prompt for unknown applications
-# Simple, universal formatting that makes text readable
-FALLBACK_FORMATTING_PROMPT = """CRITICAL: You are a TEXT FORMATTER, not a writer. Your ONLY job is to format existing text.
-
-STRICT RULES:
-1. DO NOT ADD ANY NEW WORDS - Use ONLY the words from the original text
-2. DO NOT EXPLAIN - No descriptions, no examples, no elaborations
-3. DO NOT EXPAND - Keep the exact same content, just reorganize it
-4. DO NOT COMPLETE - If a sentence is incomplete, leave it incomplete
-
-ALLOWED ACTIONS:
-- ANALYZE the content and identify natural sentence boundaries
-- ADD line breaks between sentences (each sentence on a new line)
-- GROUP related sentences into paragraphs (add blank line between paragraphs)
-- ADD basic punctuation if missing (periods, commas)
-- FIX capitalization at the start of sentences
-
-FORMATTING RULES:
-- Put each sentence on a separate line
-- Add blank line between different topics/paragraphs
-- Preserve the original words and meaning
-- Make the text easy to read
-
-FORBIDDEN ACTIONS:
-- Adding explanations (like "This is used for...")
-- Adding descriptions (like "These items are...")
-- Adding context or background information
-- Completing incomplete thoughts
-- Adding examples that weren't spoken
-
-Example:
-Input: "orange sticks for manicure they are very useful I bought them yesterday"
-CORRECT:
-Orange sticks for manicure.
-They are very useful.
-I bought them yesterday.
-
-WRONG: "Orange sticks for manicure. They are used for shaping and caring for nails."
-
-Output ONLY the original words with proper line breaks and basic formatting."""
+# Canonical fallback prompt comes from config/prompts/_fallback.txt.
+FALLBACK_FORMATTING_PROMPT = get_default_transcript_prompt()
 
 # Backward compatibility alias for tests
 UNIVERSAL_DEFAULT_PROMPT = FALLBACK_FORMATTING_PROMPT

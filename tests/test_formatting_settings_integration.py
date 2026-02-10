@@ -102,11 +102,11 @@ def test_save_load_workflow_preserves_configuration(qtbot, temp_config_dir):
                 provider="groq",
                 model="llama-3.3-70b-versatile",
                 temperature=0.3,
-                applications=["notion", "obsidian", "vscode"],
+                applications=["notion", "obsidian", "whatsapp"],
                 app_prompts={
                     "notion": "Custom prompt for Notion",
                     "obsidian": "",  # Uses default
-                    "vscode": "Custom prompt for VSCode"
+                    "whatsapp": "Custom prompt for messenger"
                 }
             )
             
@@ -118,7 +118,7 @@ def test_save_load_workflow_preserves_configuration(qtbot, temp_config_dir):
             
             # Verify prompts were saved to temp dir, not real config/prompts
             assert os.path.exists(os.path.join(temp_config_dir["prompts_dir"], "notion.txt"))
-            assert os.path.exists(os.path.join(temp_config_dir["prompts_dir"], "vscode.txt"))
+            assert os.path.exists(os.path.join(temp_config_dir["prompts_dir"], "whatsapp.txt"))
             
             # Load configuration back (simulating restart)
             loaded_config = FormattingConfig.from_env()

@@ -20,7 +20,6 @@
      - `markdown.txt` - для Markdown
      - `word.txt` - для Word/Google Docs
      - `libreoffice.txt` - для LibreOffice
-     - `vscode.txt` - для VS Code
      - `bbcode.txt` - для форумов (BBCode)
      - `whatsapp.txt` - для мессенджеров
 

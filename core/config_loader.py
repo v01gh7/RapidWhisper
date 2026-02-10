@@ -11,6 +11,7 @@ import sys
 import shutil
 from pathlib import Path
 from typing import Dict, Any, Optional
+from core.prompt_defaults import get_default_transcript_prompt
 from utils.logger import get_logger
 
 logger = get_logger()
@@ -134,7 +135,7 @@ def _create_minimal_config(config_path: Path):
             "model": "llama-3.3-70b-versatile",
             "custom_model": "",
             "combine_with_formatting": True,
-            "prompt": "You are a text editor. Your task: fix grammatical errors, add punctuation and improve text readability. Preserve the original meaning and style. Don't add anything extra. Return only the corrected text without comments.",
+            "prompt": get_default_transcript_prompt(),
             "glm_use_coding_plan": False,
             "llm": {
                 "base_url": "http://localhost:1234/v1/",
@@ -151,7 +152,6 @@ def _create_minimal_config(config_path: Path):
                 "markdown": "config/prompts/markdown.txt",
                 "word": "config/prompts/word.txt",
                 "libreoffice": "config/prompts/libreoffice.txt",
-                "vscode": "config/prompts/vscode.txt",
                 "_fallback": "config/prompts/_fallback.txt",
                 "bbcode": "config/prompts/bbcode.txt",
                 "whatsapp": "config/prompts/whatsapp.txt"
@@ -175,9 +175,6 @@ def _create_minimal_config(config_path: Path):
                 ],
                 "obsidian": [
                     "obsidian", "obsidian publish", "obsidian.app", "obsidian.exe"
-                ],
-                "vscode": [
-                    "code", "vscode", "visual studio code"
                 ],
                 "whatsapp": [
                     "discord", "discord.app", "discord.exe", "element", "matrix", "mattermost",
@@ -296,7 +293,6 @@ def _ensure_prompts_exist(prompts_dir: Path):
         "markdown.txt",
         "notion.txt",
         "obsidian.txt",
-        "vscode.txt",
         "whatsapp.txt",
         "word.txt"
     ]
