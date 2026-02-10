@@ -326,6 +326,23 @@
       }
     });
 
+    setAttr("#free-use", "aria-label", getByPath(translation, "free_use.aria", ""));
+    setText(".free-use-head h2", getByPath(translation, "free_use.title", ""));
+    setText(".free-use-badge", getByPath(translation, "free_use.badge", ""));
+    setText(".free-use-lead", getByPath(translation, "free_use.lead", ""));
+    setText(".free-card-start h3", getByPath(translation, "free_use.start_title", ""));
+    setText(".free-start-text", getByPath(translation, "free_use.start_text", ""));
+    setText("#free-groq-link", getByPath(translation, "free_use.groq_link_label", ""));
+    setAttr("#free-groq-link", "aria-label", getByPath(translation, "free_use.groq_link_aria", ""));
+    setAttr("#free-groq-link", "title", getByPath(translation, "free_use.groq_link_title", ""));
+    setListText(".free-steps li span", getByPath(translation, "free_use.steps", []));
+    setText(".free-card-providers h3", getByPath(translation, "free_use.providers_title", ""));
+    setText(".free-providers-text", getByPath(translation, "free_use.providers_text", ""));
+    setAttr(".free-provider-tags", "aria-label", getByPath(translation, "free_use.providers_aria", ""));
+    setTagList(".free-provider-tags", getByPath(translation, "free_use.providers", []), "free-provider-chip");
+    setText(".free-llm-note", getByPath(translation, "free_use.llm_note", ""));
+    setText(".free-model-note", getByPath(translation, "free_use.model_note", ""));
+
     setText("#controls > h2", getByPath(translation, "controls.title", ""));
     setText("#controls .control-card:first-child > h3", getByPath(translation, "controls.hotkeys_title", ""));
     setListText(".hotkey-list .hotkey-name", getByPath(translation, "controls.hotkey_names", []));

@@ -141,6 +141,35 @@
       ]
     }
   },
+  "free_use": {
+    "aria": "Configuration gratuite et privée",
+    "title": "Gratuit et privé par défaut",
+    "badge": "Sans télémétrie",
+    "lead": "RapidWhisper est gratuit, ne collecte pas d'analytique et n'envoie aucune donnée ailleurs que vers le fournisseur que vous choisissez explicitement dans les paramètres.",
+    "start_title": "Démarrer maintenant avec un modèle gratuit",
+    "start_text": "Vous pouvez commencer immédiatement avec un modèle Groq gratuit et coller votre clé dans les paramètres.",
+    "groq_link_label": "Obtenir une clé API Groq gratuite",
+    "groq_link_aria": "Ouvrir la page des clés API Groq",
+    "groq_link_title": "Ouvrir https://console.groq.com/keys",
+    "steps": [
+      "Ouvrez la page des clés Groq et créez une clé API",
+      "RapidWhisper -> Paramètres -> Fournisseur IA",
+      "Sélectionnez groq puis collez la clé dans le champ GROQ API key"
+    ],
+    "providers_title": "Fournisseurs, LLM local, n'importe quel modèle",
+    "providers_text": "Fournisseurs disponibles actuellement :",
+    "providers_aria": "Fournisseurs disponibles",
+    "providers": [
+      "Groq",
+      "OpenAI",
+      "GLM",
+      "Z.AI",
+      "Custom (compatible OpenAI)",
+      "LLM (endpoint local)"
+    ],
+    "llm_note": "Les endpoints LLM locaux sont pris en charge (par exemple LM Studio, Ollama, vLLM, LocalAI).",
+    "model_note": "Vous pouvez rester sur des modèles gratuits ou utiliser des modèles payants ensuite. Dans les paramètres, vous pouvez choisir n'importe quel ID de modèle pris en charge par votre fournisseur."
+  },
   "controls": {
     "title": "Raccourcis et intégrations Hook directement dans le design",
     "hotkeys_title": "Raccourcis clavier",

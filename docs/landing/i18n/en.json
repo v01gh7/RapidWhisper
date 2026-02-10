@@ -141,6 +141,35 @@
       ]
     }
   },
+  "free_use": {
+    "aria": "Free and private setup",
+    "title": "Free and private by default",
+    "badge": "No telemetry",
+    "lead": "RapidWhisper is free to use, does not collect analytics, and does not send data anywhere except the provider you explicitly choose in settings.",
+    "start_title": "Start with a free model now",
+    "start_text": "You can start immediately with a free Groq model and paste your key in settings.",
+    "groq_link_label": "Get free Groq API key",
+    "groq_link_aria": "Open Groq API key page",
+    "groq_link_title": "Open https://console.groq.com/keys",
+    "steps": [
+      "Open Groq keys page and create API key",
+      "RapidWhisper -> Settings -> AI Provider",
+      "Select groq and paste key into GROQ API key field"
+    ],
+    "providers_title": "Providers, local LLM, any model",
+    "providers_text": "Available providers right now:",
+    "providers_aria": "Available providers",
+    "providers": [
+      "Groq",
+      "OpenAI",
+      "GLM",
+      "Z.AI",
+      "Custom (OpenAI-compatible)",
+      "LLM (local endpoint)"
+    ],
+    "llm_note": "Local LLM endpoints are supported (for example LM Studio, Ollama, vLLM, LocalAI).",
+    "model_note": "You can stay on free models or use paid models later. In settings you can choose any model ID supported by your provider."
+  },
   "controls": {
     "title": "Hotkeys and Hook Integrations Built Into the Design",
     "hotkeys_title": "Hotkeys",
