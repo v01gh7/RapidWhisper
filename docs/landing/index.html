@@ -227,7 +227,7 @@
     </section>
 
     <section id="controls" class="controls reveal">
-      <h2>Хоткеи и настройки сразу в дизайне</h2>
+      <h2>Хоткеи и hook-интеграции сразу в дизайне</h2>
       <div class="controls-grid">
         <article class="control-card">
           <h3>Горячие клавиши</h3>
@@ -237,15 +237,59 @@
             <li><span class="hotkey-name">Выбор формата</span><span class="hotkey-keys"><kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>Space</kbd></span></li>
             <li><span class="hotkey-name">Ручное форматирование</span><span class="hotkey-keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>Space</kbd></span></li>
           </ul>
-        </article>
-        <article class="control-card">
-          <h3>Параметры окна</h3>
-          <ul class="setting-list">
+          <p class="control-section-title">Быстрые параметры окна</p>
+          <ul class="setting-list control-setting-list">
             <li><span>Автоскрытие</span><strong>2.5 сек</strong></li>
             <li><span>Запоминать позицию</span><strong>Да</strong></li>
             <li><span>Сценарий остановки</span><strong>Тишина или вручную</strong></li>
             <li><span>Режимы темы</span><strong>7 готовых пресетов</strong></li>
           </ul>
+        </article>
+        <article class="control-card hooks-card">
+          <h3>Hook-интеграции</h3>
+          <div class="hooks-events-block">
+            <div class="hooks-events-head">
+              <span>События Pipeline</span>
+              <strong>6 точек подключения</strong>
+            </div>
+            <div class="hooks-event-tags">
+              <code>before_recording</code>
+              <code>after_recording</code>
+              <code>transcription_received</code>
+              <code>formatting_step</code>
+              <code>post_formatting_step</code>
+              <code>task_completed</code>
+            </div>
+            <p class="hooks-intro">Python-хуки встраиваются в шаги пайплайна и дают гибкую автоматизацию: очистка текста, добавление служебных префиксов, запуск внешних скриптов и интеграции под ваш рабочий процесс.</p>
+          </div>
+          <ul class="setting-list hooks-list">
+            <li>
+              <span>Как подключить</span>
+              <div class="hooks-event-tags hooks-meta-tags">
+                <code>config/hooks</code>
+                <code>HOOK_EVENT</code>
+                <code>hookHandler(options)</code>
+              </div>
+            </li>
+            <li>
+              <span>Что настраивается в UI</span>
+              <div class="hooks-event-tags hooks-meta-tags">
+                <code>включение</code>
+                <code>порядок выполнения</code>
+                <code>фоновый запуск</code>
+                <code>обновление списка</code>
+              </div>
+            </li>
+            <li>
+              <span>Контракт данных</span>
+              <div class="hooks-event-tags hooks-meta-tags">
+                <code>options["data"]</code>
+                <code>payload совместим</code>
+                <code>цепочка hooks совместима</code>
+              </div>
+            </li>
+          </ul>
+          <p class="hooks-example"><strong>Небольшой пример:</strong> хук на <code>transcription_received</code> чистит диктовку, добавляет префикс <code>Jarvis:</code> и отправляет результат в внешний скрипт уведомлений. Так собирается персональный "Джарвис" под конкретные задачи.</p>
         </article>
       </div>
     </section>
