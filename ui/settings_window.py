@@ -4003,7 +4003,7 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         config = FormattingConfig.from_config(get_config_loader())
         
         # Show web keywords dialog
-        dialog = WebKeywordsDialog(config.web_app_keywords, self)
+        dialog = WebKeywordsDialog(config.web_app_keywords, config.applications, self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             # Get updated keywords
             updated_keywords = dialog.get_keywords()
@@ -4701,16 +4701,30 @@ class AddApplicationDialog(QDialog):
 class WebKeywordsDialog(QDialog):
     """Dialog for editing web application keywords for browser detection."""
     
-    def __init__(self, keywords_dict: Dict[str, List[str]], parent=None):
+    def __init__(self, keywords_dict: Dict[str, List[str]], applications: Optional[List[str]] = None, parent=None):
         """
         Initialize the web keywords dialog.
         
         Args:
             keywords_dict: Dictionary mapping format types to keyword lists
+            applications: Current formatting applications list
             parent: Parent widget
         """
         super().__init__(parent)
-        self.keywords_dict = keywords_dict.copy()  # Work with a copy
+        self.applications = [
+            app_name
+            for app_name in (applications or [])
+            if app_name and app_name != "_fallback"
+        ]
+
+        # Deep-copy keywords and ensure every configured app has a tab.
+        self.keywords_dict = {
+            format_type: list(keywords)
+            for format_type, keywords in keywords_dict.items()
+        }
+        for app_name in self.applications:
+            self.keywords_dict.setdefault(app_name, [])
+
         self.setWindowTitle("Настройка ключевых слов веб-приложений")
         self.setMinimumWidth(800)
         self.setMinimumHeight(600)
@@ -4815,11 +4829,17 @@ class WebKeywordsDialog(QDialog):
             from services.formatting_config import FormattingConfig
             from core.config_loader import get_config_loader
             config = FormattingConfig.from_config(get_config_loader())
-            
-            # Update editors with default values from config
-            for format_type, keywords in config.web_app_keywords.items():
-                if format_type in self.keyword_editors:
-                    self.keyword_editors[format_type].setPlainText("\n".join(keywords))
+
+            default_keywords = {
+                format_type: list(keywords)
+                for format_type, keywords in config.web_app_keywords.items()
+            }
+            for app_name in self.applications:
+                default_keywords.setdefault(app_name, [])
+
+            # Update all editors, including dynamically added applications.
+            for format_type, editor in self.keyword_editors.items():
+                editor.setPlainText("\n".join(default_keywords.get(format_type, [])))
     
     def get_keywords(self) -> Dict[str, List[str]]:
         """Get the updated keywords dictionary."""
