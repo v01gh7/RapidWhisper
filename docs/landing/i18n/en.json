@@ -1,0 +1,288 @@
+{
+  "meta": {
+    "lang": "en",
+    "title": "RapidWhisper - Voice-to-Text Without Switching Windows",
+    "description": "RapidWhisper: voice input with a global hotkey, app-aware formatting, UI themes, and hands-free control for focused work."
+  },
+  "header": {
+    "brand_aria": "RapidWhisper Home",
+    "nav": {
+      "purpose": "Purpose",
+      "hotkeys": "Hotkeys",
+      "features": "Features",
+      "providers": "Providers",
+      "pipeline": "Pipeline"
+    },
+    "theme_aria": "Choose theme",
+    "download_button": "Download",
+    "lang_toggle_aria": "Switch language",
+    "lang_toggle_title": "Switch language (EN/FR)",
+    "lang_button_label": "EN"
+  },
+  "hero": {
+    "kicker": "Free Voice-to-Text for Work and Twitch",
+    "title": "Speak. Get Ready-to-Paste Text.",
+    "lead": "RapidWhisper listens by hotkey, turns speech into text, and instantly formats it for the active app. Then you just paste the final result.",
+    "open_hotkeys": "Open hotkeys block",
+    "discord": {
+      "aria": "Discord community",
+      "description": "News, feedback, support, and community chat.",
+      "open_button": "Open Discord"
+    },
+    "support": {
+      "aria": "Community and support links",
+      "title": "Support",
+      "subtitle": "Community and project support",
+      "cards": {
+        "streamlabs_desc": "Project support and donations",
+        "donatex_desc": "Support development",
+        "kofi_desc": "Coffee donation to the developer"
+      }
+    },
+    "demo_aria": "Floating window demo",
+    "theme_panel_title": "Interface theme (above window):",
+    "theme_switcher_aria": "Theme switcher in hero",
+    "theme_buttons": {
+      "default": "Default",
+      "ocean": "Ocean",
+      "dusk": "Dusk",
+      "retro": "Retro",
+      "neo": "Neo",
+      "lime": "Lime",
+      "terminal": "Terminal Theme"
+    },
+    "theme_notes": {
+      "default": "Default: universal theme for daily work.",
+      "ocean": "Ocean: cool palette for calm focus.",
+      "dusk": "Dusk: evening contrast with soft accents.",
+      "retro": "Retro: warm retro gradient and analog atmosphere.",
+      "neo": "Neo: neon style with vivid contrast.",
+      "lime": "Lime: energetic green accent and high visual tone.",
+      "terminal": "Terminal Theme: modern CLI aesthetics with green terminal glow."
+    },
+    "theme_apps": {
+      "default": "VS Code",
+      "ocean": "Google Docs",
+      "dusk": "Notion",
+      "retro": "Obsidian",
+      "neo": "Telegram Desktop",
+      "lime": "LibreOffice Writer",
+      "terminal": "Windows Terminal"
+    },
+    "state": {
+      "recording": "Recording...",
+      "idle": "Standby"
+    },
+    "buttons": {
+      "record": "Record",
+      "pause": "Pause",
+      "start_recording": "Start recording",
+      "pause_recording": "Pause recording",
+      "cancel": "Cancel"
+    },
+    "active_app": "Active app",
+    "download": {
+      "aria": "Download builds",
+      "title": "Download",
+      "subtitle": "Builds for major platforms",
+      "hint_default": "Windows downloads directly; for macOS/Linux the Releases page opens.",
+      "platform_strip_aria": "Platform widgets",
+      "platform_names": {
+        "windows": "Windows",
+        "macos": "macOS",
+        "linux": "Linux"
+      },
+      "platform_icon_alt": {
+        "windows": "Windows icon",
+        "macos": "macOS icon",
+        "linux": "Linux icon"
+      },
+      "selected": {
+        "windows": "Selected: Windows (.exe).",
+        "macos": "Selected: macOS (.dmg).",
+        "linux": "Selected: Linux (.AppImage)."
+      },
+      "top_button_title": {
+        "windows": "Download for Windows",
+        "macos": "Download for macOS",
+        "linux": "Open downloads"
+      },
+      "free": "FREE"
+    }
+  },
+  "controls": {
+    "title": "Hotkeys and Hook Integrations Built Into the Design",
+    "hotkeys_title": "Hotkeys",
+    "hotkey_names": [
+      "Record",
+      "Cancel",
+      "Format picker",
+      "Manual formatting"
+    ],
+    "quick_window_title": "Quick Window Settings",
+    "window_settings": [
+      {
+        "name": "Auto-hide",
+        "value": "2.5 sec"
+      },
+      {
+        "name": "Remember position",
+        "value": "Yes"
+      },
+      {
+        "name": "Stop scenario",
+        "value": "Silence or manual"
+      },
+      {
+        "name": "Theme modes",
+        "value": "7 ready presets"
+      }
+    ],
+    "hooks_title": "Hook Integrations",
+    "pipeline_events_title": "Pipeline Events",
+    "pipeline_events_count": "6 hook points",
+    "pipeline_events": [
+      "before_recording",
+      "after_recording",
+      "transcription_received",
+      "formatting_step",
+      "post_formatting_step",
+      "task_completed"
+    ],
+    "hooks_intro": "Python hooks plug into pipeline stages and provide flexible automation: text cleanup, service prefixes, external scripts, and integrations for your workflow.",
+    "hooks_sections": [
+      "How to connect",
+      "What is configurable in UI",
+      "Data contract"
+    ],
+    "hooks_connect_tags": [
+      "config/hooks",
+      "HOOK_EVENT",
+      "hookHandler(options)"
+    ],
+    "hooks_ui_tags": [
+      "enable",
+      "execution order",
+      "background run",
+      "refresh list"
+    ],
+    "hooks_contract_tags": [
+      "options[\"data\"]",
+      "payload compatible",
+      "hooks chain compatible"
+    ],
+    "hooks_example_html": "<strong>Small example:</strong> a hook on <code>transcription_received</code> cleans dictation, adds the <code>Jarvis:</code> prefix, and sends output to an external notification script. This is how you build a personal \"Jarvis\" for specific tasks."
+  },
+  "purpose": {
+    "title": "What the App Is For",
+    "cards": [
+      {
+        "title": "Dictation without window switching",
+        "desc": "Start recording, speak, and paste text right where you are working."
+      },
+      {
+        "title": "Consistent output format",
+        "desc": "Choose a format once and get consistent text style in any app."
+      },
+      {
+        "title": "Flexible automation",
+        "desc": "Hooks let you add custom actions before and after text processing."
+      }
+    ]
+  },
+  "features": {
+    "title": "Features",
+    "cards": [
+      {
+        "title": "Global Hotkey",
+        "desc": "Start and stop recording anywhere."
+      },
+      {
+        "title": "Cancel Safe",
+        "desc": "Esc cancels recording without extra steps."
+      },
+      {
+        "title": "Format Picker",
+        "desc": "Choose formatting before transcription."
+      },
+      {
+        "title": "Manual Formatting",
+        "desc": "Format any existing text."
+      },
+      {
+        "title": "Live Waveform",
+        "desc": "Real-time voice visualization."
+      },
+      {
+        "title": "Smart Silence",
+        "desc": "Stop by silence or manually."
+      },
+      {
+        "title": "Web App Detection",
+        "desc": "Auto-detect popular web apps."
+      },
+      {
+        "title": "Tray + Notifications",
+        "desc": "Background workflow via system tray."
+      },
+      {
+        "title": "Auto Copy",
+        "desc": "Result is copied to clipboard automatically."
+      },
+      {
+        "title": "Hooks Pipeline",
+        "desc": "before/after hooks for custom logic."
+      },
+      {
+        "title": "Custom Providers",
+        "desc": "Any OpenAI-compatible endpoints."
+      },
+      {
+        "title": "Theme System",
+        "desc": "Default, Ocean, Dusk, Retro, Neo, Lime, Terminal."
+      }
+    ]
+  },
+  "providers": {
+    "title": "AI Providers and Extensibility",
+    "cards": [
+      {
+        "title": "Built-in",
+        "desc": "Groq, OpenAI, GLM, Z.AI - fast switching in UI."
+      },
+      {
+        "title": "Custom/OpenAI-compatible",
+        "desc": "LM Studio, Ollama, vLLM, LocalAI, and any compatible endpoints."
+      },
+      {
+        "title": "Hooks Integrations",
+        "desc": "before_recording, after_recording, formatting_step, and more stages."
+      }
+    ]
+  },
+  "pipeline": {
+    "title": "Pipeline",
+    "steps": [
+      "Hotkey opens the floating window and starts recording.",
+      "Waveform and status update in real time.",
+      "Stop by hotkey or silence.",
+      "Formatting for selected/detected context.",
+      "Result goes to clipboard + post-processing hooks."
+    ]
+  },
+  "licenses": {
+    "title": "License Block",
+    "description": "The project uses licenses for code, dependencies, and providers. This block is a quick way to access licenses directly from the landing page.",
+    "items": [
+      "Main project license (RapidWhisper)",
+      "Third-party Python/Qt library licenses",
+      "API provider terms (Groq/OpenAI/GLM/Z.AI and custom endpoints)"
+    ],
+    "hide_button": "Hide license block"
+  },
+  "footer": {
+    "left": "RapidWhisper",
+    "center": "docs/landing",
+    "right": "Theme + Hotkeys + License Block"
+  }
+}

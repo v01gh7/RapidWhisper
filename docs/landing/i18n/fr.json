@@ -1,0 +1,288 @@
+{
+  "meta": {
+    "lang": "fr",
+    "title": "RapidWhisper - Voix vers texte sans changer de fenêtre",
+    "description": "RapidWhisper : saisie vocale avec raccourci global, formatage selon l'application active, thèmes d'interface et contrôle mains libres pour un travail concentré."
+  },
+  "header": {
+    "brand_aria": "Accueil RapidWhisper",
+    "nav": {
+      "purpose": "Usage",
+      "hotkeys": "Raccourcis",
+      "features": "Fonctionnalités",
+      "providers": "Fournisseurs",
+      "pipeline": "Pipeline"
+    },
+    "theme_aria": "Choisir un thème",
+    "download_button": "Télécharger",
+    "lang_toggle_aria": "Changer de langue",
+    "lang_toggle_title": "Changer de langue (EN/FR)",
+    "lang_button_label": "FR"
+  },
+  "hero": {
+    "kicker": "Voice-to-Text gratuit pour le travail et Twitch",
+    "title": "Parlez. Obtenez un texte prêt à coller.",
+    "lead": "RapidWhisper écoute via un raccourci, transforme la voix en texte et le formate immédiatement pour l'application active. Ensuite, vous n'avez qu'à coller le résultat final.",
+    "open_hotkeys": "Ouvrir le bloc des raccourcis",
+    "discord": {
+      "aria": "Communauté Discord",
+      "description": "Actualités, retours, support et discussion avec la communauté.",
+      "open_button": "Ouvrir Discord"
+    },
+    "support": {
+      "aria": "Communauté et liens de support",
+      "title": "Support",
+      "subtitle": "Communauté et soutien du projet",
+      "cards": {
+        "streamlabs_desc": "Soutien du projet et dons",
+        "donatex_desc": "Soutenir le développement",
+        "kofi_desc": "Don café au développeur"
+      }
+    },
+    "demo_aria": "Aperçu de la fenêtre flottante",
+    "theme_panel_title": "Thème de l'interface (au-dessus de la fenêtre) :",
+    "theme_switcher_aria": "Sélecteur de thème dans le hero",
+    "theme_buttons": {
+      "default": "Default",
+      "ocean": "Ocean",
+      "dusk": "Dusk",
+      "retro": "Retro",
+      "neo": "Neo",
+      "lime": "Lime",
+      "terminal": "Terminal Theme"
+    },
+    "theme_notes": {
+      "default": "Default : thème polyvalent pour le travail quotidien.",
+      "ocean": "Ocean : palette fraîche pour une concentration calme.",
+      "dusk": "Dusk : contraste du soir avec des accents doux.",
+      "retro": "Retro : dégradé rétro chaud et ambiance analogique.",
+      "neo": "Neo : style néon avec contraste marqué.",
+      "lime": "Lime : accent vert énergique et ton visuel élevé.",
+      "terminal": "Terminal Theme : esthétique CLI moderne avec lueur terminale verte."
+    },
+    "theme_apps": {
+      "default": "VS Code",
+      "ocean": "Google Docs",
+      "dusk": "Notion",
+      "retro": "Obsidian",
+      "neo": "Telegram Desktop",
+      "lime": "LibreOffice Writer",
+      "terminal": "Windows Terminal"
+    },
+    "state": {
+      "recording": "Enregistrement...",
+      "idle": "En attente"
+    },
+    "buttons": {
+      "record": "Enregistrer",
+      "pause": "Pause",
+      "start_recording": "Démarrer l'enregistrement",
+      "pause_recording": "Mettre en pause l'enregistrement",
+      "cancel": "Annuler"
+    },
+    "active_app": "Application active",
+    "download": {
+      "aria": "Téléchargements",
+      "title": "Télécharger",
+      "subtitle": "Versions pour les principales plateformes",
+      "hint_default": "Windows se télécharge directement ; pour macOS/Linux, la page Releases s'ouvre.",
+      "platform_strip_aria": "Widgets de plateformes",
+      "platform_names": {
+        "windows": "Windows",
+        "macos": "macOS",
+        "linux": "Linux"
+      },
+      "platform_icon_alt": {
+        "windows": "Icône Windows",
+        "macos": "Icône macOS",
+        "linux": "Icône Linux"
+      },
+      "selected": {
+        "windows": "Sélectionné : Windows (.exe).",
+        "macos": "Sélectionné : macOS (.dmg).",
+        "linux": "Sélectionné : Linux (.AppImage)."
+      },
+      "top_button_title": {
+        "windows": "Télécharger pour Windows",
+        "macos": "Télécharger pour macOS",
+        "linux": "Ouvrir les téléchargements"
+      },
+      "free": "GRATUIT"
+    }
+  },
+  "controls": {
+    "title": "Raccourcis et intégrations Hook directement dans le design",
+    "hotkeys_title": "Raccourcis clavier",
+    "hotkey_names": [
+      "Enregistrement",
+      "Annuler",
+      "Sélecteur de format",
+      "Formatage manuel"
+    ],
+    "quick_window_title": "Paramètres rapides de fenêtre",
+    "window_settings": [
+      {
+        "name": "Masquage auto",
+        "value": "2,5 s"
+      },
+      {
+        "name": "Mémoriser la position",
+        "value": "Oui"
+      },
+      {
+        "name": "Scénario d'arrêt",
+        "value": "Silence ou manuel"
+      },
+      {
+        "name": "Modes de thème",
+        "value": "7 préréglages"
+      }
+    ],
+    "hooks_title": "Intégrations Hook",
+    "pipeline_events_title": "Événements du pipeline",
+    "pipeline_events_count": "6 points de hook",
+    "pipeline_events": [
+      "before_recording",
+      "after_recording",
+      "transcription_received",
+      "formatting_step",
+      "post_formatting_step",
+      "task_completed"
+    ],
+    "hooks_intro": "Les hooks Python s'intègrent aux étapes du pipeline et offrent une automatisation flexible : nettoyage du texte, ajout de préfixes système, scripts externes et intégrations selon votre workflow.",
+    "hooks_sections": [
+      "Comment connecter",
+      "Ce qui est configurable dans l'UI",
+      "Contrat de données"
+    ],
+    "hooks_connect_tags": [
+      "config/hooks",
+      "HOOK_EVENT",
+      "hookHandler(options)"
+    ],
+    "hooks_ui_tags": [
+      "activation",
+      "ordre d'exécution",
+      "exécution en arrière-plan",
+      "recharger la liste"
+    ],
+    "hooks_contract_tags": [
+      "options[\"data\"]",
+      "payload compatible",
+      "chaîne de hooks compatible"
+    ],
+    "hooks_example_html": "<strong>Petit exemple :</strong> un hook sur <code>transcription_received</code> nettoie la dictée, ajoute le préfixe <code>Jarvis:</code> et envoie le résultat à un script de notification externe. C'est ainsi que vous créez un \"Jarvis\" personnel pour des tâches précises."
+  },
+  "purpose": {
+    "title": "À quoi sert l'application",
+    "cards": [
+      {
+        "title": "Dictée sans changer de fenêtre",
+        "desc": "Lancez l'enregistrement, parlez, puis collez le texte là où vous travaillez."
+      },
+      {
+        "title": "Format de sortie uniforme",
+        "desc": "Choisissez un format une fois et obtenez un style de texte cohérent dans n'importe quelle application."
+      },
+      {
+        "title": "Automatisation flexible",
+        "desc": "Les hooks permettent d'ajouter vos propres actions avant et après le traitement du texte."
+      }
+    ]
+  },
+  "features": {
+    "title": "Fonctionnalités",
+    "cards": [
+      {
+        "title": "Raccourci global",
+        "desc": "Démarrez et arrêtez l'enregistrement partout."
+      },
+      {
+        "title": "Annulation sûre",
+        "desc": "Esc annule l'enregistrement sans étapes supplémentaires."
+      },
+      {
+        "title": "Sélecteur de format",
+        "desc": "Choisissez le format avant la transcription."
+      },
+      {
+        "title": "Formatage manuel",
+        "desc": "Formatez n'importe quel texte existant."
+      },
+      {
+        "title": "Onde en direct",
+        "desc": "Visualisation de la voix en temps réel."
+      },
+      {
+        "title": "Silence intelligent",
+        "desc": "Arrêt par silence ou manuellement."
+      },
+      {
+        "title": "Détection web apps",
+        "desc": "Détection automatique des applications web populaires."
+      },
+      {
+        "title": "Tray + notifications",
+        "desc": "Flux de travail en arrière-plan via le tray système."
+      },
+      {
+        "title": "Copie auto",
+        "desc": "Le résultat est copié automatiquement dans le presse-papiers."
+      },
+      {
+        "title": "Pipeline hooks",
+        "desc": "Hooks before/after pour une logique personnalisée."
+      },
+      {
+        "title": "Fournisseurs personnalisés",
+        "desc": "Tous les endpoints compatibles OpenAI."
+      },
+      {
+        "title": "Système de thèmes",
+        "desc": "Default, Ocean, Dusk, Retro, Neo, Lime, Terminal."
+      }
+    ]
+  },
+  "providers": {
+    "title": "Fournisseurs IA et extensibilité",
+    "cards": [
+      {
+        "title": "Intégrés",
+        "desc": "Groq, OpenAI, GLM, Z.AI - changement rapide dans l'UI."
+      },
+      {
+        "title": "Personnalisés / compatibles OpenAI",
+        "desc": "LM Studio, Ollama, vLLM, LocalAI et tous les endpoints compatibles."
+      },
+      {
+        "title": "Intégrations hooks",
+        "desc": "before_recording, after_recording, formatting_step et d'autres étapes."
+      }
+    ]
+  },
+  "pipeline": {
+    "title": "Pipeline",
+    "steps": [
+      "Le raccourci ouvre la fenêtre flottante et démarre l'enregistrement.",
+      "L'onde et le statut se mettent à jour en temps réel.",
+      "Arrêt via raccourci ou silence.",
+      "Formatage selon le contexte sélectionné/détecté.",
+      "Résultat dans le presse-papiers + hooks de post-traitement."
+    ]
+  },
+  "licenses": {
+    "title": "Bloc de licences",
+    "description": "Le projet utilise des licences pour le code, les dépendances et les fournisseurs. Ce bloc offre un accès rapide aux licences directement depuis la landing page.",
+    "items": [
+      "Licence principale du projet (RapidWhisper)",
+      "Licences des bibliothèques tierces Python/Qt",
+      "Conditions des fournisseurs API (Groq/OpenAI/GLM/Z.AI et endpoints personnalisés)"
+    ],
+    "hide_button": "Masquer le bloc de licences"
+  },
+  "footer": {
+    "left": "RapidWhisper",
+    "center": "docs/landing",
+    "right": "Thème + Raccourcis + Bloc de licences"
+  }
+}
