@@ -594,6 +594,24 @@ p {
   color: var(--page-text);
 }
 
+.demo-free-note {
+  margin: 0;
+    min-height: auto;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    text-align: center;
+    font-family: "Chakra Petch", sans-serif;
+    font-size: clamp(1.2rem, 2.2vw, 3.9rem);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--page-accent-2) 82%, #ffffff);
+    white-space: nowrap;
+    margin-top: 10px;
+}
+
 .hero-theme-panel {
   margin-bottom: 10px;
   border: 1px solid color-mix(in srgb, var(--page-border) 70%, transparent);
