@@ -71,7 +71,7 @@
   let topDownloadTargetOs = "windows";
 
   const DOWNLOAD_LINKS = {
-    windows: "../../dist/RapidWhisper.exe",
+    windows: "https://github.com/v01gh7/RapidWhisper/releases/latest/download/RapidWhisper.exe",
     macos: "https://github.com/v01gh7/RapidWhisper/releases/latest",
     linux: "https://github.com/v01gh7/RapidWhisper/releases/latest",
   };
