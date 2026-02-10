@@ -8,7 +8,7 @@
 
 [**Download for Windows / macOS / Linux**](https://v01gh7.github.io/RapidWhisper/) • [Website](https://v01gh7.github.io/RapidWhisper/) • [Discord](https://discord.gg/sZUZKDeq)
 
-A modern speech-to-text transcription application using AI APIs, inspired by SuperWhisper.
+A modern speech-to-text transcription application using AI APIs.
 
 </div>
 
@@ -134,6 +134,5 @@ Copyright (c) 2026 V01GH7
 
 ## Acknowledgments
 
-- Inspired by [SuperWhisper](https://superwhisper.com/)
 - Powered by AI APIs (Groq, OpenAI, GLM, Z.AI)
 - Built with [PyQt6](https://www.riverbankcomputing.com/software/pyqt/)
