@@ -167,3 +167,6 @@ dep.env
 
 build/
 statistics.json
+.claude/
+.autoforge/
+.autoclaude/
