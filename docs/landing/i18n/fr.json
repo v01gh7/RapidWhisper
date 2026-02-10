@@ -15,8 +15,14 @@
     },
     "theme_aria": "Choisir un thème",
     "download_button": "Télécharger",
+    "lang_menu_aria": "Liste des langues",
+    "lang_menu": {
+      "en": "Anglais",
+      "fr": "Français",
+      "ru": "Russe"
+    },
     "lang_toggle_aria": "Changer de langue",
-    "lang_toggle_title": "Changer de langue (EN/FR)",
+    "lang_toggle_title": "Changer de langue (EN/FR/RU)",
     "lang_button_label": "FR"
   },
   "hero": {

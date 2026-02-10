@@ -1,0 +1,294 @@
+{
+  "meta": {
+    "lang": "ru",
+    "title": "RapidWhisper - Голос в текст без переключения окон",
+    "description": "RapidWhisper: голосовой ввод с глобальным хоткеем, форматированием под приложение, темами интерфейса и управлением без отрыва от работы."
+  },
+  "header": {
+    "brand_aria": "RapidWhisper Home",
+    "nav": {
+      "purpose": "Для чего",
+      "hotkeys": "Хоткеи",
+      "features": "Фичи",
+      "providers": "Провайдеры",
+      "pipeline": "Пайплайн"
+    },
+    "theme_aria": "Выбор темы",
+    "download_button": "Скачать",
+    "lang_menu_aria": "Список языков",
+    "lang_menu": {
+      "en": "Английский",
+      "fr": "Французский",
+      "ru": "Русский"
+    },
+    "lang_toggle_aria": "Смена языка",
+    "lang_toggle_title": "Смена языка (EN/FR/RU)",
+    "lang_button_label": "RU"
+  },
+  "hero": {
+    "kicker": "Бесплатный Voice-to-Text для работы и Twitch",
+    "title": "Сказал. Получил готовый текст.",
+    "lead": "RapidWhisper слушает микрофон по хоткею, превращает речь в текст и сразу форматирует его под активное приложение. Потом ты просто вставляешь готовый результат.",
+    "open_hotkeys": "Открыть блок хоткеев",
+    "discord": {
+      "aria": "Discord community",
+      "description": "Новости, фидбек, техподдержка и общение с комьюнити.",
+      "open_button": "Открыть Discord"
+    },
+    "support": {
+      "aria": "Community and support links",
+      "title": "Support",
+      "subtitle": "Комьюнити и поддержка проекта",
+      "cards": {
+        "streamlabs_desc": "Поддержка проекта и донаты",
+        "donatex_desc": "Поддержать развитие проекта",
+        "kofi_desc": "Coffee-донат разработчику"
+      }
+    },
+    "demo_aria": "Floating window demo",
+    "theme_panel_title": "Тема интерфейса (над окном):",
+    "theme_switcher_aria": "Theme switcher in hero",
+    "theme_buttons": {
+      "default": "Default",
+      "ocean": "Ocean",
+      "dusk": "Dusk",
+      "retro": "Retro",
+      "neo": "Neo",
+      "lime": "Lime",
+      "terminal": "Terminal Theme"
+    },
+    "theme_notes": {
+      "default": "Default: универсальная тема для повседневной работы.",
+      "ocean": "Ocean: прохладная палитра для спокойной концентрации.",
+      "dusk": "Dusk: вечерний контраст с мягкими акцентами.",
+      "retro": "Retro: теплый ретро-градиент и ламповая атмосфера.",
+      "neo": "Neo: неоновый стиль с ярким контрастом.",
+      "lime": "Lime: энергичный зеленый акцент и высокий визуальный тонус.",
+      "terminal": "Terminal Theme: современная CLI-эстетика с зеленым терминальным свечением."
+    },
+    "theme_apps": {
+      "default": "VS Code",
+      "ocean": "Google Docs",
+      "dusk": "Notion",
+      "retro": "Obsidian",
+      "neo": "Telegram Desktop",
+      "lime": "LibreOffice Writer",
+      "terminal": "Windows Terminal"
+    },
+    "state": {
+      "recording": "Запись...",
+      "idle": "Ожидание"
+    },
+    "buttons": {
+      "record": "Запись",
+      "pause": "Пауза",
+      "start_recording": "Старт записи",
+      "pause_recording": "Пауза записи",
+      "cancel": "Отменить"
+    },
+    "active_app": "Активное приложение",
+    "download": {
+      "aria": "Download builds",
+      "title": "Скачать",
+      "subtitle": "Сборки для основных платформ",
+      "hint_default": "Windows скачивается сразу, для macOS/Linux откроется страница Releases.",
+      "platform_strip_aria": "Platform widgets",
+      "platform_names": {
+        "windows": "Windows",
+        "macos": "macOS",
+        "linux": "Linux"
+      },
+      "platform_icon_alt": {
+        "windows": "Windows icon",
+        "macos": "macOS icon",
+        "linux": "Linux icon"
+      },
+      "selected": {
+        "windows": "Выбрано: Windows (.exe).",
+        "macos": "Выбрано: macOS (.dmg).",
+        "linux": "Выбрано: Linux (.AppImage)."
+      },
+      "top_button_title": {
+        "windows": "Скачать для Windows",
+        "macos": "Скачать для macOS",
+        "linux": "Открыть загрузки"
+      },
+      "free": "БЕСПЛАТНО"
+    }
+  },
+  "controls": {
+    "title": "Хоткеи и hook-интеграции сразу в дизайне",
+    "hotkeys_title": "Горячие клавиши",
+    "hotkey_names": [
+      "Запись",
+      "Отмена",
+      "Выбор формата",
+      "Ручное форматирование"
+    ],
+    "quick_window_title": "Быстрые параметры окна",
+    "window_settings": [
+      {
+        "name": "Автоскрытие",
+        "value": "2.5 сек"
+      },
+      {
+        "name": "Запоминать позицию",
+        "value": "Да"
+      },
+      {
+        "name": "Сценарий остановки",
+        "value": "Тишина или вручную"
+      },
+      {
+        "name": "Режимы темы",
+        "value": "7 готовых пресетов"
+      }
+    ],
+    "hooks_title": "Hook-интеграции",
+    "pipeline_events_title": "События Pipeline",
+    "pipeline_events_count": "6 точек подключения",
+    "pipeline_events": [
+      "before_recording",
+      "after_recording",
+      "transcription_received",
+      "formatting_step",
+      "post_formatting_step",
+      "task_completed"
+    ],
+    "hooks_intro": "Python-хуки встраиваются в шаги пайплайна и дают гибкую автоматизацию: очистка текста, добавление служебных префиксов, запуск внешних скриптов и интеграции под ваш рабочий процесс.",
+    "hooks_sections": [
+      "Как подключить",
+      "Что настраивается в UI",
+      "Контракт данных"
+    ],
+    "hooks_connect_tags": [
+      "config/hooks",
+      "HOOK_EVENT",
+      "hookHandler(options)"
+    ],
+    "hooks_ui_tags": [
+      "включение",
+      "порядок выполнения",
+      "фоновый запуск",
+      "обновление списка"
+    ],
+    "hooks_contract_tags": [
+      "options[\"data\"]",
+      "payload совместим",
+      "цепочка hooks совместима"
+    ],
+    "hooks_example_html": "<strong>Небольшой пример:</strong> хук на <code>transcription_received</code> чистит диктовку, добавляет префикс <code>Jarvis:</code> и отправляет результат в внешний скрипт уведомлений. Так собирается персональный \"Джарвис\" под конкретные задачи."
+  },
+  "purpose": {
+    "title": "Для чего программа",
+    "cards": [
+      {
+        "title": "Диктовка без переключения окон",
+        "desc": "Запустил запись, проговорил, вставил текст там же, где работал."
+      },
+      {
+        "title": "Единый формат вывода",
+        "desc": "Фиксируешь формат и получаешь одинаковый стиль текста в любом приложении."
+      },
+      {
+        "title": "Гибкая автоматизация",
+        "desc": "Hooks позволяют добавлять свои действия до и после обработки текста."
+      }
+    ]
+  },
+  "features": {
+    "title": "Фичи",
+    "cards": [
+      {
+        "title": "Global Hotkey",
+        "desc": "Запуск и остановка записи в любом месте."
+      },
+      {
+        "title": "Cancel Safe",
+        "desc": "Esc отменяет запись без лишних шагов."
+      },
+      {
+        "title": "Format Picker",
+        "desc": "Выбор формата до распознавания."
+      },
+      {
+        "title": "Manual Formatting",
+        "desc": "Форматирование произвольного текста."
+      },
+      {
+        "title": "Live Waveform",
+        "desc": "Визуализация голоса в реальном времени."
+      },
+      {
+        "title": "Smart Silence",
+        "desc": "Остановка по тишине или вручную."
+      },
+      {
+        "title": "Web App Detection",
+        "desc": "Автодетект популярных веб-приложений."
+      },
+      {
+        "title": "Tray + Notifications",
+        "desc": "Фоновая работа через системный трей."
+      },
+      {
+        "title": "Auto Copy",
+        "desc": "Результат автоматически копируется в буфер."
+      },
+      {
+        "title": "Hooks Pipeline",
+        "desc": "before/after hooks для кастомной логики."
+      },
+      {
+        "title": "Custom Providers",
+        "desc": "Любые OpenAI-совместимые endpoint-ы."
+      },
+      {
+        "title": "Theme System",
+        "desc": "Default, Ocean, Dusk, Retro, Neo, Lime, Terminal."
+      }
+    ]
+  },
+  "providers": {
+    "title": "AI-провайдеры и расширяемость",
+    "cards": [
+      {
+        "title": "Built-in",
+        "desc": "Groq, OpenAI, GLM, Z.AI - быстрое переключение в UI."
+      },
+      {
+        "title": "Custom/OpenAI-compatible",
+        "desc": "LM Studio, Ollama, vLLM, LocalAI и любые совместимые endpoint-ы."
+      },
+      {
+        "title": "Hooks-интеграции",
+        "desc": "before_recording, after_recording, formatting_step и другие этапы."
+      }
+    ]
+  },
+  "pipeline": {
+    "title": "Пайплайн",
+    "steps": [
+      "Hotkey открывает floating-window и запускает запись.",
+      "Волна и статус обновляются в реальном времени.",
+      "Остановка по хоткею или тишине.",
+      "Форматирование под выбранный/определенный контекст.",
+      "Результат в буфере обмена + пост-обработка hooks."
+    ]
+  },
+  "licenses": {
+    "title": "Лицензионный блок",
+    "description": "В проекте используются лицензии для кода, зависимостей и провайдеров. Этот блок добавлен как быстрый доступ к лицензиям прямо в лендинге.",
+    "items": [
+      "Основная лицензия проекта (RapidWhisper)",
+      "Лицензии сторонних библиотек Python/Qt",
+      "Условия API-провайдеров (Groq/OpenAI/GLM/Z.AI и кастомные endpoint-ы)"
+    ],
+    "hide_button": "Скрыть блок лицензий"
+  },
+  "footer": {
+    "left": "RapidWhisper",
+    "center": "docs/landing",
+    "right": "Theme + Hotkeys + License block"
+  }
+}

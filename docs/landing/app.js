@@ -1,5 +1,5 @@
 (function () {
-  const SUPPORTED_LANGS = ["en", "fr"];
+  const SUPPORTED_LANGS = ["en", "fr", "ru"];
   const translationsByLang = {};
 
   const FALLBACK_THEME_NOTES = {
@@ -33,9 +33,15 @@
     macos: "Download for macOS",
     linux: "Open downloads",
   };
+  const FALLBACK_LANG_MENU = {
+    en: "English",
+    fr: "French",
+    ru: "Russian",
+  };
 
   const heroWave = document.getElementById("hero-wave");
   const heroPreview = document.getElementById("hero-preview");
+  const topbar = document.querySelector(".topbar");
   const heroAppName = document.getElementById("hero-app-name");
   const themeNote = document.getElementById("theme-note");
   const themeButtons = document.querySelectorAll(".theme-btn[data-theme-id]");
@@ -48,9 +54,10 @@
   const headerThemeDropdown = document.getElementById("header-theme-dropdown");
   const headerThemeTrigger = document.getElementById("header-theme-trigger");
   const topDownloadBtn = document.getElementById("top-download-btn");
+  const topLangDropdown = document.getElementById("top-lang-dropdown");
   const topLangToggle = document.getElementById("top-lang-toggle");
+  const langButtons = document.querySelectorAll(".lang-btn[data-lang-id]");
 
-  const controlsSection = document.getElementById("controls");
   const licensesSection = document.getElementById("licenses");
   const downloadHint = document.getElementById("download-hint");
   const downloadCards = document.querySelectorAll(".platform-icon-card[data-download-os]");
@@ -135,6 +142,44 @@
     });
   }
 
+  function scrollToTargetWithOffset(targetElement) {
+    if (!targetElement) return;
+    const headerOffset = (topbar ? Math.ceil(topbar.getBoundingClientRect().height) : 0) + 20;
+    const targetTop = targetElement.getBoundingClientRect().top + window.scrollY - headerOffset;
+    window.scrollTo({
+      top: Math.max(0, targetTop),
+      behavior: "smooth",
+    });
+  }
+
+  function scrollByHash(hashValue) {
+    const hash = typeof hashValue === "string" ? hashValue.trim() : "";
+    if (!hash || hash === "#") return false;
+    const id = hash.startsWith("#") ? hash.slice(1) : hash;
+    if (!id) return false;
+    const target = document.getElementById(id);
+    if (!target) return false;
+    scrollToTargetWithOffset(target);
+    return true;
+  }
+
+  function setLangButtonLabels(langMenuMap) {
+    const labels = langMenuMap && typeof langMenuMap === "object" ? langMenuMap : FALLBACK_LANG_MENU;
+    langButtons.forEach(function (button) {
+      const langId = button.dataset.langId || "";
+      const label = labels[langId];
+      if (typeof label === "string") {
+        button.textContent = label;
+      }
+    });
+  }
+
+  function setLangButtonsActive(langCode) {
+    langButtons.forEach(function (button) {
+      button.classList.toggle("is-active", button.dataset.langId === langCode);
+    });
+  }
+
   function setPurposeCards(cards) {
     if (!Array.isArray(cards)) return;
     const nodes = document.querySelectorAll("#purpose .tile");
@@ -208,6 +253,8 @@
     setAttr("#header-theme-trigger", "aria-label", getByPath(translation, "header.theme_aria", ""));
     setAttr("#header-theme-menu", "aria-label", getByPath(translation, "header.theme_aria", ""));
     setText("#top-download-btn", getByPath(translation, "header.download_button", ""));
+    setAttr("#top-lang-menu", "aria-label", getByPath(translation, "header.lang_menu_aria", "Language list"));
+    setLangButtonLabels(getByPath(translation, "header.lang_menu", FALLBACK_LANG_MENU));
     setThemeButtonLabels(getByPath(translation, "hero.theme_buttons", {}));
 
     setText(".kicker", getByPath(translation, "hero.kicker", ""));
@@ -433,6 +480,13 @@
     headerThemeTrigger.setAttribute("aria-expanded", isOpen ? "true" : "false");
   }
 
+  function setLangDropdownOpen(open) {
+    if (!topLangDropdown || !topLangToggle) return;
+    const isOpen = Boolean(open);
+    topLangDropdown.classList.toggle("is-open", isOpen);
+    topLangToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+  }
+
   function applyTheme(themeId) {
     const id = themeId || "default";
     document.body.dataset.pageTheme = id;
@@ -483,6 +537,7 @@
       topLangToggle.setAttribute("aria-label", langAria);
       topLangToggle.title = getByPath(translation, "header.lang_toggle_title", langAria);
     }
+    setLangButtonsActive(normalized);
 
     applyTheme(heroPreview && heroPreview.dataset.themeId ? heroPreview.dataset.themeId : "default");
     syncHeroState();
@@ -518,15 +573,18 @@
   }
 
   document.addEventListener("click", function (event) {
-    if (!headerThemeDropdown) return;
-    if (!headerThemeDropdown.contains(event.target)) {
+    if (headerThemeDropdown && !headerThemeDropdown.contains(event.target)) {
       setThemeDropdownOpen(false);
+    }
+    if (topLangDropdown && !topLangDropdown.contains(event.target)) {
+      setLangDropdownOpen(false);
     }
   });
 
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape") {
       setThemeDropdownOpen(false);
+      setLangDropdownOpen(false);
     }
   });
 
@@ -549,11 +607,22 @@
     });
   }
 
+  document.querySelectorAll('a[href^="#"]').forEach(function (link) {
+    link.addEventListener("click", function (event) {
+      const hash = link.getAttribute("href") || "";
+      if (!hash || hash === "#") return;
+      const navigated = scrollByHash(hash);
+      if (!navigated) return;
+      event.preventDefault();
+      if (window.location.hash !== hash) {
+        history.pushState(null, "", hash);
+      }
+    });
+  });
+
   document.querySelectorAll('[data-action="scroll-controls"]').forEach(function (button) {
     button.addEventListener("click", function () {
-      if (controlsSection) {
-        controlsSection.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
+      scrollByHash("#controls");
     });
   });
 
@@ -586,16 +655,38 @@
     });
   }
 
-  if (topLangToggle) {
-    topLangToggle.addEventListener("click", function () {
-      const nextLang = currentLang === "en" ? "fr" : "en";
-      applyLanguage(nextLang);
+  if (topLangDropdown) {
+    topLangDropdown.addEventListener("mouseenter", function () {
+      setLangDropdownOpen(true);
+    });
+    topLangDropdown.addEventListener("mouseleave", function () {
+      setLangDropdownOpen(false);
     });
   }
+
+  if (topLangToggle) {
+    topLangToggle.addEventListener("click", function () {
+      const shouldOpen = !topLangDropdown || !topLangDropdown.classList.contains("is-open");
+      setLangDropdownOpen(shouldOpen);
+    });
+  }
+
+  langButtons.forEach(function (button) {
+    button.addEventListener("click", function () {
+      const langId = button.dataset.langId || "en";
+      applyLanguage(langId);
+      setLangDropdownOpen(false);
+    });
+  });
 
   preloadTranslations()
     .then(function () {
       applyLanguage("en");
+      if (window.location.hash) {
+        setTimeout(function () {
+          scrollByHash(window.location.hash);
+        }, 0);
+      }
     })
     .catch(function (error) {
       console.error("Landing i18n load failed:", error);

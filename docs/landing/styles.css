@@ -164,6 +164,13 @@ a {
   flex: 0 0 auto;
 }
 
+.top-controls {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 20px;
+}
+
 .theme-palette-trigger {
   width: 48px;
   height: 40px;
@@ -233,19 +240,82 @@ a {
 
 .top-actions {
   display: inline-flex;
-  gap: 8px;
+  gap: 0;
 }
 
-.top-lang-wrap {
+.top-lang-dropdown {
+  position: relative;
   display: inline-flex;
 }
 
 .top-lang-toggle {
+  position: relative;
   min-width: 58px;
   padding-inline: 10px;
   font-family: "IBM Plex Mono", monospace;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.top-lang-toggle::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  right: -4px;
+  bottom: -10px;
+  height: 10px;
+  background: transparent;
+}
+
+.lang-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 148px;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--page-border) 86%, transparent);
+  border-radius: 12px;
+  background:
+    linear-gradient(
+      155deg,
+      color-mix(in srgb, var(--page-surface-solid) 88%, #1a2439),
+      color-mix(in srgb, var(--page-bg) 92%, #11192a)
+    );
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.38);
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 41;
+}
+
+.top-lang-dropdown:hover .lang-dropdown-menu,
+.top-lang-dropdown.is-open .lang-dropdown-menu {
+  display: flex;
+}
+
+.lang-btn {
+  border: 1px solid var(--page-border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--page-text);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  padding: 7px 10px;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
+}
+
+.lang-btn:hover,
+.lang-btn:focus-visible {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--page-accent) 62%, var(--page-border));
+}
+
+.lang-btn.is-active {
+  background: color-mix(in srgb, var(--page-accent) 20%, rgba(255, 255, 255, 0.08));
+  border-color: color-mix(in srgb, var(--page-accent) 72%, transparent);
 }
 
 .top-download-btn {
@@ -1201,7 +1271,7 @@ kbd {
 
   .top-actions {
     width: auto;
-    margin-left: auto;
+    margin-left: 0;
   }
 
   .top-actions .btn {

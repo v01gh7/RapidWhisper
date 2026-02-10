@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>RapidWhisper - Голос в текст без переключения окон</title>
+  <title>RapidWhisper - Voice-to-Text Without Switching Windows</title>
   <meta
     name="description"
-    content="RapidWhisper: голосовой ввод с глобальным хоткеем, форматированием под приложение, темами интерфейса и управлением без отрыва от работы."
+    content="RapidWhisper: voice input with a global hotkey, app-aware formatting, UI themes, and hands-free control for focused work."
   />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -34,43 +34,53 @@
       <a href="#pipeline">Пайплайн</a>
     </nav>
 
-    <div class="top-theme-dropdown" id="header-theme-dropdown">
-      <button
-        type="button"
-        class="theme-palette-trigger"
-        id="header-theme-trigger"
-        aria-haspopup="listbox"
-        aria-expanded="false"
-        aria-controls="header-theme-menu"
-        aria-label="Выбор темы"
-      >
-        <span class="theme-palette-dot" aria-hidden="true"></span>
-      </button>
-      <div class="theme-dropdown-menu" id="header-theme-menu" role="listbox" aria-label="Выбор темы">
-        <button type="button" class="theme-btn is-active" data-theme-source="header-dropdown" data-theme-id="default">Default</button>
-        <button type="button" class="theme-btn" data-theme-source="header-dropdown" data-theme-id="ocean">Ocean</button>
-        <button type="button" class="theme-btn" data-theme-source="header-dropdown" data-theme-id="dusk">Dusk</button>
-        <button type="button" class="theme-btn" data-theme-source="header-dropdown" data-theme-id="retro">Retro</button>
-        <button type="button" class="theme-btn" data-theme-source="header-dropdown" data-theme-id="neo">Neo</button>
-        <button type="button" class="theme-btn" data-theme-source="header-dropdown" data-theme-id="lime">Lime</button>
-        <button type="button" class="theme-btn" data-theme-source="header-dropdown" data-theme-id="terminal">Terminal Theme</button>
+    <div class="top-controls">
+      <div class="top-theme-dropdown" id="header-theme-dropdown">
+        <button
+          type="button"
+          class="theme-palette-trigger"
+          id="header-theme-trigger"
+          aria-haspopup="listbox"
+          aria-expanded="false"
+          aria-controls="header-theme-menu"
+          aria-label="Выбор темы"
+        >
+          <span class="theme-palette-dot" aria-hidden="true"></span>
+        </button>
+        <div class="theme-dropdown-menu" id="header-theme-menu" role="listbox" aria-label="Выбор темы">
+          <button type="button" class="theme-btn is-active" data-theme-source="header-dropdown" data-theme-id="default">Default</button>
+          <button type="button" class="theme-btn" data-theme-source="header-dropdown" data-theme-id="ocean">Ocean</button>
+          <button type="button" class="theme-btn" data-theme-source="header-dropdown" data-theme-id="dusk">Dusk</button>
+          <button type="button" class="theme-btn" data-theme-source="header-dropdown" data-theme-id="retro">Retro</button>
+          <button type="button" class="theme-btn" data-theme-source="header-dropdown" data-theme-id="neo">Neo</button>
+          <button type="button" class="theme-btn" data-theme-source="header-dropdown" data-theme-id="lime">Lime</button>
+          <button type="button" class="theme-btn" data-theme-source="header-dropdown" data-theme-id="terminal">Terminal Theme</button>
+        </div>
       </div>
-    </div>
 
-    <div class="top-lang-wrap">
-      <button
-        type="button"
-        class="btn btn-ghost top-lang-toggle"
-        id="top-lang-toggle"
-        aria-label="Switch language"
-        title="Switch language"
-      >
-        EN
-      </button>
-    </div>
+      <div class="top-lang-dropdown" id="top-lang-dropdown">
+        <button
+          type="button"
+          class="btn btn-ghost top-lang-toggle"
+          id="top-lang-toggle"
+          aria-haspopup="listbox"
+          aria-expanded="false"
+          aria-controls="top-lang-menu"
+          aria-label="Switch language"
+          title="Switch language"
+        >
+          EN
+        </button>
+        <div class="lang-dropdown-menu" id="top-lang-menu" role="listbox" aria-label="Language list">
+          <button type="button" class="lang-btn is-active" data-lang-id="en">English</button>
+          <button type="button" class="lang-btn" data-lang-id="fr">Français</button>
+          <button type="button" class="lang-btn" data-lang-id="ru">Русский</button>
+        </div>
+      </div>
 
-    <div class="top-actions">
-      <button type="button" class="btn btn-primary top-download-btn" id="top-download-btn">Скачать</button>
+      <div class="top-actions">
+        <button type="button" class="btn btn-primary top-download-btn" id="top-download-btn">Скачать</button>
+      </div>
     </div>
   </header>
 
