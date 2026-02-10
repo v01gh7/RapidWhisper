@@ -705,7 +705,7 @@ p {
 
 .demo-wave {
   margin: 13px 0;
-  min-height: 44px;
+  height: 46px;
   display: grid;
   grid-template-columns: repeat(44, minmax(4px, 1fr));
   align-items: end;
