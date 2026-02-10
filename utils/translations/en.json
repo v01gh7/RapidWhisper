@@ -420,6 +420,7 @@
     "output_label": "Formatted text",
     "format_button": "Format",
     "formatting_button": "Formatting...",
+    "back_to_formats_button": "Back to formats",
     "copy_button": "Copy",
     "empty_input_message": "Please paste or type text to format.",
     "no_output_message": "Nothing to copy yet.",

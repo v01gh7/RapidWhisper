@@ -81,7 +81,7 @@ class FormattingConfig:
         """
         # Model is optional - if not specified, default model for provider will be used
         return (
-            self.provider in ["groq", "openai", "glm", "custom"] and
+            self.provider in ["groq", "openai", "glm", "zai", "custom"] and
             bool(self.applications) and
             0.0 <= self.temperature <= 1.0
         )
@@ -101,6 +101,7 @@ class FormattingConfig:
             "groq": "llama-3.3-70b-versatile",
             "openai": "gpt-4o-mini",
             "glm": "glm-4-flash",
+            "zai": "GLM-4.7",
             "custom": ""
         }
         

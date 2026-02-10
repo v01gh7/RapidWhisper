@@ -376,7 +376,7 @@ class FormattingModule:
         
         if not self.config.is_valid():
             logger.warning("❌ Неверная конфигурация форматирования")
-            logger.warning(f"  - Провайдер валиден: {self.config.provider in ['groq', 'openai', 'glm', 'custom']}")
+            logger.warning(f"  - Провайдер валиден: {self.config.provider in ['groq', 'openai', 'glm', 'zai', 'custom']}")
             logger.warning(f"  - Приложения указаны: {bool(self.config.applications)}")
             logger.warning(f"  - Температура валидна: {0.0 <= self.config.temperature <= 1.0}")
             logger.info("=" * 80)

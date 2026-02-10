@@ -1191,41 +1191,46 @@ class RapidWhisperApp(QObject):
             from core.config_loader import get_config_loader
 
             formatting_config = FormattingConfig.from_config(get_config_loader())
+            while True:
+                dialog = FormatSelectionDialog(
+                    formatting_config,
+                    parent=None,
+                    theme_id=getattr(self.config, "window_theme", "default"),
+                )
+                self.manual_format_selection_dialog = dialog
+                self._manual_format_selection_open = True
 
-            dialog = FormatSelectionDialog(
-                formatting_config,
-                parent=None,
-                theme_id=getattr(self.config, "window_theme", "default"),
-            )
-            self.manual_format_selection_dialog = dialog
-            self._manual_format_selection_open = True
+                result = dialog.exec()
 
-            result = dialog.exec()
+                self._manual_format_selection_open = False
+                self.manual_format_selection_dialog = None
 
-            self._manual_format_selection_open = False
-            self.manual_format_selection_dialog = None
+                if result != dialog.DialogCode.Accepted:
+                    self.logger.info("Manual formatting selection cancelled")
+                    return
 
-            if result != dialog.DialogCode.Accepted:
-                self.logger.info("Manual formatting selection cancelled")
+                selected_format = dialog.get_selected_format()
+                if not selected_format:
+                    self.logger.warning("Manual formatting selection accepted without a format")
+                    return
+
+                manual_dialog = ManualFormatDialog(
+                    formatting_config,
+                    selected_format,
+                    parent=None,
+                    theme_id=getattr(self.config, "window_theme", "default"),
+                )
+                self.manual_format_dialog = manual_dialog
+                self._manual_format_dialog_open = True
+                manual_result = manual_dialog.exec()
+
+                self._manual_format_dialog_open = False
+                self.manual_format_dialog = None
+
+                if manual_result == ManualFormatDialog.RESULT_BACK_TO_SELECTION:
+                    continue
+
                 return
-
-            selected_format = dialog.get_selected_format()
-            if not selected_format:
-                self.logger.warning("Manual formatting selection accepted without a format")
-                return
-
-            manual_dialog = ManualFormatDialog(
-                formatting_config,
-                selected_format,
-                parent=None,
-                theme_id=getattr(self.config, "window_theme", "default"),
-            )
-            self.manual_format_dialog = manual_dialog
-            self._manual_format_dialog_open = True
-            manual_dialog.exec()
-
-            self._manual_format_dialog_open = False
-            self.manual_format_dialog = None
 
         except Exception as e:
             self.logger.error(f"Manual formatting dialog failed: {e}")

@@ -420,6 +420,7 @@
     "output_label": "Отформатированный текст",
     "format_button": "Форматировать",
     "formatting_button": "Форматирование...",
+    "back_to_formats_button": "Назад к форматам",
     "copy_button": "Копировать",
     "empty_input_message": "Вставьте или введите текст для форматирования.",
     "no_output_message": "Пока нечего копировать.",

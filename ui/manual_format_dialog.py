@@ -50,6 +50,8 @@ class _FormatWorker(QObject):
 
 
 class ManualFormatDialog(QDialog, StyledWindowMixin):
+    RESULT_BACK_TO_SELECTION = 1001
+
     def __init__(self, formatting_config: FormattingConfig, format_id: str, parent=None, theme_id: Optional[str] = None):
         super().__init__(parent)
         StyledWindowMixin.__init__(self)
@@ -69,6 +71,7 @@ class ManualFormatDialog(QDialog, StyledWindowMixin):
         self._formatting_thread: Optional[QThread] = None
         self._formatting_worker: Optional[_FormatWorker] = None
         self._is_formatting = False
+        self.back_button: Optional[QPushButton] = None
 
         self._create_ui()
 
@@ -163,6 +166,12 @@ class ManualFormatDialog(QDialog, StyledWindowMixin):
         self.copy_button.setEnabled(False)
         button_layout.addWidget(self.copy_button)
 
+        self.back_button = QPushButton(t("manual_format.back_to_formats_button"))
+        self.back_button.clicked.connect(self._on_back_clicked)
+        self.back_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.back_button.setStyleSheet(self._button_style())
+        button_layout.addWidget(self.back_button)
+
         self.close_button = QPushButton(t("common.close"))
         self.close_button.clicked.connect(self.reject)
         self.close_button.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -198,7 +207,7 @@ class ManualFormatDialog(QDialog, StyledWindowMixin):
 
     def _button_style(self) -> str:
         return f"""
-            QPushButton {
+            QPushButton {{
                 background-color: {self._theme["input_bg"]};
                 color: {self._theme["text_primary"]};
                 border: 1px solid {self._theme["input_border"]};
@@ -207,16 +216,16 @@ class ManualFormatDialog(QDialog, StyledWindowMixin):
                 font-size: 12px;
                 min-width: 110px;
                 font-family: '{self._theme["font_family"]}';
-            }
-            QPushButton:hover {
+            }}
+            QPushButton:hover {{
                 background-color: {self._theme["sidebar_hover"]};
                 border: 1px solid {self._theme["input_focus"]};
-            }
-            QPushButton:disabled {
+            }}
+            QPushButton:disabled {{
                 color: {self._theme["text_secondary"]};
                 background-color: {self._theme["input_bg_alt"]};
                 border: 1px solid {self._theme["input_border"]};
-            }
+            }}
         """
 
     def _on_format_clicked(self) -> None:
@@ -261,7 +270,15 @@ class ManualFormatDialog(QDialog, StyledWindowMixin):
 
     def _on_formatting_error(self, error_message: str) -> None:
         logger.error(f"Manual formatting error: {error_message}")
-        QMessageBox.warning(self, t("common.error"), t("manual_format.format_error_message"))
+        details = error_message.strip()
+        if details:
+            QMessageBox.warning(
+                self,
+                t("common.error"),
+                f"{t('manual_format.format_error_message')}\n\n{details}"
+            )
+        else:
+            QMessageBox.warning(self, t("common.error"), t("manual_format.format_error_message"))
         self._set_formatting_state(False)
 
     def _on_copy_clicked(self) -> None:
@@ -275,10 +292,17 @@ class ManualFormatDialog(QDialog, StyledWindowMixin):
         else:
             QMessageBox.warning(self, t("common.error"), t("manual_format.copy_failed_message"))
 
+    def _on_back_clicked(self) -> None:
+        if self._is_formatting:
+            return
+        self.done(self.RESULT_BACK_TO_SELECTION)
+
     def _set_formatting_state(self, is_formatting: bool) -> None:
         self._is_formatting = is_formatting
         self.input_edit.setReadOnly(is_formatting)
         self.format_button.setEnabled(not is_formatting)
+        if self.back_button is not None:
+            self.back_button.setEnabled(not is_formatting)
         self.close_button.setEnabled(not is_formatting)
         self.copy_button.setEnabled(not is_formatting and bool(self.output_edit.toPlainText().strip()))
         if is_formatting:
@@ -366,5 +390,7 @@ class ManualFormatDialog(QDialog, StyledWindowMixin):
             self.format_button.setStyleSheet(self._button_style())
         if hasattr(self, "copy_button") and self.copy_button is not None:
             self.copy_button.setStyleSheet(self._button_style())
+        if hasattr(self, "back_button") and self.back_button is not None:
+            self.back_button.setStyleSheet(self._button_style())
         if hasattr(self, "close_button") and self.close_button is not None:
             self.close_button.setStyleSheet(self._button_style())

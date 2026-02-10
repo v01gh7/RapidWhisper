@@ -69,3 +69,20 @@ def test_property_11_correct_prompt_retrieval(app_name, custom_prompt):
     
     retrieved_prompt = config.get_prompt_for_app(app_name)
     assert retrieved_prompt == custom_prompt
+
+
+def test_default_model_for_zai_provider():
+    """FormattingConfig should return a non-empty default model for Z.AI provider."""
+    config = FormattingConfig(provider="zai", model="")
+    assert config.get_model() == "GLM-4.7"
+
+
+def test_is_valid_accepts_zai_provider():
+    """FormattingConfig validation should treat Z.AI as a valid provider."""
+    config = FormattingConfig(
+        provider="zai",
+        model="",
+        applications=["_fallback"],
+        temperature=0.3,
+    )
+    assert config.is_valid()
