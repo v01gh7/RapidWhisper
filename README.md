@@ -19,6 +19,25 @@ A modern speech-to-text transcription application using Zhipu GLM API, inspired 
 - 🌐 **Web Apps Support** - Detects Google Docs, Notion, Office Online, and 20+ web applications in browsers
 - 🪝 **Hook Scripts (Python)** - Extend the pipeline with your own event hooks
 
+---
+
+## 💖 Support the Project
+
+**The program is free, but even a 30-cent donation helps!**
+
+I develop RapidWhisper in my free time and **every donation motivates me to keep improving it**. Even if you can't donate — **just hop into Discord and say that the app helps you**. That feedback alone makes it all worth it!
+
+**Ways to support:**
+
+| Platform | Link |
+|----------|------|
+| 💰 **Streamlabs** | [streamlabs.com/v01gh7/tip](https://streamlabs.com/v01gh7/tip) |
+| 🎁 **Donatex** | [donatex.gg/donate/v01gh7](https://donatex.gg/donate/v01gh7) |
+| ☕ **Ko-fi** | [ko-fi.com/v01gh7](https://ko-fi.com/v01gh7) |
+| 💬 **Discord** | [discord.gg/sZUZKDeq](https://discord.gg/sZUZKDeq) — drop a message that it helps! |
+
+---
+
 ## Requirements
 
 - Python 3.11 or higher
@@ -41,7 +60,7 @@ A modern speech-to-text transcription application using Zhipu GLM API, inspired 
 5. Open Settings (tray icon → Settings) and add your API key
 6. Done! Press Ctrl+Space to start recording
 
-**Note**: Settings are automatically saved in `%APPDATA%\RapidWhisper\.env`
+**All settings are managed through the Settings Window — no manual config editing needed!**
 
 ### For Developers
 
@@ -78,27 +97,13 @@ uv pip install -e .
 uv pip install -e ".[dev]"
 ```
 
-#### 5. Configure API key
-
-Create a `.env` file in the project root:
+#### 5. Run the application
 
 ```bash
-cp .env.example .env
+python main.py
 ```
 
-Edit `.env` and configure your preferred AI provider:
-
-```env
-# Choose your AI provider (groq, openai, or glm)
-AI_PROVIDER=groq
-
-# Add your API key for the chosen provider
-GROQ_API_KEY=your_groq_key_here
-# OPENAI_API_KEY=your_openai_key_here
-# GLM_API_KEY=your_glm_key_here
-```
-
-**Or use the Settings Window** after first launch to configure through GUI.
+**Configure everything through the Settings Window after first launch.**
 
 ## Usage
 
@@ -118,22 +123,16 @@ python main.py
 6. Paste anywhere with **Ctrl+V** (or **Cmd+V** on macOS)
 7. Notification appears in system tray when transcription is complete
 
-### Configuration
+### Settings
 
-Settings are automatically saved in:
-- **Windows**: `%APPDATA%\RapidWhisper\.env`
-- **macOS**: `~/Library/Application Support/RapidWhisper/.env`
-- **Linux**: `~/.config/RapidWhisper/.env`
+All settings are managed through the **Settings Window** — no manual config editing needed!
 
-All settings can be customized through the **Settings Window** (no restart required!):
-
-#### Opening Settings Window
+#### Opening Settings
 
 1. Right-click on the tray icon
-2. Select "Настройки" (Settings)
-3. Modify settings in the graphical interface
-4. Click "💾 Сохранить" to save
-5. Settings apply immediately without restart!
+2. Select "Settings" (or "Настройки")
+3. Customize everything in the graphical interface
+4. Changes apply immediately — no restart required!
 
 #### Settings Categories
 
@@ -143,19 +142,17 @@ All settings can be customized through the **Settings Window** (no restart requi
 - Groq is recommended for beginners (free tier available)
 - Z.AI uses the same API key as GLM (no separate key needed)
 - **Note**: Z.AI supports only post-processing and formatting, not audio transcription
-- Clickable links to get API keys
+- Clickable links to get API keys directly in the UI
 
 **⚡ Application**
-- `HOTKEY` - Global activation key (default: ctrl+space)
-- `SILENCE_THRESHOLD` - Sensitivity for silence detection (default: 0.02)
-- `SILENCE_DURATION` - How long to wait before stopping (default: 1.5 seconds)
-- `AUTO_HIDE_DELAY` - Window auto-hide delay (default: 2.5 seconds)
-- `WINDOW_POSITION_PRESET` - Window preset position  
-  Available: `center`, `top_left`, `top_center`, `top_right`, `center_left`, `center_right`, `bottom_left`, `bottom_center`, `bottom_right`, `custom`
+- Global hotkey (default: Ctrl+Space)
+- Silence detection sensitivity and duration
+- Window auto-hide delay
+- Window position preset (9 presets + custom)
 
 **🎤 Audio**
-- `SAMPLE_RATE` - Audio sample rate (default: 16000 Hz, recommended for speech)
-- `CHUNK_SIZE` - Audio chunk size (default: 1024 frames)
+- Sample rate (default: 16000 Hz, recommended for speech)
+- Audio chunk size
 
 See `docs/settings_guide.md` for detailed configuration guide.
 
@@ -174,13 +171,7 @@ RapidWhisper supports 15 languages with automatic system language detection:
 4. Click "Save"
 5. Interface updates immediately!
 
-**Via Configuration:**
-```env
-# In .env file
-INTERFACE_LANGUAGE=en-us  # or ru, zh, es, fr, etc.
-```
-
-**Note**: This changes the interface language only. You can speak any language - Whisper auto-detects!
+**Note**: This changes the interface language only. You can speak any language - the AI auto-detects!
 
 See `docs/LOCALIZATION.md` for:
 - Adding new languages
@@ -221,18 +212,22 @@ def hookHandler(options):
 ```
 
 See `docs/hooks_guide.md` for a detailed guide, full event list, and a prompt template to generate new hooks.
+
+### Text Formatting
+
+Enable in **Settings → Processing → Formatting**.
+
+**Supported Applications:**
+
+**Desktop Apps**: Notion, Obsidian, VS Code, Word, LibreOffice, and more
+
+**Web Apps** (detected in browsers):
+- 📝 **Google Services**: Docs, Sheets, Slides, Forms, Keep
+- 💼 **Microsoft Office Online**: Word, Excel, PowerPoint, Office 365
+- 🤝 **Collaboration Tools**: Dropbox Paper, Quip, Coda.io, Airtable
+- 📊 **Zoho Office**: Writer, Sheet, Show
 - 📔 **Note-Taking**: Notion, Obsidian Publish
 - ✍️ **Markdown Editors**: HackMD, StackEdit, GitHub.dev, GitLab, Gitpod
-
-### Configuration
-
-Enable in Settings → Processing → Formatting, or via `.env`:
-
-```env
-FORMATTING_ENABLED=true
-FORMATTING_PROVIDER=groq
-FORMATTING_APPLICATIONS=word,notion,obsidian,markdown
-```
 
 See `docs/WEB_APPS_SUPPORT.md` for:
 - Complete list of supported web applications
@@ -251,17 +246,13 @@ build.bat
 
 The script will:
 1. Check PyInstaller installation
-2. Save your development .env
-3. Build clean .exe (without .env files)
-4. Restore your development .env
+2. Build clean .exe (without development configs)
+3. Output: `dist\RapidWhisper.exe`
 
-Output: `dist\RapidWhisper.exe`
-
-**Important**: 
-- The .exe contains NO .env files
-- Settings are saved in `%APPDATA%\RapidWhisper\.env`
+**Important**:
 - First-time users will see a welcome screen with setup instructions
 - Only distribute the .exe file, nothing else needed
+- All settings are managed through the Settings Window
 
 See `BUILD_QUICK.md` and `DISTRIBUTION_CHECKLIST.md` for details.
 
@@ -319,20 +310,20 @@ mypy .
 
 ### API Issues
 
-**Error: "Проверьте GLM_API_KEY в .env файле"**
-- Verify your API key is correct in `.env`
-- Check that `.env` file exists in the project root
+**Error: "Check your API key in Settings"**
+- Open Settings and verify your API key is correct
 - Ensure no extra spaces around the API key
+- Check that the selected provider matches your API key
 
-**Error: "Ошибка сети, проверьте подключение"**
+**Error: "Network error, check connection"**
 - Check your internet connection
-- Verify GLM API service is accessible
+- Verify the API service is accessible
 - Check firewall settings
 
 ### Hotkey Issues
 
 **Hotkey not working**
-- Try a different key in `.env` (e.g., F2, F3)
+- Try a different key in Settings (e.g., F2, F3)
 - Check if another application is using the same hotkey
 - Run the application with administrator privileges (Windows)
 - Grant accessibility permissions (macOS)
@@ -383,32 +374,27 @@ pyinstaller RapidWhisper.spec --clean
 
 ## License
 
-**Proprietary Software - Free for Personal & Business Use**
+**Open Source - Non-Commercial Use**
 
-Copyright (c) 2026 V01GH7 - All Rights Reserved
+Copyright (c) 2026 V01GH7
 
 ✅ **Allowed:**
 - Personal use free of charge
 - Use at work for your own tasks
 - Use in business for your own productivity
-- Use anywhere as long as YOU are the end user
+- View and study the source code
+- Modify for personal use
+- Fork and experiment
 
 ❌ **Prohibited:**
-- Viewing or accessing source code
-- Selling the software or its copies
-- Selling services based on the software
-- Distribution or sharing binaries
-- Modification or reverse engineering
-- Resale or sublicensing
+- Selling the software or products based on it
+- Selling services using this software
+- Commercial distribution
+- Removing attribution
 
-📧 For commercial licenses (selling services/products based on this software), contact the author.
+📧 For commercial licenses, contact the author.
 
-📖 **More Information:**
-- Full License: [LICENSE](LICENSE)
-- Detailed Explanation: [LICENSE_EXPLAINED.md](LICENSE_EXPLAINED.md)
-- Business Use Clarification: [LICENSE_CLARIFICATION.md](LICENSE_CLARIFICATION.md)
-
-**Note:** This is proprietary software. Source code is not available for viewing or modification.
+📖 **More Information:** [LICENSE](LICENSE) | [LICENSE_UPDATE.md](LICENSE_UPDATE.md)
 
 ## Contributing
 
