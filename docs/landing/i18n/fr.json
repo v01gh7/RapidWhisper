@@ -91,7 +91,7 @@
       "aria": "Téléchargements",
       "title": "Télécharger",
       "subtitle": "Versions pour les principales plateformes",
-      "hint_default": "Windows se télécharge directement ; pour macOS/Linux, la page Releases s'ouvre.",
+      "hint_default": "Tous les fichiers sont téléchargés directement depuis Releases.",
       "platform_strip_aria": "Widgets de plateformes",
       "platform_names": {
         "windows": "Windows",

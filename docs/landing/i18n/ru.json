@@ -91,7 +91,7 @@
       "aria": "Download builds",
       "title": "Скачать",
       "subtitle": "Сборки для основных платформ",
-      "hint_default": "Windows скачивается сразу, для macOS/Linux откроется страница Releases.",
+      "hint_default": "Все файлы скачиваются напрямую из Releases.",
       "platform_strip_aria": "Platform widgets",
       "platform_names": {
         "windows": "Windows",

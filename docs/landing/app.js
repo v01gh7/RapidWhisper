@@ -22,16 +22,16 @@
     terminal: "Windows Terminal",
   };
 
-  const FALLBACK_DOWNLOAD_HINT = "Windows downloads directly; for macOS/Linux the Releases page opens.";
+  const FALLBACK_DOWNLOAD_HINT = "All files download directly from Releases.";
   const FALLBACK_SELECTED_HINTS = {
     windows: "Selected: Windows (.exe).",
     macos: "Selected: macOS (.dmg).",
-    linux: "Selected: Linux (.AppImage).",
+    linux: "Selected: Linux binary.",
   };
   const FALLBACK_DOWNLOAD_TITLES = {
     windows: "Download for Windows",
     macos: "Download for macOS",
-    linux: "Open downloads",
+    linux: "Download for Linux",
   };
   const FALLBACK_LANG_MENU = {
     en: "English",
@@ -72,8 +72,8 @@
 
   const DOWNLOAD_LINKS = {
     windows: "https://github.com/v01gh7/RapidWhisper/releases/latest/download/RapidWhisper.exe",
-    macos: "https://github.com/v01gh7/RapidWhisper/releases/latest",
-    linux: "https://github.com/v01gh7/RapidWhisper/releases/latest",
+    macos: "https://github.com/v01gh7/RapidWhisper/releases/latest/download/RapidWhisper-macOS.dmg",
+    linux: "https://github.com/v01gh7/RapidWhisper/releases/latest/download/RapidWhisper",
   };
 
   function getByPath(source, path, fallbackValue) {

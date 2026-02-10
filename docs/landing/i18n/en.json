@@ -91,7 +91,7 @@
       "aria": "Download builds",
       "title": "Download",
       "subtitle": "Builds for major platforms",
-      "hint_default": "Windows downloads directly; for macOS/Linux the Releases page opens.",
+      "hint_default": "All files download directly from Releases.",
       "platform_strip_aria": "Platform widgets",
       "platform_names": {
         "windows": "Windows",
