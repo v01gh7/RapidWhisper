@@ -1,110 +1,116 @@
 RapidWhisper License
-Proprietary Software License - Personal Use Only
+Open Source - Non-Commercial Use
 
 Copyright (c) 2026 V01GH7
-All Rights Reserved
 
 ================================================================================
-PERMITTED USES:
+PERMISSION IS GRANTED:
 ================================================================================
 
-✅ Personal Use
-   - Use the compiled software for personal purposes
-   - Install on your personal devices
-   - Use all features free of charge
+✅ 1. Non-Commercial Use
+   - Use the software for personal, educational, or non-commercial purposes
    - Use at work, home, or anywhere for YOUR OWN tasks
-   - Transcribe your own speech for any purpose
-   - Use for your own productivity and work
+   - Use in your business for your own productivity (as end user, not selling)
 
-   CLARIFICATION: "Personal use" means YOU are the end user of the software.
-   You can use it at work, in your business, or anywhere, as long as YOU
-   are using it for YOUR tasks (not selling it or services based on it).
+✅ 2. Source Code Access
+   - View, study, and learn from the source code
+   - Understand how the software works
+   - Use code patterns for education
+
+✅ 3. Modification (Non-Commercial)
+   - Fork the repository
+   - Modify for personal, educational, or non-commercial use
+   - Experiment with changes
+
+✅ 4. Distribution (Non-Commercial)
+   - Share the original software with others
+   - Share the official GitHub link
+   - Distribute modified versions for non-commercial use
+   - Must retain attribution and this license
+
+✅ 5. Educational Use
+   - Use for teaching and learning
+   - Use in educational settings
+   - Reference for code patterns and techniques
 
 ================================================================================
-PROHIBITED:
+PROHIBITED WITHOUT PERMISSION:
 ================================================================================
 
-❌ Source Code Access
-   - Viewing, accessing, or studying the source code
-   - Reverse engineering, decompiling, or disassembling
-   - Attempting to extract source code from binaries
-   - Creating derivative works based on the code
-
-❌ Commercial Use
+❌ 1. Commercial Use
    - Selling the software or its copies
-   - Selling transcription services to clients using this software
-   - Including in paid products or services that you sell
-   - Reselling, sublicensing, or redistributing for profit
-   - Offering as a paid service to others
+   - Selling products that include this software
+   - Selling services based on this software (transcription, API, etc.)
+   - Offering as paid SaaS or hosted service
+   - Any use primarily intended for commercial advantage
 
-   CLARIFICATION: Using the software at work for your own tasks is NOT
-   commercial use. Commercial use means selling the software itself or
-   selling services based on it to others.
+❌ 2. Commercial Distribution
+   - Distributing modified versions commercially
+   - Including in commercial products
+   - Selling access to the software or modifications
 
-❌ Distribution
-   - Distributing copies of the software
-   - Sharing executable files (.exe, .dmg, binaries)
-   - Publishing on other platforms or websites
-   - Uploading to file sharing services
-   - Sending copies to other people
+❌ 3. Removing Attribution
+   - Removing copyright notices
+   - Claiming authorship
+   - Hiding original source
 
-❌ Resale
-   - Selling as-is
-   - Selling with modifications
-   - Including in paid bundles
-   - Monetizing in any way
-
-❌ Modification and Redistribution
-   - Modifying the software
-   - Creating modified versions
-   - Publishing derivative products
-   - Releasing forks for public use
-   - Sharing modified binaries
-
-❌ Sublicensing
-   - Granting licenses to third parties
-   - Transferring rights to others
-   - Creating derivative licenses
-
-================================================================================
-EXCEPTIONS:
-================================================================================
-
-The following actions require WRITTEN PERMISSION from the author:
-
-📧 Commercial Use
-   - Contact the author for a commercial license
-   
-📧 Distribution
-   - Obtain permission before any distribution
-
-📧 Source Code Access
-   - Source code access is NOT granted under this license
-   - Contact author for special arrangements
-
-📧 Integration into Other Projects
-   - Requires explicit written consent
+❌ 4. Circumvention
+   - Removing or bypassing license restrictions
+   - Re-licensing under different terms
 
 ================================================================================
 CONDITIONS:
 ================================================================================
 
-1. This copyright notice must be retained in all copies or substantial 
-   portions of the software.
+1. ATTRIBUTION
+   - retain copyright notices
+   - credit the author in distributions
 
-2. The author must be credited in any mention of the software.
+2. SHARE-ALIKE (for modifications)
+   - modified versions must use this same license
+   - cannot re-license under different terms
 
-3. Removal or modification of copyright notices is prohibited.
+3. SOURCE CODE
+   - modified versions must include source code
+   - or provide access to source code
 
-4. Impersonating the author or creator is prohibited.
+4. NO WARRANTY
+   - software is provided "AS IS"
+   - no warranties of any kind
 
-5. The software is provided as compiled binaries only. Source code access
-   is not granted under this license.
+================================================================================
+COMMERCIAL LICENSE:
+================================================================================
 
-6. Users may only download the software from official sources:
-   - Official GitHub releases
-   - Official website (if any)
-   - Links provided by the author
+For commercial use, commercial distribution, or integration into commercial
+products, contact the author for a separate commercial license.
+
+Commercial licenses include:
+- Right to sell products using this software
+- Right to offer commercial services
+- Right to distribute in commercial products
+- Priority support
+- Custom features (negotiable)
+
+Contact: https://github.com/V01GH7/RapidWhisper
+
+================================================================================
+DEFINITIONS:
+================================================================================
+
+"Commercial Use" means any use primarily intended for commercial advantage
+or monetary compensation, including:
+- Selling the software or products containing it
+- Offering services based on the software to third parties
+- Using in SaaS or hosted services sold to customers
+- Any use where the software adds value to a commercial product
+
+"Non-Commercial Use" means:
+- Personal use
+- Educational use
+- Use for your own work/productivity (even at work or in business)
+- Use where you are the end user, not selling to others
+- Internal company use by employees for their tasks
 
 ================================================================================
 DISCLAIMER:
@@ -122,19 +128,18 @@ SOFTWARE.
 TERMINATION:
 ================================================================================
 
-This license is automatically terminated if you violate any of these terms.
-Upon termination, you must destroy all copies of the software in your
-possession.
+This license terminates automatically if you violate any terms. Upon
+termination, you must stop all use and distribution.
 
 ================================================================================
 CONTACT:
 ================================================================================
 
-For commercial licenses, permissions, or inquiries:
+For commercial licenses or questions:
 - GitHub: https://github.com/V01GH7/RapidWhisper
 - Discord: https://discord.gg/sZUZKDeq
 
 ================================================================================
 
-License Version: 2.0
-Date: February 2, 2026
+License Version: 3.0
+Date: February 10, 2026
