@@ -114,6 +114,31 @@
         "linux": "Ouvrir les téléchargements"
       },
       "free": "GRATUIT"
+    },
+    "smart_format": {
+      "aria": "Formatage intelligent RapidWhisper",
+      "title": "Formatage pour tout workflow",
+      "count": "3 modes",
+      "lead": "RapidWhisper peut formater automatiquement le texte, appliquer un format manuel selon la cible choisie, et détecter automatiquement le bon format via l'application active ou l'onglet du navigateur.",
+      "modes_aria": "Modes de formatage",
+      "modes": [
+        "Formatage auto selon le contexte actif",
+        "Formatage manuel pour la cible choisie",
+        "Détection auto par application et onglet navigateur"
+      ],
+      "standard_apps_title": "Formats standard",
+      "standard_apps_aria": "Liste des formats standard",
+      "standard_apps": [
+        "Notion",
+        "Obsidian",
+        "Markdown",
+        "Word",
+        "LibreOffice",
+        "BBCode",
+        "WhatsApp",
+        "Email",
+        "Fallback universel"
+      ]
     }
   },
   "controls": {

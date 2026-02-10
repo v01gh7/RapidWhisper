@@ -114,6 +114,31 @@
         "linux": "Open downloads"
       },
       "free": "FREE"
+    },
+    "smart_format": {
+      "aria": "RapidWhisper smart formatting",
+      "title": "Formatting for Any Flow",
+      "count": "3 modes",
+      "lead": "RapidWhisper can format text automatically, apply manual formatting for a selected target, and auto-detect the right format from active apps or browser tabs.",
+      "modes_aria": "Formatting modes",
+      "modes": [
+        "Auto-format for active context",
+        "Manual formatting for selected target",
+        "Auto-detection by app and browser tab"
+      ],
+      "standard_apps_title": "Standard formats",
+      "standard_apps_aria": "List of standard formats",
+      "standard_apps": [
+        "Notion",
+        "Obsidian",
+        "Markdown",
+        "Word",
+        "LibreOffice",
+        "BBCode",
+        "WhatsApp",
+        "Email",
+        "Universal fallback"
+      ]
     }
   },
   "controls": {

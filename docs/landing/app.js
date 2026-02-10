@@ -121,6 +121,24 @@
     });
   }
 
+  function setTagList(selector, values, className) {
+    if (!Array.isArray(values)) return;
+    const node = document.querySelector(selector);
+    if (!node) return;
+    node.innerHTML = "";
+    values.forEach(function (value) {
+      if (typeof value !== "string") return;
+      const trimmed = value.trim();
+      if (!trimmed) return;
+      const item = document.createElement("span");
+      if (typeof className === "string" && className) {
+        item.className = className;
+      }
+      item.textContent = trimmed;
+      node.appendChild(item);
+    });
+  }
+
   function setPipelineSteps(steps) {
     if (!Array.isArray(steps)) return;
     const nodes = document.querySelectorAll("#pipeline .steps li");
@@ -283,6 +301,15 @@
     setText(".download-head h3", getByPath(translation, "hero.download.title", ""));
     setText(".download-head p", getByPath(translation, "hero.download.subtitle", ""));
     setAttr(".platform-strip", "aria-label", getByPath(translation, "hero.download.platform_strip_aria", ""));
+    setAttr(".smart-format-block", "aria-label", getByPath(translation, "hero.smart_format.aria", ""));
+    setText(".smart-format-title", getByPath(translation, "hero.smart_format.title", ""));
+    setText(".smart-format-count", getByPath(translation, "hero.smart_format.count", ""));
+    setText(".smart-format-lead", getByPath(translation, "hero.smart_format.lead", ""));
+    setAttr(".smart-format-modes", "aria-label", getByPath(translation, "hero.smart_format.modes_aria", ""));
+    setTagList(".smart-format-modes", getByPath(translation, "hero.smart_format.modes", []), "smart-chip");
+    setText(".smart-format-apps-title", getByPath(translation, "hero.smart_format.standard_apps_title", ""));
+    setAttr(".smart-format-apps", "aria-label", getByPath(translation, "hero.smart_format.standard_apps_aria", ""));
+    setTagList(".smart-format-apps", getByPath(translation, "hero.smart_format.standard_apps", []), "smart-chip");
     setText(".demo-free-note", getByPath(translation, "hero.download.free", ""));
 
     const platformNames = getByPath(translation, "hero.download.platform_names", {});
