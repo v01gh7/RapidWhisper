@@ -154,9 +154,13 @@ def _create_minimal_config(config_path: Path):
                 "libreoffice": "config/prompts/libreoffice.txt",
                 "_fallback": "config/prompts/_fallback.txt",
                 "bbcode": "config/prompts/bbcode.txt",
-                "whatsapp": "config/prompts/whatsapp.txt"
+                "whatsapp": "config/prompts/whatsapp.txt",
+                "Email": "config/prompts/Email.txt"
             },
             "web_app_keywords": {
+                "Email": [
+                    "gmail", "yandex mail", "почта", "inbox"
+                ],
                 "bbcode": [
                     "bitrix24", "b24", "битрикс24", "битрикс", "phpbb", "vbulletin", "mybb",
                     "smf", "simple machines", "xenforo", "invision", "ipboard", "forum", "форум",
@@ -288,6 +292,7 @@ def _ensure_prompts_exist(prompts_dir: Path):
     # Список всех промптов которые должны существовать
     prompt_files = [
         "_fallback.txt",
+        "Email.txt",
         "bbcode.txt",
         "libreoffice.txt",
         "markdown.txt",

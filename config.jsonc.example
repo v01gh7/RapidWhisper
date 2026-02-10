@@ -189,6 +189,12 @@
         "zoho show",
         "zoho writer"
       ],
+      "Email": [
+        "gmail",
+        "yandex mail",
+        "почта",
+        "inbox"
+      ],
       "whatsapp": [
         "discord",
         "discord.app",
@@ -234,7 +240,8 @@
       "libreoffice": "config/prompts/libreoffice.txt",
       "_fallback": "config/prompts/_fallback.txt",
       "bbcode": "config/prompts/bbcode.txt",
-      "whatsapp": "config/prompts/whatsapp.txt"
+      "whatsapp": "config/prompts/whatsapp.txt",
+      "Email": "config/prompts/Email.txt"
     }
   },
   "hooks": {
