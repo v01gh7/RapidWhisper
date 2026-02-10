@@ -196,11 +196,19 @@ class FormattingModule:
                 
                 # Check if this format is in the configured applications list
                 logger.info(f"  🔎 Проверка в списке настроенных приложений: {self.config.applications}")
-                
-                if format_type in self.config.applications:
-                    logger.info(f"  ✅ Формат '{format_type}' найден в списке приложений")
-                    return format_type
-                
+
+                # Match application key case-insensitively to avoid config/UI case drift
+                app_lookup = {app.lower(): app for app in self.config.applications}
+                matched_app_name = app_lookup.get(format_type.lower())
+
+                if matched_app_name:
+                    if matched_app_name != format_type:
+                        logger.info(
+                            f"  ℹ️ Формат '{format_type}' приведен к имени приложения '{matched_app_name}'"
+                        )
+                    logger.info(f"  ✅ Формат '{matched_app_name}' найден в списке приложений")
+                    return matched_app_name
+
                 logger.warning(f"  ⚠️ Формат '{format_type}' не найден в списке настроенных приложений")
                 return None
             

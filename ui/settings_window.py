@@ -4001,6 +4001,15 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         # Load current config
         config = FormattingConfig.from_config(get_config_loader())
+
+        if config.use_fixed_format:
+            QMessageBox.information(
+                self,
+                "Автодетект временно отключен",
+                "Включен режим «Фиксированный формат».\n"
+                "При этом ключевые слова не применяются и всегда используется универсальный промпт.\n"
+                "Чтобы срабатывали ключевые слова, отключите этот режим в блоке «Форматирование» и сохраните настройки."
+            )
         
         # Show web keywords dialog
         dialog = WebKeywordsDialog(config.web_app_keywords, config.applications, self)

@@ -150,6 +150,36 @@ def test_auto_detection_used_when_no_manual_selection_or_fixed_format():
     assert window_monitor.get_active_window_info.called
 
 
+def test_auto_detection_matches_application_case_insensitively():
+    """
+    Test that detected keyword format maps to configured app case-insensitively.
+    """
+    config = FormattingConfig()
+    config.enabled = True
+    config.use_fixed_format = False
+    config.applications = ["Email"]
+    config.web_app_keywords = {
+        "email": ["gmail", "inbox"]
+    }
+
+    state_manager = Mock()
+    state_manager.get_manual_format_selection.return_value = None
+
+    window_monitor = Mock()
+    window_monitor.get_active_window_info.return_value = WindowInfo(
+        title="Inbox - Gmail - Google Chrome",
+        process_name="chrome.exe",
+        icon=None,
+        process_id=12345
+    )
+
+    module = FormattingModule(config, window_monitor=window_monitor, state_manager=state_manager)
+
+    result = module.get_active_application_format()
+
+    assert result == "Email"
+
+
 def test_no_state_manager_falls_back_to_normal_behavior():
     """
     Test that module works without state manager (backward compatibility).
