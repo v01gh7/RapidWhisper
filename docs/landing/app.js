@@ -330,6 +330,10 @@
     setText(".free-use-head h2", getByPath(translation, "free_use.title", ""));
     setText(".free-use-badge", getByPath(translation, "free_use.badge", ""));
     setText(".free-use-lead", getByPath(translation, "free_use.lead", ""));
+    setText(".free-local-title", getByPath(translation, "free_use.local_stats_title", ""));
+    setAttr(".free-local-tags", "aria-label", getByPath(translation, "free_use.local_stats_aria", ""));
+    setTagList(".free-local-tags", getByPath(translation, "free_use.local_stats", []), "free-stat-chip");
+    setText(".free-local-note", getByPath(translation, "free_use.local_stats_note", ""));
     setText(".free-card-start h3", getByPath(translation, "free_use.start_title", ""));
     setText(".free-start-text", getByPath(translation, "free_use.start_text", ""));
     setText("#free-groq-link", getByPath(translation, "free_use.groq_link_label", ""));
