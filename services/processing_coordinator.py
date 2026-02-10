@@ -10,7 +10,6 @@ from typing import Optional, Tuple
 from services.formatting_module import FormattingModule
 from services.formatting_config import FormattingConfig
 from utils.logger import get_logger
-from utils.text_guard import has_extra_tokens
 
 logger = get_logger()
 
@@ -450,9 +449,6 @@ OUTPUT RULES (HIGHEST PRIORITY):
             
             # Check if formatting actually worked
             if formatted_text != text:
-                if formatted_text and has_extra_tokens(text, formatted_text):
-                    logger.warning("⚠️ Fallback formatting added new words - returning original text")
-                    return text
                 logger.info("✅ Fallback formatting completed successfully")
                 logger.info(f"Result preview: {formatted_text[:100]}...")
                 return formatted_text

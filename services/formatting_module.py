@@ -11,7 +11,6 @@ from typing import Optional
 from services.formatting_config import FormattingConfig
 from services.window_monitor import WindowMonitor, WindowInfo
 from utils.logger import get_logger
-from utils.text_guard import has_extra_tokens
 
 logger = get_logger()
 
@@ -331,10 +330,6 @@ class FormattingModule:
                 api_key=api_key
             )
             
-            if formatted_text and has_extra_tokens(text, formatted_text):
-                logger.warning("  ⚠️ Форматирование добавило новые слова - возвращаем оригинальный текст")
-                return text
-
             logger.info("  ✅ Текст успешно отформатирован")
             return formatted_text
             
