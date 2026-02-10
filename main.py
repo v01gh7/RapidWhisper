@@ -1281,9 +1281,17 @@ class RapidWhisperApp(QObject):
             if getattr(self.floating_window, "info_panel", None) is not None:
                 self.floating_window.info_panel.config = self.config
             if hasattr(self.floating_window, "set_theme"):
-                self.floating_window.set_theme(active_theme_id)
+                try:
+                    self.floating_window.set_theme(active_theme_id, update_waveform=False)
+                except TypeError:
+                    self.floating_window.set_theme(active_theme_id)
             if hasattr(self.floating_window, "set_opacity"):
                 self.floating_window.set_opacity(255)
+            if hasattr(self.floating_window, "get_waveform_widget"):
+                waveform_widget = self.floating_window.get_waveform_widget()
+                waveform_color = getattr(self.config, "waveform_color", "")
+                if waveform_widget and waveform_color:
+                    waveform_widget.set_waveform_color(waveform_color)
 
         if self.settings_window is not None:
             self.settings_window.config = self.config

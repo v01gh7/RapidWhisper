@@ -2187,6 +2187,8 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         
         opacity_layout.addLayout(opacity_container)
         opacity_group.setLayout(opacity_layout)
+        # Opacity is fixed in the app; keep controls alive for internal logic, hide from UI.
+        opacity_group.setVisible(False)
         layout.addWidget(opacity_group)
         
         # Группа: Размеры шрифтов
@@ -2373,19 +2375,27 @@ class SettingsWindow(QDialog, StyledWindowMixin):
 
     def _apply_theme_runtime(self, theme_id: str) -> None:
         """Applies selected theme to all active windows immediately."""
+        previous_theme_id = getattr(self.config, "window_theme", DEFAULT_WINDOW_THEME_ID) or DEFAULT_WINDOW_THEME_ID
+        previous_theme = get_window_theme(previous_theme_id)
         theme = get_window_theme(theme_id)
-        theme_wave_color = theme["waveform_color"]
+        previous_theme_wave_color = previous_theme["waveform_color"]
+        existing_wave_color = getattr(self.config, "waveform_color", "") or previous_theme_wave_color
+
+        if existing_wave_color.lower() == previous_theme_wave_color.lower():
+            current_wave_color = theme["waveform_color"]
+        else:
+            current_wave_color = existing_wave_color
 
         self.config.window_theme = theme_id
         self.config.window_opacity = 255
-        self.config.waveform_color = theme_wave_color
+        self.config.waveform_color = current_wave_color
         self.opacity_slider.setValue(255)
         self.opacity_value_label.setText("255")
         self._apply_style()
 
         self.waveform_color_button.setStyleSheet(f"""
             QPushButton {{
-                background-color: {theme_wave_color};
+                background-color: {current_wave_color};
                 border: 2px solid {theme["input_border"]};
                 border-radius: 4px;
             }}
@@ -2401,13 +2411,20 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         if app_root and hasattr(app_root, "config"):
             app_root.config.window_theme = theme_id
             app_root.config.window_opacity = 255
-            app_root.config.waveform_color = theme_wave_color
+            app_root.config.waveform_color = current_wave_color
 
             if hasattr(app_root, "floating_window") and app_root.floating_window:
                 if hasattr(app_root.floating_window, "set_theme"):
-                    app_root.floating_window.set_theme(theme_id)
+                    try:
+                        app_root.floating_window.set_theme(theme_id, update_waveform=False)
+                    except TypeError:
+                        app_root.floating_window.set_theme(theme_id)
                 if hasattr(app_root.floating_window, "set_opacity"):
                     app_root.floating_window.set_opacity(255)
+                if hasattr(app_root.floating_window, "get_waveform_widget"):
+                    waveform_widget = app_root.floating_window.get_waveform_widget()
+                    if waveform_widget:
+                        waveform_widget.set_waveform_color(current_wave_color)
 
             for attr_name in ("format_selection_dialog", "manual_format_selection_dialog", "manual_format_dialog"):
                 dialog = getattr(app_root, attr_name, None)
@@ -2423,7 +2440,10 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                 if widget is self:
                     continue
                 if hasattr(widget, "set_theme"):
-                    widget.set_theme(theme_id)
+                    try:
+                        widget.set_theme(theme_id, update_waveform=False)
+                    except TypeError:
+                        widget.set_theme(theme_id)
                 elif hasattr(widget, "set_window_theme"):
                     widget.set_window_theme(theme_id)
                 if hasattr(widget, "set_opacity"):
