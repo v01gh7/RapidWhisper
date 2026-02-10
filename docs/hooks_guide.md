@@ -1,49 +1,49 @@
-# Руководство по созданию хуков RapidWhisper
+# RapidWhisper Hooks Creation Guide
 
-Это документ, который можно передать исполнителю. Здесь описано, как устроены хуки, какие события есть, какую структуру данных они получают и как писать корректные скрипты.
+This is a document you can pass to a contractor. It describes how hooks work, what events exist, what data structure they receive, and how to write correct scripts.
 
-## 1. Что такое хук
-Хук — это Python‑скрипт, который выполняется на определенном шаге пайплайна.  
-Один файл = один хук = одно событие.
+## 1. What is a hook
+A hook is a Python script that runs at a specific step of the pipeline.
+One file = one hook = one event.
 
-Хук получает `options` (словарь) и **обязан вернуть словарь** той же структуры, чтобы цепочка могла продолжиться.
+A hook receives `options` (a dictionary) and **must return a dictionary** of the same structure for the chain to continue.
 
-## 2. Где хранить хук
-Скрипты хуков лежат по умолчанию в:
+## 2. Where to store hooks
+Hook scripts are stored by default in:
 ```
 config/hooks
 ```
 
-Файлы с префиксом `__` игнорируются.  
-Чтобы включить пример — уберите `__` из названия файла.
+Files with the `__` prefix are ignored.
+To enable an example — remove `__` from the filename.
 
-## 3. Обязательная структура файла
-Минимальный файл хука:
+## 3. Required file structure
+Minimal hook file:
 ```python
 HOOK_EVENT = "transcription_received"
 
 def hookHandler(options):
-    # ваш код
+    # your code
     return options
 ```
 
-**Обязательные требования:**
-- В файле должен быть `HOOK_EVENT` (строка).
-- В файле должна быть функция `hookHandler(options)`.
-- `hookHandler` возвращает словарь `options`.
+**Required:**
+- The file must have `HOOK_EVENT` (a string).
+- The file must have a function `hookHandler(options)`.
+- `hookHandler` returns the `options` dictionary.
 
-Если `HOOK_EVENT` отсутствует или невалидный — файл **не будет зарегистрирован**.
+If `HOOK_EVENT` is missing or invalid — the file **will not be registered**.
 
-## 4. Список доступных событий
-- `before_recording` — до начала записи
-- `after_recording` — после записи (аудиофайл сохранен)
-- `transcription_received` — получен текст из ASR
-- `formatting_step` — шаг форматирования
-- `post_formatting_step` — шаг пост‑форматирования
-- `task_completed` — финальный текст перед показом
+## 4. List of available events
+- `before_recording` — before recording starts
+- `after_recording` — after recording (audio file is saved)
+- `transcription_received` — text received from ASR
+- `formatting_step` — formatting step
+- `post_formatting_step` — post-formatting step
+- `task_completed` — final text before display
 
-## 5. Структура `options`
-Пример типичного payload:
+## 5. Structure of `options`
+Example of a typical payload:
 ```json
 {
   "event": "transcription_received",
@@ -70,28 +70,28 @@ def hookHandler(options):
 }
 ```
 
-### Ключи `data` по событиям
-| Событие | Ключи `data` | Что можно менять |
+### `data` keys by event
+| Event | `data` keys | What can be modified |
 | --- | --- | --- |
-| `before_recording` | *(empty)* | Можно добавлять свои поля |
-| `after_recording` | `audio_file_path` | Можно заменить путь |
-| `transcription_received` | `text`, `audio_file_path` | Можно менять `text` |
-| `formatting_step` | `text`, `format_type`, `combined` | Можно менять `text` |
-| `post_formatting_step` | `text`, `format_type`, `combined` | Можно менять `text` |
-| `task_completed` | `text` | Можно менять `text` |
+| `before_recording` | *(empty)* | You can add your own fields |
+| `after_recording` | `audio_file_path` | Can replace the path |
+| `transcription_received` | `text`, `audio_file_path` | Can modify `text` |
+| `formatting_step` | `text`, `format_type`, `combined` | Can modify `text` |
+| `post_formatting_step` | `text`, `format_type`, `combined` | Can modify `text` |
+| `task_completed` | `text` | Can modify `text` |
 
-## 6. Фоновые хуки
-В UI можно пометить хук как **"В фоне"**.  
-В этом случае:
-- хук выполняется асинхронно
-- основная цепочка не ждет его результата
-- результат хука не влияет на текст
+## 6. Background hooks
+In the UI you can mark a hook as **"Background"**.
+In this case:
+- the hook runs asynchronously
+- the main chain doesn't wait for its result
+- the hook result doesn't affect the text
 
-Используйте фоновые хуки **только для побочных действий**: логирование, статистика, отправка в внешние сервисы и т.д.
+Use background hooks **only for side effects**: logging, statistics, sending to external services, etc.
 
-## 7. Примеры
+## 7. Examples
 
-### Пример 1 — Очистка пробелов после транскрипции
+### Example 1 — Trim whitespace after transcription
 ```python
 HOOK_EVENT = "transcription_received"
 
@@ -107,7 +107,7 @@ def hookHandler(options):
     return options
 ```
 
-### Пример 2 — Добавление метаданных после записи
+### Example 2 — Add metadata after recording
 ```python
 import os
 
@@ -122,7 +122,7 @@ def hookHandler(options):
     return options
 ```
 
-### Пример 3 — Добавить заголовок перед форматированием
+### Example 3 — Add heading before formatting
 ```python
 HOOK_EVENT = "formatting_step"
 
@@ -138,29 +138,28 @@ def hookHandler(options):
     return options
 ```
 
-## 8. Шаблон запроса к ИИ (чтобы сгенерировать хук)
-Скопируйте и вставьте этот запрос в модель:
+## 8. AI prompt template (to generate a hook)
+Copy and paste this prompt into the model:
 
 ```text
-Ты — Python‑разработчик. Сгенерируй файл хука для RapidWhisper.
+You are a Python developer. Generate a hook file for RapidWhisper.
 
-Требования:
-- Один файл = один хук
-- В файле должен быть HOOK_EVENT
-- Функция hookHandler(options) возвращает options
-- Менять можно только options["data"]
-- Нельзя ломать структуру options
+Requirements:
+- One file = one hook
+- File must have HOOK_EVENT
+- Function hookHandler(options) returns options
+- Only modify options["data"]
+- Don't break the options structure
 
-Событие: <ВСТАВЬ_СОБЫТИЕ>
-Моя задача: <ОПИШИ_ЧТО_ДОЛЖЕН_ДЕЛАТЬ_ХУК>
+Event: <INSERT_EVENT>
+My task: <DESCRIBE_WHAT_HOOK_SHOULD_DO>
 
-Сделай аккуратный код, добавь проверки типов и безопасные условия.
-Верни только код файла без объяснений.
+Write clean code, add type checks and safe conditions.
+Return only the file code without explanations.
 ```
 
-## 9. Проверка и включение
-1. Сохраните файл в `config/hooks/`
-2. Убедитесь, что нет префикса `__`
-3. В UI включите хуки и выберите событие
-4. Убедитесь, что хук появился в списке и включен
-
+## 9. Testing and enabling
+1. Save the file to `config/hooks/`
+2. Make sure there's no `__` prefix
+3. In the UI, enable hooks and select the event
+4. Verify the hook appears in the list and is enabled
