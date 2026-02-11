@@ -296,6 +296,7 @@
   "status": {
     "recording": "Recording...",
     "processing": "Processing...",
+    "formatting": "Formatting...",
     "ready": "Ready"
   },
   "errors": {

@@ -673,6 +673,150 @@ from PyQt6.QtCore import QThread, pyqtSignal
 GLMClient = TranscriptionClient
 
 
+class ProcessingThread(QThread):
+    """
+    Поток для форматирования и постобработки транскрибированного текста.
+
+    Запускается после завершения TranscriptionThread.
+    Выполняет форматирование и постобработку в отдельном потоке,
+    чтобы не блокировать UI.
+
+    Signals:
+        processing_complete: Сигнал с обработанным текстом (str)
+        processing_error: Сигнал при ошибке обработки (Exception)
+        model_not_found: Сигнал при ошибке "модель не найдена" (model: str, provider: str)
+        api_error: Сигнал ошибки API (error_type: str, error_message: str, provider: str)
+        processing_started: Сигнал при начале обработки
+    """
+
+    # Сигналы
+    processing_complete = pyqtSignal(str)  # Обработанный текст
+    processing_error = pyqtSignal(Exception)  # Ошибка обработки
+    model_not_found = pyqtSignal(str, str)  # Модель не найдена (model, provider)
+    api_error = pyqtSignal(str, str, str)  # Ошибка API (error_type, error_message, provider)
+    processing_started = pyqtSignal()  # Начало обработки
+
+    def __init__(
+        self,
+        text: str,
+        config,
+        formatting_module: 'FormattingModule',
+        formatting_config: 'FormattingConfig',
+        transcription_client: 'TranscriptionClient',
+        state_manager=None
+    ):
+        """
+        Инициализирует поток обработки.
+
+        Args:
+            text: Исходный транскрибированный текст
+            config: Config object с настройками постобработки
+            formatting_module: FormattingModule instance
+            formatting_config: FormattingConfig instance
+            transcription_client: TranscriptionClient для API вызовов
+            state_manager: StateManager для hooks
+        """
+        super().__init__()
+        self.text = text
+        self.config = config
+        self.formatting_module = formatting_module
+        self.formatting_config = formatting_config
+        self.transcription_client = transcription_client
+        self.state_manager = state_manager
+
+    def run(self) -> None:
+        """
+        Выполняет форматирование и постобработку текста.
+
+        Создаёт ProcessingCoordinator и вызывает process_transcription().
+        Обрабатывает все возможные ошибки API.
+        """
+        from utils.logger import get_logger
+        logger = get_logger()
+
+        processed_text = self.text
+
+        try:
+            logger.info("=" * 80)
+            logger.info("ProcessingThread.run() начат")
+            logger.info(f"Исходный текст: {self.text[:100]}...")
+
+            # Сигнал о начале обработки
+            self.processing_started.emit()
+
+            # Выполняем хук transcription_received
+            try:
+                from services.hooks_manager import get_hook_manager, build_hook_options
+                options = build_hook_options(
+                    "transcription_received",
+                    session_id=self.state_manager.get_current_session_id() if self.state_manager else None,
+                    data={"text": self.text}
+                )
+                options = get_hook_manager().run_event("transcription_received", options)
+                processed_text = options.get("data", {}).get("text", self.text)
+            except Exception as e:
+                logger.error(f"Hook transcription_received failed: {e}")
+
+            # Создаём ProcessingCoordinator
+            from services.processing_coordinator import ProcessingCoordinator
+            coordinator = ProcessingCoordinator(
+                formatting_module=self.formatting_module,
+                config_manager=self.config
+            )
+
+            # Обрабатываем текст через координатор
+            try:
+                processed_text = coordinator.process_transcription(
+                    text=processed_text,
+                    transcription_client=self.transcription_client,
+                    config=self.config
+                )
+                logger.info(f"Обработка завершена: {processed_text[:100]}...")
+            except NotFoundError as nf_error:
+                logger.error(f"Модель не найдена: {nf_error}")
+                model_to_use = self.config.post_processing_custom_model if self.config.post_processing_custom_model else self.config.post_processing_model
+                self.model_not_found.emit(model_to_use, self.config.post_processing_provider)
+                logger.info("Используем оригинальный текст без обработки")
+            except RateLimitError as rl_error:
+                logger.error(f"Rate Limit Error: {rl_error}")
+                provider = self.config.post_processing_provider if self.config.enable_post_processing else self.formatting_config.provider
+                self.api_error.emit("RateLimitError", str(rl_error), provider)
+                logger.info("Используем оригинальный текст без обработки")
+            except AuthenticationError as auth_error:
+                logger.error(f"Authentication Error: {auth_error}")
+                provider = self.config.post_processing_provider if self.config.enable_post_processing else self.formatting_config.provider
+                self.api_error.emit("AuthenticationError", str(auth_error), provider)
+                logger.info("Используем оригинальный текст без обработки")
+            except APIConnectionError as conn_error:
+                logger.error(f"Connection Error: {conn_error}")
+                provider = self.config.post_processing_provider if self.config.enable_post_processing else self.formatting_config.provider
+                self.api_error.emit("APIConnectionError", str(conn_error), provider)
+                logger.info("Используем оригинальный текст без обработки")
+            except APITimeoutError as timeout_error:
+                logger.error(f"Timeout Error: {timeout_error}")
+                provider = self.config.post_processing_provider if self.config.enable_post_processing else self.formatting_config.provider
+                self.api_error.emit("APITimeoutError", str(timeout_error), provider)
+                logger.info("Используем оригинальный текст без обработки")
+            except Exception as processing_error:
+                error_type = type(processing_error).__name__
+                error_message = str(processing_error)
+                provider = self.config.post_processing_provider if self.config.enable_post_processing else self.formatting_config.provider
+                logger.error(f"Ошибка обработки: {processing_error}")
+                self.api_error.emit("APIError", error_message, provider)
+                logger.info("Используем оригинальный текст без обработки")
+
+            # Отправляем сигнал с результатом
+            logger.info("Отправка сигнала processing_complete")
+            self.processing_complete.emit(processed_text)
+
+        except Exception as e:
+            # Критическая ошибка в потоке обработки
+            logger.error(f"Критическая ошибка в ProcessingThread: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            self.processing_error.emit(e)
+
+
 class TranscriptionThread(QThread):
     """
     Поток для транскрипции аудио в фоновом режиме.
@@ -689,7 +833,8 @@ class TranscriptionThread(QThread):
     """
     
     # Сигналы
-    transcription_complete = pyqtSignal(str)  # Транскрибированный текст
+    transcription_raw_complete = pyqtSignal(str)  # Сырой транскрибированный текст (без обработки)
+    transcription_complete = pyqtSignal(str)  # Транскрибированный текст (для обратной совместимости)
     transcription_error = pyqtSignal(Exception)  # Ошибка транскрипции
     model_not_found = pyqtSignal(str, str)  # Модель не найдена в постобработке (model, provider)
     transcription_model_not_found = pyqtSignal(str, str)  # Модель не найдена в транскрипции (model, provider)
@@ -782,105 +927,10 @@ class TranscriptionThread(QThread):
                 # Пробросить ошибку дальше чтобы остановить обработку
                 raise
             
-            # Process text through formatting and/or post-processing
-            # Use ProcessingCoordinator to handle combined operations
-            from services.window_monitor import WindowMonitor
-            from core.config_loader import get_config_loader
-            try:
-                from services.hooks_manager import get_hook_manager, build_hook_options
-                options = build_hook_options(
-                    "transcription_received",
-                    session_id=self.state_manager.get_current_session_id() if self.state_manager else None,
-                    data={"text": transcribed_text, "audio_file_path": self.audio_file_path}
-                )
-                options = get_hook_manager().run_event("transcription_received", options)
-                transcribed_text = options.get("data", {}).get("text", transcribed_text)
-            except Exception as e:
-                logger.error(f"Hook transcription_received failed: {e}")
-            
-            # Load formatting configuration
-            formatting_config = FormattingConfig.from_config(get_config_loader())
-            
-            # Create window monitor using factory method
-            window_monitor = WindowMonitor.create()
-            
-            # Create formatting module
-            formatting_module = FormattingModule(
-                config_manager=None,
-                ai_client_factory=None,
-                window_monitor=window_monitor,
-                state_manager=self.state_manager
-            )
-            formatting_module.config = formatting_config
-            
-            # Create processing coordinator
-            coordinator = ProcessingCoordinator(
-                formatting_module=formatting_module,
-                config_manager=config
-            )
-            
-            # Process the transcribed text
-            try:
-                transcribed_text = coordinator.process_transcription(
-                    text=text,
-                    transcription_client=self.transcription_client,
-                    config=config
-                )
-            except NotFoundError as nf_error:
-                logger.error(f"❌ Модель не найдена: {nf_error}")
-                logger.info("Отправка сигнала model_not_found для уведомления пользователя")
-                # Determine which model caused the error
-                model_to_use = config.post_processing_custom_model if config.post_processing_custom_model else config.post_processing_model
-                self.model_not_found.emit(model_to_use, config.post_processing_provider)
-                logger.info("Используем оригинальный текст без обработки")
-                # Continue with original text
-            except RateLimitError as rl_error:
-                logger.error(f"❌ Rate Limit Error: {rl_error}")
-                logger.info("Отправка сигнала api_error для уведомления пользователя")
-                provider = config.post_processing_provider if config.enable_post_processing else formatting_config.provider
-                self.api_error.emit("RateLimitError", str(rl_error), provider)
-                logger.info("Используем оригинальный текст без обработки")
-                # Continue with original text
-            except AuthenticationError as auth_error:
-                logger.error(f"❌ Authentication Error: {auth_error}")
-                logger.info("Отправка сигнала api_error для уведомления пользователя")
-                provider = config.post_processing_provider if config.enable_post_processing else formatting_config.provider
-                self.api_error.emit("AuthenticationError", str(auth_error), provider)
-                logger.info("Используем оригинальный текст без обработки")
-                # Continue with original text
-            except APIConnectionError as conn_error:
-                logger.error(f"❌ Connection Error: {conn_error}")
-                logger.info("Отправка сигнала api_error для уведомления пользователя")
-                provider = config.post_processing_provider if config.enable_post_processing else formatting_config.provider
-                self.api_error.emit("APIConnectionError", str(conn_error), provider)
-                logger.info("Используем оригинальный текст без обработки")
-                # Continue with original text
-            except APITimeoutError as timeout_error:
-                logger.error(f"❌ Timeout Error: {timeout_error}")
-                logger.info("Отправка сигнала api_error для уведомления пользователя")
-                provider = config.post_processing_provider if config.enable_post_processing else formatting_config.provider
-                self.api_error.emit("APITimeoutError", str(timeout_error), provider)
-                logger.info("Используем оригинальный текст без обработки")
-                # Continue with original text
-            except Exception as processing_error:
-                # Проверить тип ошибки и отправить соответствующий сигнал
-                error_type = type(processing_error).__name__
-                error_message = str(processing_error)
-                
-                # Извлечь информацию о провайдере
-                provider = config.post_processing_provider if config.enable_post_processing else formatting_config.provider
-                
-                # Отправить сигнал api_error для всех остальных ошибок
-                logger.error(f"❌ Ошибка обработки: {processing_error}")
-                logger.info("Отправка сигнала api_error для уведомления пользователя")
-                self.api_error.emit("APIError", error_message, provider)
-                
-                logger.info("Используем оригинальный текст без обработки")
-                # Continue with original text
-            
-            # Отправить сигнал с результатом
-            logger.info("Отправка сигнала transcription_complete")
-            self.transcription_complete.emit(transcribed_text)
+            # Отправить сигнал с результатом (сырой текст)
+            # Форматирование и постобработка выполняются в отдельном потоке ProcessingThread
+            logger.info("Отправка сигнала transcription_raw_complete")
+            self.transcription_raw_complete.emit(transcribed_text)
             
         except Exception as e:
             # Отправить сигнал об ошибке

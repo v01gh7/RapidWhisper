@@ -23,7 +23,7 @@ from core.state_manager import StateManager, AppState
 from core.statistics_manager import StatisticsManager
 from services.hotkey_manager import HotkeyManager
 from services.audio_engine import AudioRecordingThread
-from services.transcription_client import TranscriptionThread
+from services.transcription_client import TranscriptionThread, ProcessingThread
 from services.clipboard_manager import ClipboardManager
 from services.silence_detector import SilenceDetector
 from ui.floating_window import FloatingWindow
@@ -90,6 +90,7 @@ class RapidWhisperApp(QObject):
         # Потоки
         self.recording_thread: AudioRecordingThread = None
         self.transcription_thread: TranscriptionThread = None
+        self.processing_thread = None  # ProcessingThread for formatting/post-processing
         
         # Окно настроек (единственный экземпляр)
         self.settings_window = None
@@ -730,6 +731,9 @@ class RapidWhisperApp(QObject):
             self.logger.info("TranscriptionThread создан")
             
             # Подключить сигналы потока
+            self.transcription_thread.transcription_raw_complete.connect(
+                self._on_transcription_raw_complete
+            )
             self.transcription_thread.transcription_complete.connect(
                 self._on_transcription_complete
             )
@@ -878,6 +882,131 @@ class RapidWhisperApp(QObject):
         )
         
         self.logger.info(f"Уведомление об ошибке API показано пользователю: {title}")
+
+    def _on_transcription_raw_complete(self, text: str) -> None:
+        """
+        Обработчик завершения транскрипции (сырой текст).
+
+        Запускает поток форматирования/постобработки.
+
+        Args:
+            text: Сырой транскрибированный текст
+        """
+        self.logger.info(f"Raw transcription complete: {text[:50]}...")
+        self._start_processing(text)
+
+    def _start_processing(self, raw_text: str) -> None:
+        """
+        Запускает поток форматирования и постобработки.
+
+        Args:
+            raw_text: Сырой транскрибированный текст
+        """
+        from services.window_monitor import WindowMonitor
+        from services.formatting_module import FormattingModule
+        from services.formatting_config import FormattingConfig
+        from core.config_loader import get_config_loader
+
+        try:
+            # Load configuration
+            config = Config.load_from_config()
+            formatting_config = FormattingConfig.from_config(get_config_loader())
+
+            # Create window monitor and formatting module
+            window_monitor = WindowMonitor.create()
+            formatting_module = FormattingModule(
+                config_manager=None,
+                ai_client_factory=None,
+                window_monitor=window_monitor,
+                state_manager=self.state_manager
+            )
+            formatting_module.config = formatting_config
+
+            # Get transcription_client from the completed transcription thread
+            transcription_client = self.transcription_thread.transcription_client
+
+            # Create processing thread
+            self.processing_thread = ProcessingThread(
+                text=raw_text,
+                config=config,
+                formatting_module=formatting_module,
+                formatting_config=formatting_config,
+                transcription_client=transcription_client,
+                state_manager=self.state_manager
+            )
+
+            # Connect signals
+            self.processing_thread.processing_complete.connect(
+                self._on_processing_complete
+            )
+            self.processing_thread.processing_error.connect(
+                self._on_processing_error
+            )
+            self.processing_thread.model_not_found.connect(
+                self._on_model_not_found
+            )
+            self.processing_thread.api_error.connect(
+                self._on_api_error
+            )
+            self.processing_thread.processing_started.connect(
+                self._on_processing_started
+            )
+
+            # Start thread
+            self.processing_thread.start()
+            self.logger.info("ProcessingThread started")
+
+        except Exception as e:
+            self.logger.error(f"Error starting processing thread: {e}")
+            import traceback
+            self.logger.error(traceback.format_exc())
+            # Fallback to raw text if processing fails to start
+            self.state_manager.on_transcription_complete(raw_text)
+
+    def _on_processing_started(self) -> None:
+        """Обработчик начала форматирования/постобработки."""
+        self.logger.info("Processing started (formatting/post-processing)")
+        self.tray_icon.set_status(t("status.formatting"))
+
+    def _on_processing_complete(self, text: str) -> None:
+        """
+        Обработчик завершения форматирования/постобработки.
+
+        Args:
+            text: Обработанный текст
+        """
+        self.logger.info(f"Processing complete: {text[:50]}...")
+
+        # Track transcription statistics with final text
+        try:
+            import wave
+            with wave.open(self._audio_file_path, 'rb') as wav_file:
+                frames = wav_file.getnframes()
+                rate = wav_file.getframerate()
+                audio_duration = frames / float(rate)
+                self.statistics_manager.track_transcription(audio_duration, text)
+                self.logger.info(f"Transcription statistics tracked: {audio_duration:.2f}s, {len(text)} chars")
+        except Exception as e:
+            self.logger.error(f"Failed to track transcription statistics: {e}")
+
+        # Forward to state manager
+        self.state_manager.on_transcription_complete(text)
+
+        # Clear processing thread reference
+        self.processing_thread = None
+
+    def _on_processing_error(self, error: Exception) -> None:
+        """
+        Обработчик ошибки форматирования/постобработки.
+
+        Args:
+            error: Исключение
+        """
+        self.logger.error(f"Processing error: {error}")
+        self.processing_thread = None
+        # Note: ProcessingThread falls back to raw text on error, so we don't call on_error here
+        # The processing_complete signal will be emitted with the original text
+
     
     def _display_result(self, text: str) -> None:
         """
@@ -1584,6 +1713,9 @@ class RapidWhisperApp(QObject):
             
             if self.transcription_thread and self.transcription_thread.isRunning():
                 self.transcription_thread.wait(1000)
+
+            if self.processing_thread and self.processing_thread.isRunning():
+                self.processing_thread.wait(1000)
             
             # Отменить регистрацию горячей клавиши
             if self.hotkey_manager:

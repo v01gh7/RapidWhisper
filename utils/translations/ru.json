@@ -296,6 +296,7 @@
   "status": {
     "recording": "Запись...",
     "processing": "Обработка...",
+    "formatting": "Форматирование...",
     "ready": "Готово"
   },
   "errors": {
