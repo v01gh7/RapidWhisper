@@ -217,7 +217,13 @@
       "open_text_error_message": "Failed to open transcription:\n{error}",
       "open_folder_error_message": "Failed to open folder:\n{error}",
       "delete_error_title": "❌ Error",
-      "delete_error_message": "Failed to delete recording:\n{error}"
+      "delete_error_message": "Failed to delete recording:\n{error}",
+      "re_transcribe": "🔄 Re-transcribe",
+      "re_transcribe_tooltip": "Transcribe the audio again with current settings",
+      "re_transcribing": "Re-transcribing...",
+      "re_transcribe_error_title": "Transcription Failed",
+      "re_transcribe_error_message": "Failed to transcribe audio:\n{error}",
+      "re_transcribe_success": "Re-transcription complete!"
     },
     "ui_customization": {
       "title": "UI Customization",
@@ -428,6 +434,14 @@
     "format_error_message": "Formatting failed. Please check your settings and try again.",
     "copy_success_message": "Copied to clipboard.",
     "copy_failed_message": "Failed to copy to clipboard.",
-    "dialog_error": "Failed to show manual formatting dialog"
+    "dialog_error": "Failed to show manual formatting dialog",
+    "file_loaded": "File loaded: {filename}",
+    "file_load_error": "Failed to load file: {error}",
+    "transcribing": "Transcribing audio...",
+    "transcribing_button": "Transcribing...",
+    "transcription_complete": "Transcription complete!",
+    "transcription_error": "Transcription failed. Please check your API key and try again.",
+    "no_transcription_api_key": "Transcription API key not configured. Please check your AI Provider settings.",
+    "drop_hint": "Drop audio files to transcribe or text files to format"
   }
 }

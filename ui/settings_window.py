@@ -2941,7 +2941,12 @@ class SettingsWindow(QDialog, StyledWindowMixin):
         open_text_action = menu.addAction(t("settings.recordings.open_text_context"))
         open_text_action.setEnabled(has_transcription)
         open_text_action.triggered.connect(self._open_transcription)
-        
+
+        # Re-transcribe action
+        re_transcribe_action = menu.addAction(t("settings.recordings.re_transcribe"))
+        re_transcribe_action.setToolTip(t("settings.recordings.re_transcribe_tooltip"))
+        re_transcribe_action.triggered.connect(self._re_transcribe_recording)
+
         menu.addSeparator()
         
         open_folder_action = menu.addAction(t("settings.recordings.open_folder_context"))
@@ -3086,7 +3091,170 @@ class SettingsWindow(QDialog, StyledWindowMixin):
                     t("settings.recordings.delete_error_message", error=str(e)),
                     QMessageBox.StandardButton.Ok
                 )
-    
+
+    def _re_transcribe_recording(self):
+        """Re-transcribe the selected audio recording."""
+        from PyQt6.QtWidgets import QProgressDialog
+        from services.transcription_client import TranscriptionClient
+        from core.config_loader import get_config_loader
+
+        current_item = self.recordings_list.currentItem()
+        if not current_item:
+            return
+
+        recording_path = current_item.data(Qt.ItemDataRole.UserRole)
+        if not recording_path:
+            return
+
+        # Get transcription provider settings
+        config_loader = get_config_loader()
+        provider = config_loader.get("ai_provider.provider", "groq")
+        api_key = None
+        base_url = None
+        model = config_loader.get("ai_provider.transcription_custom_model")
+
+        if provider == "groq":
+            api_key = config_loader.get("ai_provider.api_keys.groq")
+        elif provider == "openai":
+            api_key = config_loader.get("ai_provider.api_keys.openai")
+        elif provider == "glm":
+            api_key = config_loader.get("ai_provider.api_keys.glm")
+        elif provider == "custom":
+            api_key = config_loader.get("ai_provider.api_keys.custom")
+            base_url = config_loader.get("ai_provider.custom_base_url")
+
+        if not api_key:
+            QMessageBox.warning(
+                self,
+                t("common.error"),
+                t("errors.no_api_key", provider=provider)
+            )
+            return
+
+        # Create progress dialog
+        progress = QProgressDialog(
+            t("settings.recordings.re_transcribing"),
+            "",  # No cancel button text
+            0, 0,  # Min, Max (0,0 for indeterminate)
+            self
+        )
+        progress.setWindowTitle(t("settings.recordings.re_transcribe"))
+        progress.setWindowModality(Qt.WindowModality.WindowModal)
+        progress.setCancelButton(None)
+        progress.show()
+
+        # Process events to show dialog
+        from PyQt6.QtCore import QCoreApplication
+        QCoreApplication.processEvents()
+
+        try:
+            # Create transcription client
+            client = TranscriptionClient(
+                provider=provider,
+                api_key=api_key,
+                base_url=base_url,
+                model=model
+            )
+
+            # Transcribe audio
+            text = client.transcribe_audio(recording_path)
+
+            # Apply formatting/post-processing if enabled
+            config = Config.load_from_config()
+            text = self._apply_processing_if_needed(text, config)
+
+            # Save transcription
+            from pathlib import Path
+            recording_path_obj = Path(recording_path)
+            transcription_filename = recording_path_obj.stem + ".txt"
+
+            from core.config import get_transcriptions_dir
+            transcriptions_dir = get_transcriptions_dir()
+            transcription_path = transcriptions_dir / transcription_filename
+
+            # Write transcription to file
+            transcription_path.write_text(text, encoding='utf-8')
+            logger.info(f"Re-transcription saved: {transcription_path}")
+
+            # Show success and refresh list
+            progress.close()
+            QMessageBox.information(
+                self,
+                t("common.success"),
+                t("settings.recordings.re_transcribe_success")
+            )
+            self._refresh_recordings_list()
+
+        except Exception as e:
+            progress.close()
+            logger.error(f"Re-transcription failed: {e}")
+            QMessageBox.critical(
+                self,
+                t("settings.recordings.re_transcribe_error_title"),
+                t("settings.recordings.re_transcribe_error_message", error=str(e)),
+                QMessageBox.StandardButton.Ok
+            )
+
+    def _apply_processing_if_needed(self, text: str, config) -> str:
+        """Apply formatting and/or post-processing to transcribed text."""
+        from services.formatting_config import FormattingConfig
+        from services.formatting_module import FormattingModule
+        from services.processing_coordinator import ProcessingCoordinator
+        from services.window_monitor import WindowMonitor
+        from core.config_loader import get_config_loader
+
+        # Load formatting configuration
+        formatting_config = FormattingConfig.from_config(get_config_loader())
+
+        # Create window monitor
+        window_monitor = WindowMonitor.create()
+
+        # Create formatting module
+        formatting_module = FormattingModule(
+            config_manager=None,
+            ai_client_factory=None,
+            window_monitor=window_monitor,
+            state_manager=None
+        )
+        formatting_module.config = formatting_config
+
+        # Create processing coordinator
+        coordinator = ProcessingCoordinator(
+            formatting_module=formatting_module,
+            config_manager=config
+        )
+
+        # Create a dummy transcription client for processing (we only need post_process_text)
+        class DummyClient:
+            def post_process_text(self, text, provider, model, system_prompt, api_key=None,
+                               base_url=None, use_coding_plan=False, temperature=0.3,
+                               max_tokens=16000):
+                # Import the actual client to use its post_process_text method
+                from services.transcription_client import TranscriptionClient
+                dummy = TranscriptionClient(provider=provider, api_key=api_key or "dummy",
+                                        base_url=base_url)
+                return dummy.post_process_text(
+                    text=text,
+                    provider=provider,
+                    model=model,
+                    system_prompt=system_prompt,
+                    api_key=api_key,
+                    base_url=base_url,
+                    use_coding_plan=use_coding_plan,
+                    temperature=temperature,
+                    max_tokens=max_tokens
+                )
+
+        try:
+            return coordinator.process_transcription(
+                text=text,
+                transcription_client=DummyClient(),
+                config=config
+            )
+        except Exception as e:
+            logger.warning(f"Processing failed during re-transcription: {e}")
+            return text
+
     def _change_recordings_folder(self):
         """Изменяет папку для сохранения записей."""
         from PyQt6.QtWidgets import QFileDialog

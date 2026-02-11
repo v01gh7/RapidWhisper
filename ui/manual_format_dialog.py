@@ -5,9 +5,11 @@ Allows the user to select a formatting prompt and apply it to any pasted text.
 """
 
 from typing import Optional, Tuple
+import os
+from pathlib import Path
 
-from PyQt6.QtCore import Qt, QObject, pyqtSignal, QThread, QTimer
-from PyQt6.QtGui import QFont
+from PyQt6.QtCore import Qt, QObject, pyqtSignal, QThread, QTimer, QMimeData
+from PyQt6.QtGui import QFont, QDragEnterEvent, QDropEvent
 from PyQt6.QtWidgets import (
     QDialog,
     QVBoxLayout,
@@ -16,6 +18,7 @@ from PyQt6.QtWidgets import (
     QTextEdit,
     QPushButton,
     QMessageBox,
+    QMenu,
 )
 
 from core.config_loader import get_config_loader
@@ -28,6 +31,98 @@ from utils.i18n import t
 from utils.logger import get_logger
 
 logger = get_logger()
+
+
+class _TranscriptionWorker(QObject):
+    """Worker for transcribing audio files in background thread."""
+    finished = pyqtSignal(str)
+    error = pyqtSignal(str)
+
+    def __init__(self, audio_path: str, formatting_config: FormattingConfig):
+        super().__init__()
+        self._audio_path = audio_path
+        self._formatting_config = formatting_config
+
+    def run(self) -> None:
+        """Transcribe audio file and emit result."""
+        try:
+            from services.transcription_client import TranscriptionClient
+            from core.config_loader import get_config_loader
+            from core.config import Config
+
+            config_loader = get_config_loader()
+            config = Config.load_from_config()
+
+            # Get transcription provider settings
+            provider = config_loader.get("ai_provider.provider", "groq")
+            api_key = None
+            base_url = None
+            model = config_loader.get("ai_provider.transcription_custom_model")
+
+            if provider == "groq":
+                api_key = config_loader.get("ai_provider.api_keys.groq")
+            elif provider == "openai":
+                api_key = config_loader.get("ai_provider.api_keys.openai")
+            elif provider == "glm":
+                api_key = config_loader.get("ai_provider.api_keys.glm")
+            elif provider == "custom":
+                api_key = config_loader.get("ai_provider.api_keys.custom")
+                base_url = config_loader.get("ai_provider.custom_base_url")
+
+            if not api_key:
+                self.error.emit(t("manual_format.no_transcription_api_key"))
+                return
+
+            # Create client and transcribe
+            client = TranscriptionClient(
+                provider=provider,
+                api_key=api_key,
+                base_url=base_url,
+                model=model
+            )
+
+            # Convert to WAV if needed (for mp3, m4a, etc.)
+            audio_to_transcribe = self._ensure_wav_format(self._audio_path)
+
+            try:
+                text = client.transcribe_audio(audio_to_transcribe)
+                self.finished.emit(text)
+            finally:
+                # Clean up temporary WAV file if created
+                if audio_to_transcribe != self._audio_path and os.path.exists(audio_to_transcribe):
+                    os.remove(audio_to_transcribe)
+
+        except Exception as exc:
+            logger.error(f"Transcription worker error: {exc}")
+            self.error.emit(str(exc))
+
+    def _ensure_wav_format(self, audio_path: str) -> str:
+        """Convert audio to WAV format if needed. Returns path to WAV file."""
+        suffix = Path(audio_path).suffix.lower()
+
+        if suffix == '.wav':
+            return audio_path
+
+        # For non-WAV files, convert using ffmpeg if available
+        import tempfile
+        import subprocess
+
+        try:
+            with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp_file:
+                tmp_path = tmp_file.name
+
+            # Try to convert with ffmpeg
+            subprocess.run(
+                ['ffmpeg', '-y', '-i', audio_path, tmp_path],
+                capture_output=True,
+                check=True
+            )
+            logger.info(f"Converted {audio_path} to WAV format")
+            return tmp_path
+        except (FileNotFoundError, subprocess.CalledProcessError) as e:
+            logger.warning(f"Could not convert to WAV: {e}")
+            # Try using original file anyway
+            return audio_path
 
 
 class _FormatWorker(QObject):
@@ -52,6 +147,10 @@ class _FormatWorker(QObject):
 class ManualFormatDialog(QDialog, StyledWindowMixin):
     RESULT_BACK_TO_SELECTION = 1001
 
+    # Signals for transcription and re-transcription
+    transcription_complete = pyqtSignal(str)  # Text from audio transcription
+    transcription_error = pyqtSignal(str)  # Error message
+
     def __init__(self, formatting_config: FormattingConfig, format_id: str, parent=None, theme_id: Optional[str] = None):
         super().__init__(parent)
         StyledWindowMixin.__init__(self)
@@ -72,8 +171,14 @@ class ManualFormatDialog(QDialog, StyledWindowMixin):
         self._formatting_worker: Optional[_FormatWorker] = None
         self._is_formatting = False
         self.back_button: Optional[QPushButton] = None
+        self._transcription_thread: Optional[QThread] = None
+        self._transcription_worker: Optional["_TranscriptionWorker"] = None
+        self._is_transcribing = False
 
         self._create_ui()
+
+        # Enable drag-drop
+        self.setAcceptDrops(True)
 
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
         self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent, True)
@@ -343,6 +448,153 @@ class ManualFormatDialog(QDialog, StyledWindowMixin):
             base_url = self.formatting_config.custom_base_url
 
         return api_key, base_url
+
+    # Drag and drop support
+    def dragEnterEvent(self, event: QDragEnterEvent) -> None:
+        """Handle drag enter event."""
+        if event.mimeData().hasUrls():
+            # Check if any URL is a supported file type
+            for url in event.mimeData().urls():
+                file_path = url.toLocalFile()
+                if file_path:
+                    suffix = Path(file_path).suffix.lower()
+                    if suffix in ('.wav', '.mp3', '.ogg', '.flac', '.m4a', '.mp4', '.txt', '.md'):
+                        event.acceptProposedAction()
+                        return
+        event.ignore()
+
+    def dragMoveEvent(self, event: QDragEnterEvent) -> None:
+        """Handle drag move event."""
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event: QDropEvent) -> None:
+        """Handle drop event - process dropped files."""
+        if not event.mimeData().hasUrls():
+            event.ignore()
+            return
+
+        for url in event.mimeData().urls():
+            file_path = url.toLocalFile()
+            if not file_path:
+                continue
+
+            path = Path(file_path)
+            suffix = path.suffix.lower()
+
+            # Audio files - transcribe then format
+            if suffix in ('.wav', '.mp3', '.ogg', '.flac', '.m4a', '.mp4'):
+                self._start_transcription(str(path))
+                event.acceptProposedAction()
+                return
+
+            # Text files - load directly
+            elif suffix in ('.txt', '.md'):
+                self._load_text_file(str(path))
+                event.acceptProposedAction()
+                return
+
+        event.ignore()
+
+    def _load_text_file(self, file_path: str) -> None:
+        """Load text file content into input area."""
+        try:
+            text = Path(file_path).read_text(encoding='utf-8')
+            self.input_edit.setPlainText(text)
+            self._set_status(t("manual_format.file_loaded", filename=Path(file_path).name))
+        except Exception as e:
+            logger.error(f"Failed to load text file: {e}")
+            QMessageBox.warning(
+                self,
+                t("common.error"),
+                t("manual_format.file_load_error", error=str(e))
+            )
+
+    def _start_transcription(self, audio_path: str) -> None:
+        """Start audio transcription in background thread."""
+        if self._is_transcribing:
+            logger.warning("Transcription already in progress")
+            return
+
+        # Check transcription credentials
+        if not self._has_transcription_credentials():
+            QMessageBox.warning(
+                self,
+                t("common.error"),
+                t("manual_format.no_transcription_api_key")
+            )
+            return
+
+        self._set_transcription_state(True)
+        self._set_status(t("manual_format.transcribing"))
+
+        # Create and start transcription thread
+        self._transcription_thread = QThread(self)
+        self._transcription_worker = _TranscriptionWorker(audio_path, self.formatting_config)
+        self._transcription_worker.moveToThread(self._transcription_thread)
+
+        self._transcription_thread.started.connect(self._transcription_worker.run)
+        self._transcription_worker.finished.connect(self._on_transcription_finished)
+        self._transcription_worker.error.connect(self._on_transcription_error)
+        self._transcription_worker.finished.connect(self._transcription_worker.deleteLater)
+        self._transcription_worker.error.connect(self._transcription_worker.deleteLater)
+        self._transcription_worker.finished.connect(self._transcription_thread.quit)
+        self._transcription_worker.error.connect(self._transcription_thread.quit)
+        self._transcription_thread.finished.connect(self._transcription_thread.deleteLater)
+
+        self._transcription_thread.start()
+
+    def _on_transcription_finished(self, text: str) -> None:
+        """Handle successful transcription."""
+        self.input_edit.setPlainText(text)
+        self._set_transcription_state(False)
+        self._set_status(t("manual_format.transcription_complete"))
+
+    def _on_transcription_error(self, error_message: str) -> None:
+        """Handle transcription error."""
+        logger.error(f"Transcription error: {error_message}")
+        QMessageBox.warning(
+            self,
+            t("common.error"),
+            f"{t('manual_format.transcription_error')}\n\n{error_message}"
+        )
+        self._set_transcription_state(False)
+
+    def _set_transcription_state(self, is_transcribing: bool) -> None:
+        """Update UI state during transcription."""
+        self._is_transcribing = is_transcribing
+        self.input_edit.setReadOnly(is_transcribing)
+        self.format_button.setEnabled(not is_transcribing)
+        if self.back_button is not None:
+            self.back_button.setEnabled(not is_transcribing)
+        self.close_button.setEnabled(not is_transcribing)
+
+        if is_transcribing:
+            # Show transcription in progress
+            self.format_button.setText(t("manual_format.transcribing_button"))
+        else:
+            self.format_button.setText(t("manual_format.format_button"))
+
+    def _has_transcription_credentials(self) -> bool:
+        """Check if transcription API credentials are configured."""
+        from core.config_loader import get_config_loader
+        config_loader = get_config_loader()
+
+        provider = config_loader.get("ai_provider.provider", "groq")
+        api_key = None
+
+        if provider == "groq":
+            api_key = config_loader.get("ai_provider.api_keys.groq")
+        elif provider == "openai":
+            api_key = config_loader.get("ai_provider.api_keys.openai")
+        elif provider == "glm":
+            api_key = config_loader.get("ai_provider.api_keys.glm")
+        elif provider == "custom":
+            api_key = config_loader.get("ai_provider.api_keys.custom")
+
+        return bool(api_key)
 
     def keyPressEvent(self, event) -> None:
         if event.key() == Qt.Key.Key_Escape and self._is_formatting:
