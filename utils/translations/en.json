@@ -220,10 +220,12 @@
       "delete_error_message": "Failed to delete recording:\n{error}",
       "re_transcribe": "🔄 Re-transcribe",
       "re_transcribe_tooltip": "Transcribe the audio again with current settings",
-      "re_transcribing": "Re-transcribing...",
+      "re_transcribing": "Re-transcribing audio...",
+      "re_transcribing_step1": "Transcribing audio file...",
+      "re_transcribing_step2": "Applying formatting...",
       "re_transcribe_error_title": "Transcription Failed",
       "re_transcribe_error_message": "Failed to transcribe audio:\n{error}",
-      "re_transcribe_success": "Re-transcription complete!"
+      "re_transcribe_success": "Re-transcription complete!\n\nText copied to clipboard."
     },
     "ui_customization": {
       "title": "UI Customization",

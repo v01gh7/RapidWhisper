@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import (
     QScrollArea, QApplication, QCheckBox, QTextEdit, QGridLayout, QMenu,
     QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QSizePolicy
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QSize
+from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QSize, QObject, QTimer
 from PyQt6.QtGui import QFont, QIcon, QScreen, QPainter
 from core.config import Config
 from core.statistics_manager import StatisticsManager
@@ -3094,8 +3094,9 @@ class SettingsWindow(QDialog, StyledWindowMixin):
 
     def _re_transcribe_recording(self):
         """Re-transcribe the selected audio recording."""
-        from PyQt6.QtWidgets import QProgressDialog
-        from services.transcription_client import TranscriptionClient
+        from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QProgressBar
+        from PyQt6.QtCore import QThread, pyqtSignal
+        from services.clipboard_manager import ClipboardManager
         from core.config_loader import get_config_loader
 
         current_item = self.recordings_list.currentItem()
@@ -3131,53 +3132,155 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             )
             return
 
-        # Create progress dialog
-        progress = QProgressDialog(
-            t("settings.recordings.re_transcribing"),
-            "",  # No cancel button text
-            0, 0,  # Min, Max (0,0 for indeterminate)
-            self
-        )
-        progress.setWindowTitle(t("settings.recordings.re_transcribe"))
-        progress.setWindowModality(Qt.WindowModality.WindowModal)
-        progress.setCancelButton(None)
-        progress.show()
+        # Create styled progress dialog
+        progress_dialog = QDialog(self)
+        progress_dialog.setWindowTitle(t("settings.recordings.re_transcribe"))
+        progress_dialog.setWindowModality(Qt.WindowModality.ApplicationModal)
+        progress_dialog.setFixedSize(400, 150)
+        progress_dialog.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
 
-        # Process events to show dialog
-        from PyQt6.QtCore import QCoreApplication
-        QCoreApplication.processEvents()
+        # Get current theme
+        theme_id = getattr(self.config, "window_theme", DEFAULT_WINDOW_THEME_ID)
+        theme = get_window_theme(theme_id)
+
+        # Build styled dialog
+        dialog_style = f"""
+            QDialog {{
+                background-color: {theme["window_bg"]};
+                border: 2px solid {theme["window_border"]};
+                border-radius: 12px;
+            }}
+        """
+        progress_dialog.setStyleSheet(dialog_style)
+
+        layout = QVBoxLayout()
+        layout.setContentsMargins(24, 24, 24, 24)
+        layout.setSpacing(16)
+
+        # Status label
+        status_label = QLabel(t("settings.recordings.re_transcribing"))
+        status_label.setStyleSheet(f"""
+            QLabel {{
+                color: {theme["text_primary"]};
+                font-size: 14px;
+                font-family: '{theme["font_family"]}';
+            }}
+        """)
+        status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(status_label)
+
+        # Progress bar
+        progress_bar = QProgressBar()
+        progress_bar.setRange(0, 0)  # Indeterminate progress
+        progress_bar.setTextVisible(False)
+        progress_bar.setStyleSheet(f"""
+            QProgressBar {{
+                border: 1px solid {theme["input_border"]};
+                border-radius: 6px;
+                background-color: {theme["input_bg"]};
+                height: 8px;
+            }}
+            QProgressBar::chunk {{
+                background-color: {theme.get("accent", "#0078d4")};
+                border-radius: 5px;
+            }}
+        """)
+        layout.addWidget(progress_bar)
+
+        progress_dialog.setLayout(layout)
+        progress_dialog.show()
+
+        # Store references to prevent garbage collection
+        self._re_transcribe_dialog = progress_dialog
+        self._re_transcribe_status_label = status_label
+        self._re_transcribe_result = None
+        self._re_transcribe_error = None
+        self._re_transcribe_recording_path = recording_path  # Store for later use
+
+        # Create worker for background transcription
+        class ReTranscribeWorker(QObject):
+            finished = pyqtSignal(str)
+            error = pyqtSignal(str)
+
+            def __init__(self, audio_path, provider, api_key, base_url, model):
+                super().__init__()
+                self.audio_path = audio_path
+                self.provider = provider
+                self.api_key = api_key
+                self.base_url = base_url
+                self.model = model
+
+            def run(self):
+                try:
+                    from services.transcription_client import TranscriptionClient
+                    client = TranscriptionClient(
+                        provider=self.provider,
+                        api_key=self.api_key,
+                        base_url=self.base_url,
+                        model=self.model
+                    )
+                    text = client.transcribe_audio(self.audio_path)
+                    self.finished.emit(text)
+                except Exception as e:
+                    self.error.emit(str(e))
+
+        # Create and start thread
+        self._re_transcribe_thread = QThread(self)
+        self._re_transcribe_worker = ReTranscribeWorker(
+            recording_path, provider, api_key, base_url, model
+        )
+        self._re_transcribe_worker.moveToThread(self._re_transcribe_thread)
+
+        # Connect signals
+        self._re_transcribe_thread.started.connect(self._re_transcribe_worker.run)
+        self._re_transcribe_worker.finished.connect(self._on_re_transcribe_finished)
+        self._re_transcribe_worker.error.connect(self._on_re_transcribe_error)
+        self._re_transcribe_worker.finished.connect(self._re_transcribe_worker.deleteLater)
+        self._re_transcribe_worker.error.connect(self._re_transcribe_worker.deleteLater)
+        self._re_transcribe_worker.finished.connect(self._re_transcribe_thread.quit)
+        self._re_transcribe_worker.error.connect(self._re_transcribe_thread.quit)
+        self._re_transcribe_thread.finished.connect(self._re_transcribe_thread.deleteLater)
+
+        # Start transcription
+        self._re_transcribe_thread.start()
+
+    def _on_re_transcribe_finished(self, text: str):
+        """Handle successful re-transcription - apply processing and save."""
+        self._re_transcribe_result = text
+        self._update_re_transcribe_status_text(t("settings.recordings.re_transcribing_step2"))
+
+        # Apply formatting/post-processing in a timer to allow UI update
+        QTimer.singleShot(100, lambda: self._complete_re_transcription(text))
+
+    def _complete_re_transcription(self, text: str):
+        """Complete re-transcription - apply processing, save and copy."""
+        from services.clipboard_manager import ClipboardManager
+        from pathlib import Path
+        from core.config import get_transcriptions_dir
 
         try:
-            # Create transcription client
-            client = TranscriptionClient(
-                provider=provider,
-                api_key=api_key,
-                base_url=base_url,
-                model=model
-            )
-
-            # Transcribe audio
-            text = client.transcribe_audio(recording_path)
-
-            # Apply formatting/post-processing if enabled
+            # Apply formatting/post-processing
             config = Config.load_from_config()
-            text = self._apply_processing_if_needed(text, config)
+            processed_text = self._apply_processing_if_needed(text, config)
 
             # Save transcription
-            from pathlib import Path
-            recording_path_obj = Path(recording_path)
+            recording_path_obj = Path(self._re_transcribe_recording_path)
             transcription_filename = recording_path_obj.stem + ".txt"
-
-            from core.config import get_transcriptions_dir
             transcriptions_dir = get_transcriptions_dir()
             transcription_path = transcriptions_dir / transcription_filename
 
             # Write transcription to file
-            transcription_path.write_text(text, encoding='utf-8')
+            transcription_path.write_text(processed_text, encoding='utf-8')
             logger.info(f"Re-transcription saved: {transcription_path}")
 
+            # Copy to clipboard
+            ClipboardManager.copy_to_clipboard(processed_text)
+
+            # Close progress dialog
+            if hasattr(self, "_re_transcribe_dialog"):
+                self._re_transcribe_dialog.close()
+
             # Show success and refresh list
-            progress.close()
             QMessageBox.information(
                 self,
                 t("common.success"),
@@ -3186,14 +3289,46 @@ class SettingsWindow(QDialog, StyledWindowMixin):
             self._refresh_recordings_list()
 
         except Exception as e:
-            progress.close()
-            logger.error(f"Re-transcription failed: {e}")
+            logger.error(f"Error completing re-transcription: {e}")
+            if hasattr(self, "_re_transcribe_dialog"):
+                self._re_transcribe_dialog.close()
             QMessageBox.critical(
                 self,
                 t("settings.recordings.re_transcribe_error_title"),
                 t("settings.recordings.re_transcribe_error_message", error=str(e)),
                 QMessageBox.StandardButton.Ok
             )
+
+    def _on_re_transcribe_error(self, error_message: str):
+        """Handle re-transcription error."""
+        self._re_transcribe_error = error_message
+        logger.error(f"Re-transcription failed: {error_message}")
+
+        if hasattr(self, "_re_transcribe_dialog"):
+            self._re_transcribe_dialog.close()
+
+        QMessageBox.critical(
+            self,
+            t("settings.recordings.re_transcribe_error_title"),
+            t("settings.recordings.re_transcribe_error_message", error=error_message),
+            QMessageBox.StandardButton.Ok
+        )
+
+    def _update_re_transcribe_status(self):
+        """Update re-transcription status message periodically."""
+        if hasattr(self, "_re_transcribe_status_label") and self._re_transcribe_status_label:
+            self._re_transcribe_message_index = (self._re_transcribe_message_index + 1) % 3
+            messages = [
+                t("settings.recordings.re_transcribing"),
+                t("settings.recordings.re_transcribing_step1"),
+                t("settings.recordings.re_transcribing_step2"),
+            ]
+            self._re_transcribe_status_label.setText(messages[self._re_transcribe_message_index])
+
+    def _update_re_transcribe_status_text(self, text: str):
+        """Update re-transcription status text directly."""
+        if hasattr(self, "_re_transcribe_status_label") and self._re_transcribe_status_label:
+            self._re_transcribe_status_label.setText(text)
 
     def _apply_processing_if_needed(self, text: str, config) -> str:
         """Apply formatting and/or post-processing to transcribed text."""
